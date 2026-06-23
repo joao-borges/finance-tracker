@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Box, Button, Chip, IconButton, Typography } from "@mui/material";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
@@ -7,6 +7,8 @@ import dayjs from "dayjs";
 import BudgetSection from "../components/BudgetSection";
 import { budgetsApi, type BudgetSummary } from "../lib/api";
 import { errorText, formatMoney } from "../lib/format";
+
+const SAVE_DEBOUNCE_MS = 600;
 
 function collectPlanned(summary: BudgetSummary): Record<number, number | null> {
     const planned: Record<number, number | null> = {};
@@ -30,6 +32,16 @@ export default function BudgetPage() {
     const [summary, setSummary] = useState<BudgetSummary | null>(null);
     const [planned, setPlanned] = useState<Record<number, number | null>>({});
     const [saving, setSaving] = useState(false);
+    const dirty = useRef<Map<number, number | null>>(new Map());
+    const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const cancelPending = () => {
+        if (timer.current) {
+            clearTimeout(timer.current);
+            timer.current = null;
+        }
+        dirty.current.clear();
+    };
 
     const load = useCallback(() => {
         budgetsApi
@@ -41,23 +53,48 @@ export default function BudgetPage() {
             .catch((error: unknown) => message.error(errorText(error)));
     }, [month, message]);
 
-    useEffect(load, [load]);
+    useEffect(() => {
+        cancelPending();
+        load();
+    }, [load]);
+
+    useEffect(() => {
+        return () => cancelPending();
+    }, []);
+
+    const flush = useCallback(() => {
+        if (dirty.current.size === 0) {
+            return;
+        }
+        const entries = Array.from(dirty.current.entries()).map(([categoryId, plannedAmount]) => ({
+            categoryId,
+            plannedAmount,
+        }));
+        dirty.current.clear();
+        setSaving(true);
+        budgetsApi
+            .setPlanned(month, entries)
+            .then(setSummary)
+            .catch((error: unknown) => message.error(errorText(error)))
+            .finally(() => setSaving(false));
+    }, [month, message]);
 
     const setOne = (categoryId: number, value: number | null) => {
         setPlanned((current) => ({ ...current, [categoryId]: value }));
+        dirty.current.set(categoryId, value);
+        if (timer.current) {
+            clearTimeout(timer.current);
+        }
+        timer.current = setTimeout(flush, SAVE_DEBOUNCE_MS);
     };
 
-    const save = async () => {
+    const runAction = async (action: () => Promise<BudgetSummary>) => {
+        cancelPending();
         setSaving(true);
         try {
-            const entries = Object.entries(planned).map(([id, plannedAmount]) => ({
-                categoryId: Number(id),
-                plannedAmount,
-            }));
-            const result = await budgetsApi.setPlanned(month, entries);
+            const result = await action();
             setSummary(result);
             setPlanned(collectPlanned(result));
-            message.success("Budget saved");
         } catch (error: unknown) {
             message.error(errorText(error));
         } finally {
@@ -73,7 +110,7 @@ export default function BudgetPage() {
 
     return (
         <Box>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 3, flexWrap: "wrap" }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1, flexWrap: "wrap" }}>
                 <IconButton onClick={() => shiftMonth(-1)} aria-label="previous month">
                     <ChevronLeftIcon />
                 </IconButton>
@@ -88,10 +125,17 @@ export default function BudgetPage() {
                     color={summary.leftToBudget < 0 ? "error" : "primary"}
                     label={`Left to budget ${formatMoney(summary.leftToBudget)}`}
                 />
-                <Button variant="contained" onClick={save} disabled={saving}>
-                    Save
+                <Button size="small" onClick={() => runAction(() => budgetsApi.copyPrevious(month))}>
+                    Copy from previous month
+                </Button>
+                <Button size="small" color="error" onClick={() => runAction(() => budgetsApi.clear(month))}>
+                    Clear all
                 </Button>
             </Box>
+
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, height: 20 }}>
+                {saving ? "Saving…" : "Changes save automatically"}
+            </Typography>
 
             <BudgetSection
                 title="Income"

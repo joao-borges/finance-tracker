@@ -125,6 +125,31 @@ public class BudgetService {
         return summary(month);
     }
 
+    /** Remove all planned amounts for the month. */
+    @Transactional
+    public BudgetSummary clear(final String month) {
+        parseMonth(month);
+        budgetRepository.deleteAll(budgetRepository.findByMonth(month));
+        return summary(month);
+    }
+
+    /** Replace this month's planned amounts with the previous month's. */
+    @Transactional
+    public BudgetSummary copyFromPrevious(final String month) {
+        final YearMonth ym = parseMonth(month);
+        final List<Budget> sources = budgetRepository.findByMonth(ym.minusMonths(1).toString());
+        budgetRepository.deleteAll(budgetRepository.findByMonth(month));
+        budgetRepository.flush();
+        for (final Budget source : sources) {
+            budgetRepository.save(Budget.builder()
+                    .month(month)
+                    .category(source.getCategory())
+                    .plannedAmount(source.getPlannedAmount())
+                    .build());
+        }
+        return summary(month);
+    }
+
     private BudgetSummary.BudgetLine line(final Category category, final BigDecimal planned, final BigDecimal actual) {
         return BudgetSummary.BudgetLine.builder()
                 .categoryId(category.getId())

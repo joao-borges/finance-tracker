@@ -282,6 +282,8 @@ export interface BudgetEntry {
 export const budgetsApi = {
     summary: (month: string) => http<BudgetSummary>("GET", `/api/budgets/${month}/summary`),
     setPlanned: (month: string, entries: BudgetEntry[]) => http<BudgetSummary>("PUT", `/api/budgets/${month}`, entries),
+    clear: (month: string) => http<BudgetSummary>("DELETE", `/api/budgets/${month}`),
+    copyPrevious: (month: string) => http<BudgetSummary>("POST", `/api/budgets/${month}/copy-previous`),
 };
 
 export const rulesExtraApi = {
