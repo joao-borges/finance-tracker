@@ -1,0 +1,157 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Box, CircularProgress, Typography } from "@mui/material";
+import { App as AntApp } from "antd";
+import SavedFilterControls from "../components/SavedFilterControls";
+import TransactionFilterBar from "../components/TransactionFilterBar";
+import TransactionsTable from "../components/TransactionsTable";
+import TransactionEditModal from "../components/TransactionEditModal";
+import {
+    accountsApi,
+    categoriesApi,
+    merchantsApi,
+    transactionsApi,
+    type Account,
+    type Category,
+    type Merchant,
+    type Transaction,
+    type TransactionFilters,
+} from "../lib/api";
+import { errorText } from "../lib/format";
+
+const PAGE_SIZE = 25;
+
+export default function TransactionsPage() {
+    const { message } = AntApp.useApp();
+    const [rows, setRows] = useState<Transaction[]>([]);
+    const [filters, setFilters] = useState<TransactionFilters>({});
+    const [page, setPage] = useState(0);
+    const [hasNext, setHasNext] = useState(true);
+    const [loading, setLoading] = useState(false);
+    const [reloadToken, setReloadToken] = useState(0);
+    const [accounts, setAccounts] = useState<Account[]>([]);
+    const [merchants, setMerchants] = useState<Merchant[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [loadedId, setLoadedId] = useState<number | undefined>(undefined);
+    const [loadedName, setLoadedName] = useState("");
+    const [editing, setEditing] = useState<Transaction | null>(null);
+    const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+    const loadMerchants = useCallback(() => {
+        merchantsApi.list().then(setMerchants).catch(() => setMerchants([]));
+    }, []);
+
+    const filtersKey = JSON.stringify(filters);
+
+    useEffect(() => {
+        accountsApi.list().then(setAccounts).catch(() => setAccounts([]));
+        categoriesApi.list().then(setCategories).catch(() => setCategories([]));
+        loadMerchants();
+    }, [loadMerchants]);
+
+    // Reset to the first page whenever the filters change.
+    useEffect(() => {
+        setPage(0);
+    }, [filtersKey]);
+
+    // Load the current page — replace on page 0, append for later pages.
+    useEffect(() => {
+        let cancelled = false;
+        setLoading(true);
+        transactionsApi
+            .list(filters, page, PAGE_SIZE)
+            .then((result) => {
+                if (cancelled) {
+                    return;
+                }
+                setHasNext(result.hasNext);
+                setRows((previous) => (page === 0 ? result.content : [...previous, ...result.content]));
+            })
+            .catch((error: unknown) => {
+                if (!cancelled) {
+                    message.error(errorText(error));
+                }
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [page, filtersKey, reloadToken, message]);
+
+    // Infinite scroll: load the next page when the sentinel scrolls into view.
+    useEffect(() => {
+        const element = sentinelRef.current;
+        if (element === null) {
+            return;
+        }
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && hasNext && !loading) {
+                setPage((current) => current + 1);
+            }
+        });
+        observer.observe(element);
+        return () => observer.disconnect();
+    }, [hasNext, loading]);
+
+    const setLoaded = (id: number | undefined, name: string) => {
+        setLoadedId(id);
+        setLoadedName(name);
+    };
+
+    const refresh = () => {
+        setPage(0);
+        setReloadToken((token) => token + 1);
+        loadMerchants();
+    };
+
+    return (
+        <Box>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 1 }}>
+                <Typography variant="h5" sx={{ flexGrow: 1 }}>
+                    Transactions
+                </Typography>
+                <SavedFilterControls
+                    filters={filters}
+                    loadedId={loadedId}
+                    loadedName={loadedName}
+                    setLoaded={setLoaded}
+                    onApply={setFilters}
+                />
+            </Box>
+
+            <TransactionFilterBar
+                filters={filters}
+                accounts={accounts}
+                merchants={merchants}
+                categories={categories}
+                onChange={(next) => setFilters((current) => ({ ...current, ...next }))}
+                onClear={() => {
+                    setFilters({});
+                    setLoaded(undefined, "");
+                }}
+            />
+
+            <TransactionsTable rows={rows} onOpen={setEditing} />
+
+            <Box ref={sentinelRef} sx={{ display: "flex", justifyContent: "center", py: 2, minHeight: 32 }}>
+                {loading && <CircularProgress size={24} />}
+                {!loading && !hasNext && rows.length > 0 && (
+                    <Typography variant="body2" color="text.secondary">
+                        End of transactions
+                    </Typography>
+                )}
+            </Box>
+
+            <TransactionEditModal
+                transaction={editing}
+                categories={categories}
+                merchants={merchants}
+                onClose={() => setEditing(null)}
+                onSaved={refresh}
+            />
+        </Box>
+    );
+}

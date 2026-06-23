@@ -1,0 +1,21 @@
+# Secrets / local env
+.env
+
+# Java / Maven
+/target/
+*.class
+
+# Node / Vite
+web/node_modules/
+web/dist/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+
+# Logs
+*.log

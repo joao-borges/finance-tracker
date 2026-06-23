@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+      Enforce unique category-group names. First heals any existing duplicates
+      (repoint categories to the surviving lowest-id group, drop the extras),
+      then adds the constraint. Data-healing steps are intentionally not
+      reversible (<rollback/> = no-op).
+    -->
+
+    <changeSet id="004-repoint-categories-off-duplicate-groups" author="finance">
+        <sql><![CDATA[
+            UPDATE categories
+            SET group_id = keep.keep_id
+            FROM (
+                SELECT g.id AS dup_id, m.keep_id
+                FROM category_groups g
+                JOIN (SELECT name, MIN(id) AS keep_id FROM category_groups GROUP BY name) m
+                  ON g.name = m.name
+                WHERE g.id <> m.keep_id
+            ) keep
+            WHERE categories.group_id = keep.dup_id
+        ]]></sql>
+        <rollback/>
+    </changeSet>
+
+    <changeSet id="004-delete-duplicate-category-groups" author="finance">
+        <sql><![CDATA[
+            DELETE FROM category_groups
+            WHERE id NOT IN (SELECT MIN(id) FROM category_groups GROUP BY name)
+        ]]></sql>
+        <rollback/>
+    </changeSet>
+
+    <changeSet id="004-unique-category-group-name" author="finance">
+        <addUniqueConstraint tableName="category_groups" columnNames="name" constraintName="uq_category_groups_name"/>
+    </changeSet>
+
+</databaseChangeLog>

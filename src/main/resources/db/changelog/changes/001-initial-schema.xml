@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+      Initial schema, one operation per changeSet so each can be rolled back
+      independently. All change types used here (createTable, createIndex,
+      addForeignKeyConstraint, addUniqueConstraint) support automatic rollback,
+      so no explicit <rollback> blocks are needed.
+
+      Ordering respects FK references: a table is created before anything that
+      points at it.
+    -->
+
+    <changeSet id="001-create-accounts" author="finance">
+        <createTable tableName="accounts">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="simplefin_id" type="varchar(255)">
+                <constraints unique="true" uniqueConstraintName="uq_accounts_simplefin_id"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="varchar(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="currency" type="varchar(8)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="balance" type="numeric(19, 4)"/>
+            <column name="balance_date" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="hidden" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="archived" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_synced_at" type="TIMESTAMP WITH TIME ZONE"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="002-create-category-groups" author="finance">
+        <createTable tableName="category_groups">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sort_order" type="integer" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="icon" type="varchar(255)"/>
+            <column name="color" type="varchar(255)"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="003-create-categories" author="finance">
+        <createTable tableName="categories">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="group_id" type="bigint">
+                <constraints foreignKeyName="fk_categories_group" references="category_groups(id)"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="icon" type="varchar(255)"/>
+            <column name="is_income" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sort_order" type="integer" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="archived" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="004-create-import-runs" author="finance">
+        <createTable tableName="import_runs">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="source" type="varchar(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="started_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="finished_at" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="status" type="varchar(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_name" type="varchar(512)"/>
+            <column name="new_count" type="integer" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="dedup_count" type="integer" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="error_count" type="integer" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="account_count" type="integer" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="005-create-transactions" author="finance">
+        <createTable tableName="transactions">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="account_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_transactions_account" references="accounts(id)"/>
+            </column>
+            <column name="source" type="varchar(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="simplefin_id" type="varchar(255)"/>
+            <column name="dedup_key" type="varchar(512)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="content_hash" type="varchar(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="posted_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="amount" type="numeric(19, 4)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="merchant" type="varchar(512)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="varchar(512)"/>
+            <column name="category_id" type="bigint">
+                <constraints foreignKeyName="fk_transactions_category" references="categories(id)"/>
+            </column>
+            <column name="needs_review" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="excluded_from_budget" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_split" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="split_parent_id" type="bigint"/>
+            <column name="is_dedup" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="notes" type="varchar(2048)"/>
+            <column name="currency" type="varchar(8)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="import_run_id" type="bigint">
+                <constraints foreignKeyName="fk_transactions_import_run" references="import_runs(id)"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="006-fk-transactions-split-parent" author="finance">
+        <addForeignKeyConstraint constraintName="fk_transactions_split_parent"
+                                 baseTableName="transactions" baseColumnNames="split_parent_id"
+                                 referencedTableName="transactions" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="007-index-transactions-account" author="finance">
+        <createIndex indexName="ix_transactions_account" tableName="transactions">
+            <column name="account_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="008-index-transactions-category" author="finance">
+        <createIndex indexName="ix_transactions_category" tableName="transactions">
+            <column name="category_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="009-index-transactions-posted-at" author="finance">
+        <createIndex indexName="ix_transactions_posted_at" tableName="transactions">
+            <column name="posted_at"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="010-index-transactions-content-hash" author="finance">
+        <createIndex indexName="ix_transactions_content_hash" tableName="transactions">
+            <column name="content_hash"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="011-index-transactions-dedup-key" author="finance">
+        <createIndex indexName="ix_transactions_dedup_key" tableName="transactions">
+            <column name="dedup_key"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="012-create-import-sources" author="finance">
+        <createTable tableName="import_sources">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="account_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_import_sources_account" references="accounts(id)"/>
+            </column>
+            <column name="date_column" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_format" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="amount_column" type="varchar(255)"/>
+            <column name="amount_sign_convention" type="varchar(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="merchant_column" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description_column" type="varchar(255)"/>
+            <column name="has_header" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="013-create-rules" author="finance">
+        <createTable tableName="rules">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="merchant_match" type="varchar(512)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="category_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_rules_category" references="categories(id)"/>
+            </column>
+            <column name="auto_approve" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="priority" type="integer" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="enabled" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_matched_at" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="match_count" type="bigint" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="014-create-budgets" author="finance">
+        <createTable tableName="budgets">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="month" type="varchar(7)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="category_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_budgets_category" references="categories(id)"/>
+            </column>
+            <column name="planned_amount" type="numeric(19, 4)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="015-uq-budgets-month-category" author="finance">
+        <addUniqueConstraint constraintName="uq_budget_month_category"
+                             tableName="budgets" columnNames="month, category_id"/>
+    </changeSet>
+
+    <changeSet id="016-create-webhook-endpoints" author="finance">
+        <createTable tableName="webhook_endpoints">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="url" type="varchar(1024)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="secret" type="varchar(512)"/>
+            <column name="enabled" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="format" type="varchar(32)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="017-create-webhook-endpoint-events" author="finance">
+        <createTable tableName="webhook_endpoint_events">
+            <column name="endpoint_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_webhook_events_endpoint" references="webhook_endpoints(id)"/>
+            </column>
+            <column name="event" type="varchar(64)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

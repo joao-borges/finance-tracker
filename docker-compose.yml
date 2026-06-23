@@ -1,0 +1,44 @@
+# Local dev (IDE) — Postgres only; run the app from your IDE / mvnw + Vite:
+#   docker compose up -d db
+#   cd api && ./mvnw spring-boot:run        # API on :8080
+#   cd web && npm install && npm run dev     # UI on :3000 (HMR), proxies /api
+#
+# Prod-like single container — UI baked into the jar, everything on :8080:
+#   docker compose --profile full up --build
+
+services:
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-finance}
+      POSTGRES_USER: ${POSTGRES_USER:-finance}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-finance}
+    ports:
+      - "5432:5432"
+    volumes:
+      # Postgres 18+ images store data under a version subdir; mount the parent.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-finance} -d ${POSTGRES_DB:-finance}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    profiles: ["full"]
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-finance}
+      DB_USER: ${POSTGRES_USER:-finance}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-finance}
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:

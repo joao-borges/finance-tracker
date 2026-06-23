@@ -1,0 +1,33 @@
+package ca.joaoborges.finance.transaction;
+
+import lombok.Builder;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+
+/**
+ * Read DTO for the transactions list. {@code merchantName} is the raw bank
+ * descriptor; {@code merchant} is the canonical merchant's name once linked.
+ * Logo/icon fields drive the list's avatars and category emoji.
+ */
+@Builder
+public record TransactionDto(
+        Long id,
+        Instant postedAt,
+        Long accountId,
+        String accountName,
+        String accountLogoUrl,
+        String merchantName,
+        Long merchantId,
+        String merchant,
+        String merchantLogoUrl,
+        String merchantIcon,
+        Long categoryId,
+        String categoryName,
+        String categoryIcon,
+        BigDecimal amount,
+        String currency,
+        String source,
+        boolean needsReview,
+        boolean excludedFromBudget) {
+}

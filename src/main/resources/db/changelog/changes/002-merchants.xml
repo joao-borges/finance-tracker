@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+      Canonical merchants + website/favicon support. One operation per changeSet
+      (auto-rollback supported), ordered so merchants exists before anything
+      references it.
+    -->
+
+    <changeSet id="002-create-merchants" author="finance">
+        <createTable tableName="merchants">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uq_merchants_name"/>
+            </column>
+            <column name="website" type="varchar(512)"/>
+            <column name="logo_url" type="varchar(1024)"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="002-accounts-add-website-logo" author="finance">
+        <addColumn tableName="accounts">
+            <column name="website" type="varchar(512)"/>
+            <column name="logo_url" type="varchar(1024)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="002-transactions-add-merchant-id" author="finance">
+        <addColumn tableName="transactions">
+            <column name="merchant_id" type="bigint"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="002-fk-transactions-merchant" author="finance">
+        <addForeignKeyConstraint constraintName="fk_transactions_merchant"
+                                 baseTableName="transactions" baseColumnNames="merchant_id"
+                                 referencedTableName="merchants" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="002-index-transactions-merchant" author="finance">
+        <createIndex indexName="ix_transactions_merchant" tableName="transactions">
+            <column name="merchant_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="002-rules-add-merchant-id" author="finance">
+        <addColumn tableName="rules">
+            <column name="merchant_id" type="bigint"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="002-fk-rules-merchant" author="finance">
+        <addForeignKeyConstraint constraintName="fk_rules_merchant"
+                                 baseTableName="rules" baseColumnNames="merchant_id"
+                                 referencedTableName="merchants" referencedColumnNames="id"/>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+      Merchant emoji fallback, and saved-filter criteria become multi-valued:
+      replace the single id columns with comma-separated id lists (stored via a
+      LongListConverter). The single test rows are dev-only, so the old columns
+      are simply dropped.
+    -->
+
+    <changeSet id="006-merchants-add-icon" author="finance">
+        <addColumn tableName="merchants">
+            <column name="icon" type="varchar(16)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="006-saved-filters-add-id-lists" author="finance">
+        <addColumn tableName="saved_filters">
+            <column name="account_ids" type="varchar(512)"/>
+            <column name="merchant_ids" type="varchar(512)"/>
+            <column name="category_ids" type="varchar(512)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="006-saved-filters-drop-single-account-id" author="finance">
+        <dropColumn tableName="saved_filters" columnName="account_id"/>
+    </changeSet>
+
+    <changeSet id="006-saved-filters-drop-single-merchant-id" author="finance">
+        <dropColumn tableName="saved_filters" columnName="merchant_id"/>
+    </changeSet>
+
+    <changeSet id="006-saved-filters-drop-single-category-id" author="finance">
+        <dropColumn tableName="saved_filters" columnName="category_id"/>
+    </changeSet>
+
+</databaseChangeLog>

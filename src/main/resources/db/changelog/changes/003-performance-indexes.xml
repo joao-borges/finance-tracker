@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+      Indexes tuned to the actual query shapes on the only indefinitely-growing
+      table (transactions). One operation per changeSet.
+
+      Kept deliberately small to avoid taxing the import write path:
+      - budget spend filters by category_id + a posted_at range, so a composite
+        (category_id, posted_at) replaces the standalone category_id index
+        (the leading column still serves category-only lookups);
+      - the review queue/count runs on every dashboard load, so a PARTIAL index
+        over just the review rows keeps it tiny and fast.
+      Not added (verified unnecessary for now): a "visible" partial on posted_at
+      (the existing posted_at index already serves recency; the split/dedup
+      filter removes only a few rows) and a category_id IS NULL index
+      (retroactive rule apply is a rare manual action — a scan is fine).
+    -->
+
+    <changeSet id="003-drop-index-transactions-category" author="finance">
+        <dropIndex indexName="ix_transactions_category" tableName="transactions"/>
+    </changeSet>
+
+    <changeSet id="003-index-transactions-category-posted" author="finance">
+        <createIndex indexName="ix_transactions_category_posted" tableName="transactions">
+            <column name="category_id"/>
+            <column name="posted_at"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="003-index-transactions-review" author="finance">
+        <sql>CREATE INDEX ix_transactions_review ON transactions (posted_at) WHERE needs_review AND NOT is_split AND NOT is_dedup</sql>
+        <rollback>DROP INDEX ix_transactions_review</rollback>
+    </changeSet>
+
+</databaseChangeLog>

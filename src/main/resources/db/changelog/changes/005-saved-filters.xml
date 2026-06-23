@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="005-create-saved-filters" author="finance">
+        <createTable tableName="saved_filters">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uq_saved_filters_name"/>
+            </column>
+            <column name="from_date" type="date"/>
+            <column name="to_date" type="date"/>
+            <column name="account_id" type="bigint"/>
+            <column name="merchant_id" type="bigint"/>
+            <column name="category_id" type="bigint"/>
+            <column name="review" type="boolean"/>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

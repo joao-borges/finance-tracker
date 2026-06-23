@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <include file="changes/001-initial-schema.xml" relativeToChangelogFile="true"/>
+    <include file="changes/002-merchants.xml" relativeToChangelogFile="true"/>
+    <include file="changes/003-performance-indexes.xml" relativeToChangelogFile="true"/>
+    <include file="changes/004-category-group-unique.xml" relativeToChangelogFile="true"/>
+    <include file="changes/005-saved-filters.xml" relativeToChangelogFile="true"/>
+    <include file="changes/006-merchant-icon-and-multi-filters.xml" relativeToChangelogFile="true"/>
+    <include file="changes/007-account-merge.xml" relativeToChangelogFile="true"/>
+    <include file="changes/008-drop-webhook-endpoints.xml" relativeToChangelogFile="true"/>
+
+</databaseChangeLog>

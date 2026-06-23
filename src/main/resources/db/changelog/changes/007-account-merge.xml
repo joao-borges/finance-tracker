@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+      Account renaming + merging. `import_ref` is the stable key CSV imports match
+      on (so `name` can be renamed freely for display). `merged_into_id` points a
+      source account (e.g. an Amex supplementary card) at the canonical account it
+      was merged into; merged sources are hidden and their transactions reassigned.
+    -->
+
+    <changeSet id="007-accounts-add-import-ref" author="finance">
+        <addColumn tableName="accounts">
+            <column name="import_ref" type="varchar(255)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="007-accounts-backfill-import-ref" author="finance">
+        <sql>UPDATE accounts SET import_ref = name WHERE import_ref IS NULL</sql>
+        <rollback/>
+    </changeSet>
+
+    <changeSet id="007-accounts-unique-import-ref" author="finance">
+        <addUniqueConstraint tableName="accounts" columnNames="import_ref" constraintName="uq_accounts_import_ref"/>
+    </changeSet>
+
+    <changeSet id="007-accounts-add-merged-into" author="finance">
+        <addColumn tableName="accounts">
+            <column name="merged_into_id" type="bigint"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="007-fk-accounts-merged-into" author="finance">
+        <addForeignKeyConstraint constraintName="fk_accounts_merged_into"
+                                 baseTableName="accounts" baseColumnNames="merged_into_id"
+                                 referencedTableName="accounts" referencedColumnNames="id"/>
+    </changeSet>
+
+</databaseChangeLog>
