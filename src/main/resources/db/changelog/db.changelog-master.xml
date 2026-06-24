@@ -14,5 +14,6 @@
     <include file="changes/007-account-merge.xml" relativeToChangelogFile="true"/>
     <include file="changes/008-drop-webhook-endpoints.xml" relativeToChangelogFile="true"/>
     <include file="changes/009-category-alert-threshold.xml" relativeToChangelogFile="true"/>
+    <include file="changes/010-simplefin-connection.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

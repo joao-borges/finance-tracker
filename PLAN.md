@@ -170,8 +170,10 @@ Splits never double-count because the parent (`is_split=true`) is excluded and o
 
 SimpleFIN is a thin JSON API — claim a setup token once, exchange it for a long-lived access URL, then `GET <access_url>/accounts` returns accounts (with balances) and their transactions. No need for any intermediary; the Spring Boot app calls it directly.
 
+**Implemented** in `simplefin/`: `SimpleFinClient` (claim + `fetchAccounts`, over the shared Apache-HttpClient `RestTemplate`), `SimpleFinSyncService` (`setup`/`sync`, the pipeline below), `SimpleFinScheduler` (`@Scheduled(cron = "0 0 6,18 * * *")`, separate bean so the `@Transactional` proxy applies), and `SimpleFinController` (`POST /api/simplefin/setup`, `GET /api/simplefin/status`, `POST /api/simplefin/sync`). The access URL is stored only in `simplefin_connection` — never returned by any endpoint or logged. `fetchAccounts` sends `start-date` (120-day lookback) since the bridge omits transactions otherwise.
+
 ### Sync flow (cron, twice daily)
-1. `GET /accounts` with the stored access URL.
+1. `GET /accounts?start-date=<epoch>` with the stored access URL.
 2. For each account → upsert; update `balance`, `balance_date`, `last_synced_at`.
 3. For each transaction in the payload:
    - **Skip if pending.** Posted-only. (SimpleFIN flags pending; drop those.)
@@ -324,7 +326,7 @@ Group the dashboard like the screenshot: Cash, Credit Cards, Loans. Respect `hid
 - **Over budget (red embed)** — when categorized spend crosses a category's monthly budget, with the category, the month's spend, and the overflow amount.
 - **Threshold reached (yellow embed)** — when monthly spend crosses a category's configured `alert_threshold`.
 
-Budget/threshold alerts are driven by `budget/BudgetAlertService.checkAfterSpend`, called from the ingest loop and from inline categorization; it alerts **only on the crossing** (compares spend before vs after the change) so it never re-alerts a category that was already over. All sent fire-and-forget over the JDK `HttpClient` (`sendAsync`) so a slow/broken webhook never blocks ingestion.
+Budget/threshold alerts are driven by `budget/BudgetAlertService.checkAfterSpend`, called from the ingest loop and from inline categorization; it alerts **only on the crossing** (compares spend before vs after the change) so it never re-alerts a category that was already over. All sent fire-and-forget over the shared Apache-HttpClient `RestTemplate` (wrapped in `CompletableFuture.runAsync`) so a slow/broken webhook never blocks ingestion.
 
 ---
 

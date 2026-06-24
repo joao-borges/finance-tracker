@@ -15,6 +15,7 @@ import UploadFileIcon from "@mui/icons-material/UploadFile";
 import { App as AntApp, Select, Space } from "antd";
 import { importApi, type CsvFormat, type ImportRun } from "../lib/api";
 import { errorText } from "../lib/format";
+import SimpleFinSection from "../components/SimpleFinSection";
 
 const FORMATS: { label: string; value: CsvFormat }[] = [
     { label: "Simple (account,name,value)", value: "SIMPLE" },
@@ -59,6 +60,11 @@ export default function ImportPage() {
                 Import
             </Typography>
 
+            <SimpleFinSection onSynced={reload} />
+
+            <Typography variant="h6" sx={{ mb: 1 }}>
+                CSV upload
+            </Typography>
             <Space wrap style={{ marginBottom: 12 }}>
                 <Select
                     style={{ minWidth: 240 }}

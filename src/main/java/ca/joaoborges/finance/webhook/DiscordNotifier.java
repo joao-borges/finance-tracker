@@ -4,23 +4,24 @@ import ca.joaoborges.finance.ingest.ImportSummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Posts notifications to a Discord channel webhook (the only notification channel
- * we support). Fire-and-forget over the JDK HttpClient so a slow/broken webhook
- * never blocks an import. No-op when no webhook URL is configured.
+ * we support). Fire-and-forget — the POST runs on a background thread over the
+ * shared {@link RestTemplate} so a slow/broken webhook never blocks an import.
+ * No-op when no webhook URL is configured.
  */
 @Service
 public class DiscordNotifier {
@@ -30,10 +31,12 @@ public class DiscordNotifier {
     private static final int RED = 0xE53935;
     private static final int YELLOW = 0xF1C40F;
 
-    private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final RestTemplate restTemplate;
     private final String webhookUrl;
 
-    public DiscordNotifier(@Value("${finance.discord.webhook-url:}") final String webhookUrl) {
+    public DiscordNotifier(final RestTemplate restTemplate,
+                           @Value("${finance.discord.webhook-url:}") final String webhookUrl) {
+        this.restTemplate = restTemplate;
         this.webhookUrl = webhookUrl;
     }
 
@@ -92,18 +95,16 @@ public class DiscordNotifier {
     }
 
     private void post(final String body) {
-        final HttpRequest request = HttpRequest.newBuilder(URI.create(webhookUrl))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
-                .build();
-        httpClient.sendAsync(request, HttpResponse.BodyHandlers.discarding())
-                .whenComplete((response, error) -> {
-                    if (error != null) {
-                        log.warn("Discord webhook call failed", error);
-                    } else if (response.statusCode() >= 300) {
-                        log.warn("Discord webhook returned HTTP {}", response.statusCode());
-                    }
-                });
+        final HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        final HttpEntity<String> request = new HttpEntity<>(body, headers);
+        CompletableFuture.runAsync(() -> {
+            try {
+                restTemplate.postForEntity(webhookUrl, request, Void.class);
+            } catch (final RuntimeException error) {
+                log.warn("Discord webhook call failed: {}", error.getMessage());
+            }
+        });
     }
 
     private String escape(final String value) {

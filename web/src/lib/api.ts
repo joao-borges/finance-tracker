@@ -305,3 +305,14 @@ export const importApi = {
         return (await res.json()) as ImportRun;
     },
 };
+
+export interface SimpleFinStatus {
+    connected: boolean;
+    lastSyncedAt: string | null;
+}
+
+export const simplefinApi = {
+    status: () => http<SimpleFinStatus>("GET", "/api/simplefin/status"),
+    setup: (token: string) => http<SimpleFinStatus>("POST", "/api/simplefin/setup", { token }),
+    sync: () => http<ImportRun>("POST", "/api/simplefin/sync"),
+};

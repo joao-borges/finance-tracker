@@ -18,6 +18,9 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
     /** Review-queue size (visible, non-quarantined, non-split). */
     long countByNeedsReviewTrueAndSplitFalseAndDedupFalse();
 
+    /** SimpleFIN dedup: has this provider transaction id already been imported? */
+    boolean existsBySimplefinId(String simplefinId);
+
     /** Uncategorized transactions eligible for a retroactive rule run. */
     List<Transaction> findByCategoryIsNullAndSplitFalseAndDedupFalse();
 

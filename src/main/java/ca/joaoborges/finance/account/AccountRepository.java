@@ -11,6 +11,8 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
 
     Optional<Account> findByImportRef(String importRef);
 
+    Optional<Account> findBySimplefinId(String simplefinId);
+
     /** Accounts shown on the accounts page: canonical/standalone (not merged away). */
     List<Account> findByMergedIntoIsNullOrderByNameAsc();
 
