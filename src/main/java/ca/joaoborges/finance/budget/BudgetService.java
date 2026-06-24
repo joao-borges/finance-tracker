@@ -97,7 +97,7 @@ public class BudgetService {
 
     @Transactional
     public BudgetSummary setBudgets(final String month, final List<BudgetEntry> entries) {
-        parseMonth(month);
+        requireEditable(month);
         final Map<Long, Budget> existing = new java.util.HashMap<>();
         budgetRepository.findByMonth(month).forEach(b -> existing.put(b.getCategory().getId(), b));
 
@@ -128,7 +128,7 @@ public class BudgetService {
     /** Remove all planned amounts for the month. */
     @Transactional
     public BudgetSummary clear(final String month) {
-        parseMonth(month);
+        requireEditable(month);
         budgetRepository.deleteAll(budgetRepository.findByMonth(month));
         return summary(month);
     }
@@ -136,7 +136,7 @@ public class BudgetService {
     /** Replace this month's planned amounts with the previous month's. */
     @Transactional
     public BudgetSummary copyFromPrevious(final String month) {
-        final YearMonth ym = parseMonth(month);
+        final YearMonth ym = requireEditable(month);
         final List<Budget> sources = budgetRepository.findByMonth(ym.minusMonths(1).toString());
         budgetRepository.deleteAll(budgetRepository.findByMonth(month));
         budgetRepository.flush();
@@ -159,6 +159,15 @@ public class BudgetService {
                 .actual(actual)
                 .remaining(planned.subtract(actual))
                 .build();
+    }
+
+    /** Past months are read-only; only the current month and future are editable. */
+    private YearMonth requireEditable(final String month) {
+        final YearMonth ym = parseMonth(month);
+        if (ym.isBefore(YearMonth.now())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Past months are read-only");
+        }
+        return ym;
     }
 
     private YearMonth parseMonth(final String month) {

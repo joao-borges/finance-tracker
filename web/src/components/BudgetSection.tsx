@@ -20,9 +20,10 @@ interface Props {
     lines: BudgetLine[];
     planned: Record<number, number | null>;
     onPlanned: (categoryId: number, value: number | null) => void;
+    readOnly?: boolean;
 }
 
-export default function BudgetSection({ title, subtitle, lines, planned, onPlanned }: Props) {
+export default function BudgetSection({ title, subtitle, lines, planned, onPlanned, readOnly }: Props) {
     return (
         <Box sx={{ mb: 3 }}>
             <Box sx={{ display: "flex", alignItems: "baseline", mb: 1, gap: 2 }}>
@@ -56,6 +57,7 @@ export default function BudgetSection({ title, subtitle, lines, planned, onPlann
                                             style={{ width: 130 }}
                                             min={0}
                                             step={10}
+                                            disabled={readOnly}
                                             value={planned[line.categoryId] ?? null}
                                             onChange={(value) => onPlanned(line.categoryId, value)}
                                             prefix="$"

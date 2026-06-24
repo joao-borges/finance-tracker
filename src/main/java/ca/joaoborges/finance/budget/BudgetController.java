@@ -1,6 +1,10 @@
 package ca.joaoborges.finance.budget;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,6 +22,7 @@ import java.util.List;
 public class BudgetController {
 
     private final BudgetService budgetService;
+    private final BudgetPdfExporter budgetPdfExporter;
 
     @GetMapping("/{month}/summary")
     public BudgetSummary summary(@PathVariable final String month) {
@@ -38,6 +43,16 @@ public class BudgetController {
     @PostMapping("/{month}/copy-previous")
     public BudgetSummary copyPrevious(@PathVariable final String month) {
         return budgetService.copyFromPrevious(month);
+    }
+
+    @GetMapping("/{month}/export")
+    public ResponseEntity<byte[]> export(@PathVariable final String month) {
+        final byte[] pdf = budgetPdfExporter.export(month);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename("budget-" + month + ".pdf").build().toString())
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
     }
 
 }

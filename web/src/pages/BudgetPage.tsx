@@ -34,6 +34,7 @@ export default function BudgetPage() {
     const [saving, setSaving] = useState(false);
     const dirty = useRef<Map<number, number | null>>(new Map());
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const isPast = dayjs(`${month}-01`).isBefore(dayjs().startOf("month"));
 
     const cancelPending = () => {
         if (timer.current) {
@@ -80,6 +81,9 @@ export default function BudgetPage() {
     }, [month, message]);
 
     const setOne = (categoryId: number, value: number | null) => {
+        if (isPast) {
+            return;
+        }
         setPlanned((current) => ({ ...current, [categoryId]: value }));
         dirty.current.set(categoryId, value);
         if (timer.current) {
@@ -125,16 +129,23 @@ export default function BudgetPage() {
                     color={summary.leftToBudget < 0 ? "error" : "primary"}
                     label={`Left to budget ${formatMoney(summary.leftToBudget)}`}
                 />
-                <Button size="small" onClick={() => runAction(() => budgetsApi.copyPrevious(month))}>
-                    Copy from previous month
+                <Button size="small" component="a" href={`/api/budgets/${month}/export`}>
+                    Export PDF
                 </Button>
-                <Button size="small" color="error" onClick={() => runAction(() => budgetsApi.clear(month))}>
-                    Clear all
-                </Button>
+                {!isPast && (
+                    <>
+                        <Button size="small" onClick={() => runAction(() => budgetsApi.copyPrevious(month))}>
+                            Copy from previous month
+                        </Button>
+                        <Button size="small" color="error" onClick={() => runAction(() => budgetsApi.clear(month))}>
+                            Clear all
+                        </Button>
+                    </>
+                )}
             </Box>
 
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2, height: 20 }}>
-                {saving ? "Saving…" : "Changes save automatically"}
+                {isPast ? "Past month — read only" : saving ? "Saving…" : "Changes save automatically"}
             </Typography>
 
             <BudgetSection
@@ -143,6 +154,7 @@ export default function BudgetPage() {
                 lines={summary.income}
                 planned={planned}
                 onPlanned={setOne}
+                readOnly={isPast}
             />
 
             {summary.groups.map((group) => {
@@ -154,6 +166,7 @@ export default function BudgetPage() {
                         lines={group.categories}
                         planned={planned}
                         onPlanned={setOne}
+                        readOnly={isPast}
                     />
                 );
             })}
