@@ -18,6 +18,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 /**
  * A spending or income category. {@code isIncome} separates income lines from
  * expense lines in the budget math.
@@ -56,5 +58,9 @@ public class Category {
     @Builder.Default
     @Column(nullable = false)
     private boolean archived = false;
+
+    /** Optional monthly spend threshold; crossing it fires a yellow Discord alert. */
+    @Column(name = "alert_threshold", precision = 19, scale = 4)
+    private BigDecimal alertThreshold;
 
 }

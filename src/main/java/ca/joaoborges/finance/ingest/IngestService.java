@@ -3,6 +3,8 @@ package ca.joaoborges.finance.ingest;
 import ca.joaoborges.finance.account.Account;
 import ca.joaoborges.finance.account.AccountRepository;
 import ca.joaoborges.finance.account.AccountType;
+import ca.joaoborges.finance.budget.BudgetAlertService;
+import ca.joaoborges.finance.category.Category;
 import ca.joaoborges.finance.common.ContentHashing;
 import ca.joaoborges.finance.common.SourceType;
 import ca.joaoborges.finance.csv.ParsedTransaction;
@@ -16,7 +18,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.YearMonth;
+import java.time.ZoneOffset;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -40,6 +46,11 @@ public class IngestService {
     private final ImportRunRepository importRunRepository;
     private final RuleEngine ruleEngine;
     private final DiscordNotifier discordNotifier;
+    private final BudgetAlertService budgetAlertService;
+
+    /** Per category+month spend added by this import, for budget/threshold crossing checks. */
+    private record AlertKey(Long categoryId, YearMonth month) {
+    }
 
     @Transactional
     public ImportRun ingest(final List<ParsedTransaction> rows, final SourceType source, final String fileName) {
@@ -53,6 +64,8 @@ public class IngestService {
         final List<Rule> enabledRules = ruleRepository.findByEnabledTrueOrderByPriorityAscIdAsc();
         final Instant fallbackPostedAt = Instant.now();
         final Map<String, Integer> byAccount = new LinkedHashMap<>();
+        final Map<AlertKey, BigDecimal> spendByCategoryMonth = new HashMap<>();
+        final Map<Long, Category> categoriesById = new HashMap<>();
         int newCount = 0;
         int reviewed = 0;
         int needsReview = 0;
@@ -84,6 +97,13 @@ public class IngestService {
             } else {
                 reviewed++;
             }
+
+            final Category category = transaction.getCategory();
+            if (category != null && !category.isIncome()) {
+                final AlertKey key = new AlertKey(category.getId(), YearMonth.from(postedAt.atZone(ZoneOffset.UTC)));
+                spendByCategoryMonth.merge(key, transaction.getAmount().negate(), BigDecimal::add);
+                categoriesById.putIfAbsent(category.getId(), category);
+            }
         }
 
         run.setNewCount(newCount);
@@ -93,6 +113,8 @@ public class IngestService {
         final ImportRun saved = importRunRepository.save(run);
 
         discordNotifier.sendImportSummary(new ImportSummary(fileName, newCount, reviewed, needsReview, byAccount));
+        spendByCategoryMonth.forEach((key, delta) ->
+                budgetAlertService.checkAfterSpend(categoriesById.get(key.categoryId()), key.month(), delta));
         return saved;
     }
 

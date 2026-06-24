@@ -2,6 +2,8 @@ package ca.joaoborges.finance.category;
 
 import lombok.Builder;
 
+import java.math.BigDecimal;
+
 @Builder
 public record CategoryDto(
         Long id,
@@ -10,6 +12,7 @@ public record CategoryDto(
         Boolean income,
         Integer sortOrder,
         Boolean archived,
+        BigDecimal alertThreshold,
         Long groupId,
         String groupName) {
 }

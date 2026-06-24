@@ -18,6 +18,7 @@ export default function CategoriesPage() {
             options: groups.map((group) => ({ label: group.name, value: group.id })),
         },
         { name: "income", label: "Income", type: "boolean", initial: false },
+        { name: "alertThreshold", label: "Alert threshold", type: "number" },
         { name: "sortOrder", label: "Sort order", type: "number", initial: 0 },
         { name: "icon", label: "Icon", type: "emoji" },
         { name: "archived", label: "Archived", type: "boolean", initial: false },

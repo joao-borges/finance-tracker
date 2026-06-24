@@ -69,6 +69,7 @@ CategoryGroup
 Category
   id, group_id, name, icon
   is_income (bool)     # income vs expense
+  alert_threshold      # optional; monthly spend over this fires a yellow Discord alert
   sort_order, archived
 
 Merchant                 # canonical merchant, distinct from the raw bank descriptor
@@ -318,7 +319,12 @@ Group the dashboard like the screenshot: Cash, Credit Cards, Loans. Respect `hid
 
 **Discord only — deliberately not configurable.** The earlier configurable-endpoint design (multiple endpoints, event subscriptions, raw/discord formats, a `WebhookEndpoint` entity) was dropped as over-built for a personal app. One Discord channel webhook URL, supplied via config (`finance.discord.webhook-url` ← env `DISCORD_WEBHOOK_URL`, never committed); blank disables notifications.
 
-**What fires:** after every import (`IngestService` → `webhook/DiscordNotifier`), a message with the file, total imported, a per-account breakdown, and the reviewed-vs-needs-review split. Sent fire-and-forget over the JDK `HttpClient` (`sendAsync`) so a slow/broken webhook never blocks the import. Other events (large transaction, budget threshold) can be added later by calling the same notifier.
+**What fires:**
+- **Import summary** — after every import (`IngestService`): file, total imported, per-account breakdown, reviewed-vs-needs-review split.
+- **Over budget (red embed)** — when categorized spend crosses a category's monthly budget, with the category, the month's spend, and the overflow amount.
+- **Threshold reached (yellow embed)** — when monthly spend crosses a category's configured `alert_threshold`.
+
+Budget/threshold alerts are driven by `budget/BudgetAlertService.checkAfterSpend`, called from the ingest loop and from inline categorization; it alerts **only on the crossing** (compares spend before vs after the change) so it never re-alerts a category that was already over. All sent fire-and-forget over the JDK `HttpClient` (`sendAsync`) so a slow/broken webhook never blocks ingestion.
 
 ---
 

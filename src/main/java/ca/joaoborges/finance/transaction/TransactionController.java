@@ -1,5 +1,6 @@
 package ca.joaoborges.finance.transaction;
 
+import ca.joaoborges.finance.budget.BudgetAlertService;
 import ca.joaoborges.finance.category.Category;
 import ca.joaoborges.finance.category.CategoryRepository;
 import ca.joaoborges.finance.common.PageResponse;
@@ -21,6 +22,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.YearMonth;
+import java.time.ZoneOffset;
 import java.util.List;
 
 /**
@@ -38,6 +41,7 @@ public class TransactionController {
     private final TransactionRepository transactionRepository;
     private final TransactionMapper transactionMapper;
     private final CategoryRepository categoryRepository;
+    private final BudgetAlertService budgetAlertService;
     private final MerchantService merchantService;
 
     @GetMapping
@@ -58,6 +62,7 @@ public class TransactionController {
     public TransactionDto update(@PathVariable final Long id, @RequestBody final TransactionUpdate body) {
         final Transaction transaction = transactionRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found"));
+        final Long previousCategoryId = transaction.getCategory() == null ? null : transaction.getCategory().getId();
         if (body.categoryId() != null) {
             transaction.setCategory(resolveCategory(body.categoryId()));
         }
@@ -71,7 +76,15 @@ public class TransactionController {
         if (body.excludedFromBudget() != null) {
             transaction.setExcludedFromBudget(body.excludedFromBudget());
         }
-        return transactionMapper.toDto(transactionRepository.save(transaction));
+        final TransactionDto dto = transactionMapper.toDto(transactionRepository.save(transaction));
+
+        final Category category = transaction.getCategory();
+        if (category != null && !category.getId().equals(previousCategoryId)
+                && !transaction.isExcludedFromBudget() && !transaction.isSplit() && !transaction.isDedup()) {
+            budgetAlertService.checkAfterSpend(category,
+                    YearMonth.from(transaction.getPostedAt().atZone(ZoneOffset.UTC)), transaction.getAmount().negate());
+        }
+        return dto;
     }
 
     private Category resolveCategory(final Long categoryId) {

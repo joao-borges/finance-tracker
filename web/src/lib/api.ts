@@ -42,6 +42,7 @@ export interface Category {
     income?: boolean;
     sortOrder?: number;
     archived?: boolean;
+    alertThreshold?: number | null;
     groupId?: number | null;
     groupName?: string | null;
 }
