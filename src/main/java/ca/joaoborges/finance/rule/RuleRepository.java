@@ -13,4 +13,6 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
 
     List<Rule> findAllByOrderByPriorityAscIdAsc();
 
+    boolean existsByName(String name);
+
 }

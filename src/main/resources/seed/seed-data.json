@@ -1,0 +1,1525 @@
+{
+  "groups": [
+    {
+      "name": "Income",
+      "sortOrder": 0,
+      "income": true,
+      "categories": [
+        {
+          "name": "Paychecks",
+          "icon": "💵",
+          "sortOrder": 0
+        },
+        {
+          "name": "Interest",
+          "icon": "💸",
+          "sortOrder": 1
+        },
+        {
+          "name": "Business Income",
+          "icon": "💰",
+          "sortOrder": 2
+        },
+        {
+          "name": "Other Income",
+          "icon": "💰",
+          "sortOrder": 3
+        }
+      ]
+    },
+    {
+      "name": "Auto & Transport",
+      "sortOrder": 1,
+      "income": false,
+      "categories": [
+        {
+          "name": "Gas",
+          "icon": "⛽️",
+          "sortOrder": 0
+        },
+        {
+          "name": "Auto Maintenance",
+          "icon": "🔧",
+          "sortOrder": 1
+        },
+        {
+          "name": "Parking & Tolls",
+          "icon": "🏢",
+          "sortOrder": 2
+        },
+        {
+          "name": "Motorhome",
+          "icon": "🚎",
+          "sortOrder": 3
+        },
+        {
+          "name": "Car Insurance",
+          "icon": "🛑",
+          "sortOrder": 4
+        },
+        {
+          "name": "Auto Payment",
+          "icon": "🚗",
+          "sortOrder": 5
+        }
+      ]
+    },
+    {
+      "name": "Housing",
+      "sortOrder": 2,
+      "income": false,
+      "categories": [
+        {
+          "name": "Rent",
+          "icon": "🏠",
+          "sortOrder": 0
+        },
+        {
+          "name": "Home Insurance",
+          "icon": "✅",
+          "sortOrder": 1
+        }
+      ]
+    },
+    {
+      "name": "Bills & Utilities",
+      "sortOrder": 3,
+      "income": false,
+      "categories": [
+        {
+          "name": "Internet & Cable",
+          "icon": "🌐",
+          "sortOrder": 0
+        },
+        {
+          "name": "Phone",
+          "icon": "📱",
+          "sortOrder": 1
+        },
+        {
+          "name": "Electric",
+          "icon": "⚡",
+          "sortOrder": 2
+        }
+      ]
+    },
+    {
+      "name": "Food & Dining",
+      "sortOrder": 4,
+      "income": false,
+      "categories": [
+        {
+          "name": "Groceries",
+          "icon": "🍏",
+          "sortOrder": 0
+        }
+      ]
+    },
+    {
+      "name": "Travel & Lifestyle",
+      "sortOrder": 5,
+      "income": false,
+      "categories": [
+        {
+          "name": "Travel & Vacation",
+          "icon": "🏝",
+          "sortOrder": 0
+        },
+        {
+          "name": "Entertainment/Dining",
+          "icon": "🎥",
+          "sortOrder": 1
+        },
+        {
+          "name": "Joao",
+          "icon": "🚹",
+          "sortOrder": 2
+        },
+        {
+          "name": "Pets",
+          "icon": "🐶",
+          "sortOrder": 3
+        },
+        {
+          "name": "Amanda",
+          "icon": "🚺",
+          "sortOrder": 4
+        },
+        {
+          "name": "Subscriptions",
+          "icon": "🔁",
+          "sortOrder": 5
+        }
+      ]
+    },
+    {
+      "name": "Shopping",
+      "sortOrder": 6,
+      "income": false,
+      "categories": [
+        {
+          "name": "Electronics",
+          "icon": "🖥",
+          "sortOrder": 0
+        },
+        {
+          "name": "Clothing",
+          "icon": "👕",
+          "sortOrder": 1
+        },
+        {
+          "name": "Furniture & Housewares",
+          "icon": "🪑",
+          "sortOrder": 2
+        }
+      ]
+    },
+    {
+      "name": "William",
+      "sortOrder": 7,
+      "income": false,
+      "categories": [
+        {
+          "name": "Gym",
+          "icon": "🏅",
+          "sortOrder": 0
+        },
+        {
+          "name": "Fun and Stuff",
+          "icon": "⚽️",
+          "sortOrder": 1
+        },
+        {
+          "name": "Daycare",
+          "icon": "🏫",
+          "sortOrder": 2
+        },
+        {
+          "name": "Swim",
+          "icon": "🐟",
+          "sortOrder": 3
+        },
+        {
+          "name": "Birthday",
+          "icon": "🥳",
+          "sortOrder": 4
+        }
+      ]
+    },
+    {
+      "name": "Education",
+      "sortOrder": 8,
+      "income": false,
+      "categories": [
+        {
+          "name": "Student Loans",
+          "icon": "🎓",
+          "sortOrder": 0
+        }
+      ]
+    },
+    {
+      "name": "Health & Wellness",
+      "sortOrder": 9,
+      "income": false,
+      "categories": [
+        {
+          "name": "Medical",
+          "icon": "💊",
+          "sortOrder": 0
+        },
+        {
+          "name": "Dentist",
+          "icon": "🦷",
+          "sortOrder": 1
+        },
+        {
+          "name": "Fitness",
+          "icon": "💪",
+          "sortOrder": 2
+        },
+        {
+          "name": "Therapy",
+          "icon": "🤯",
+          "sortOrder": 3
+        }
+      ]
+    },
+    {
+      "name": "Financial",
+      "sortOrder": 10,
+      "income": false,
+      "categories": [
+        {
+          "name": "Financial Fees",
+          "icon": "🏦",
+          "sortOrder": 0
+        },
+        {
+          "name": "Insurance",
+          "icon": "☂️",
+          "sortOrder": 1
+        },
+        {
+          "name": "CC Debt",
+          "icon": "💸",
+          "sortOrder": 2
+        },
+        {
+          "name": "Financed Airline Ticket",
+          "icon": "✈️",
+          "sortOrder": 3
+        }
+      ]
+    },
+    {
+      "name": "Other",
+      "sortOrder": 11,
+      "income": false,
+      "categories": [
+        {
+          "name": "Miscellaneous",
+          "icon": "💲",
+          "sortOrder": 0
+        }
+      ]
+    },
+    {
+      "name": "Transfers",
+      "sortOrder": 12,
+      "income": false,
+      "categories": [
+        {
+          "name": "Transfer",
+          "icon": "🔁",
+          "sortOrder": 0
+        },
+        {
+          "name": "Credit Card Payment",
+          "icon": "💳",
+          "sortOrder": 1
+        }
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "name": "monarch → Subscriptions",
+      "merchantMatch": "monarch",
+      "categoryName": "Subscriptions",
+      "priority": 0,
+      "autoApprove": true
+    },
+    {
+      "name": "canada life → Other Income",
+      "merchantMatch": "canada life",
+      "categoryName": "Other Income",
+      "priority": 1,
+      "autoApprove": true
+    },
+    {
+      "name": "gilda borges → Other Income",
+      "merchantMatch": "gilda borges",
+      "categoryName": "Other Income",
+      "priority": 2,
+      "autoApprove": true
+    },
+    {
+      "name": "gilda borges → Other Income",
+      "merchantMatch": "gilda borges",
+      "categoryName": "Other Income",
+      "priority": 3,
+      "autoApprove": true
+    },
+    {
+      "name": "royal lepage → Rent",
+      "merchantMatch": "royal lepage",
+      "categoryName": "Rent",
+      "priority": 4,
+      "autoApprove": true
+    },
+    {
+      "name": "purdys → Entertainment/Dining",
+      "merchantMatch": "purdys",
+      "categoryName": "Entertainment/Dining",
+      "priority": 5,
+      "autoApprove": true
+    },
+    {
+      "name": "go bananas → Fun and Stuff",
+      "merchantMatch": "go bananas",
+      "categoryName": "Fun and Stuff",
+      "priority": 6,
+      "autoApprove": true
+    },
+    {
+      "name": "fun circle → Fun and Stuff",
+      "merchantMatch": "fun circle",
+      "categoryName": "Fun and Stuff",
+      "priority": 7,
+      "autoApprove": true
+    },
+    {
+      "name": "shoppers → Groceries",
+      "merchantMatch": "shoppers",
+      "categoryName": "Groceries",
+      "priority": 8,
+      "autoApprove": true
+    },
+    {
+      "name": "netflix → Subscriptions",
+      "merchantMatch": "netflix",
+      "categoryName": "Subscriptions",
+      "priority": 9,
+      "autoApprove": true
+    },
+    {
+      "name": "shaw → Internet & Cable",
+      "merchantMatch": "shaw",
+      "categoryName": "Internet & Cable",
+      "priority": 10,
+      "autoApprove": true
+    },
+    {
+      "name": "scotiabank → Motorhome",
+      "merchantMatch": "scotiabank",
+      "categoryName": "Motorhome",
+      "priority": 11,
+      "autoApprove": true
+    },
+    {
+      "name": "apple → Subscriptions",
+      "merchantMatch": "apple",
+      "categoryName": "Subscriptions",
+      "priority": 12,
+      "autoApprove": true
+    },
+    {
+      "name": "mobile integrat pay → Paychecks",
+      "merchantMatch": "mobile integrat pay",
+      "categoryName": "Paychecks",
+      "priority": 13,
+      "autoApprove": true
+    },
+    {
+      "name": "paramount fine → Entertainment/Dining",
+      "merchantMatch": "paramount fine",
+      "categoryName": "Entertainment/Dining",
+      "priority": 14,
+      "autoApprove": true
+    },
+    {
+      "name": "bella gelateria → Entertainment/Dining",
+      "merchantMatch": "bella gelateria",
+      "categoryName": "Entertainment/Dining",
+      "priority": 15,
+      "autoApprove": true
+    },
+    {
+      "name": "mastrcrd → Credit Card Payment",
+      "merchantMatch": "mastrcrd",
+      "categoryName": "Credit Card Payment",
+      "priority": 16,
+      "autoApprove": true
+    },
+    {
+      "name": "cobs bread → Groceries",
+      "merchantMatch": "cobs bread",
+      "categoryName": "Groceries",
+      "priority": 17,
+      "autoApprove": true
+    },
+    {
+      "name": "london drugs → Groceries",
+      "merchantMatch": "london drugs",
+      "categoryName": "Groceries",
+      "priority": 18,
+      "autoApprove": true
+    },
+    {
+      "name": "fed prov terr → Paychecks",
+      "merchantMatch": "fed prov terr",
+      "categoryName": "Paychecks",
+      "priority": 19,
+      "autoApprove": true
+    },
+    {
+      "name": "scotia plan loan → Motorhome",
+      "merchantMatch": "scotia plan loan",
+      "categoryName": "Motorhome",
+      "priority": 20,
+      "autoApprove": true
+    },
+    {
+      "name": "flavr ice cream langely → Entertainment/Dining",
+      "merchantMatch": "flavr ice cream langely",
+      "categoryName": "Entertainment/Dining",
+      "priority": 21,
+      "autoApprove": true
+    },
+    {
+      "name": "mastercard transfer → Credit Card Payment",
+      "merchantMatch": "mastercard transfer",
+      "categoryName": "Credit Card Payment",
+      "priority": 22,
+      "autoApprove": true
+    },
+    {
+      "name": "cora langley → Entertainment/Dining",
+      "merchantMatch": "cora langley",
+      "categoryName": "Entertainment/Dining",
+      "priority": 23,
+      "autoApprove": true
+    },
+    {
+      "name": "my gym langley → Gym",
+      "merchantMatch": "my gym langley",
+      "categoryName": "Gym",
+      "priority": 24,
+      "autoApprove": true
+    },
+    {
+      "name": "amex → Credit Card Payment",
+      "merchantMatch": "amex",
+      "categoryName": "Credit Card Payment",
+      "priority": 25,
+      "autoApprove": true
+    },
+    {
+      "name": "payment → Credit Card Payment",
+      "merchantMatch": "payment",
+      "categoryName": "Credit Card Payment",
+      "priority": 26,
+      "autoApprove": true
+    },
+    {
+      "name": "payment money account → Credit Card Payment",
+      "merchantMatch": "payment money account",
+      "categoryName": "Credit Card Payment",
+      "priority": 27,
+      "autoApprove": true
+    },
+    {
+      "name": "youtube → Subscriptions",
+      "merchantMatch": "youtube",
+      "categoryName": "Subscriptions",
+      "priority": 28,
+      "autoApprove": true
+    },
+    {
+      "name": "tap barrel shipyards → Entertainment/Dining",
+      "merchantMatch": "tap barrel shipyards",
+      "categoryName": "Entertainment/Dining",
+      "priority": 29,
+      "autoApprove": true
+    },
+    {
+      "name": "easy park → Entertainment/Dining",
+      "merchantMatch": "easy park",
+      "categoryName": "Entertainment/Dining",
+      "priority": 30,
+      "autoApprove": true
+    },
+    {
+      "name": "oxford ice cream langley → Entertainment/Dining",
+      "merchantMatch": "oxford ice cream langley",
+      "categoryName": "Entertainment/Dining",
+      "priority": 31,
+      "autoApprove": true
+    },
+    {
+      "name": "papa john's → Entertainment/Dining",
+      "merchantMatch": "papa john's",
+      "categoryName": "Entertainment/Dining",
+      "priority": 32,
+      "autoApprove": true
+    },
+    {
+      "name": "pulse pharmacy → Groceries",
+      "merchantMatch": "pulse pharmacy",
+      "categoryName": "Groceries",
+      "priority": 33,
+      "autoApprove": true
+    },
+    {
+      "name": "square one insurance → Home Insurance",
+      "merchantMatch": "square one insurance",
+      "categoryName": "Home Insurance",
+      "priority": 34,
+      "autoApprove": true
+    },
+    {
+      "name": "tech nails salon → Amanda",
+      "merchantMatch": "tech nails salon",
+      "categoryName": "Amanda",
+      "priority": 35,
+      "autoApprove": true
+    },
+    {
+      "name": "costco gas → Gas",
+      "merchantMatch": "costco gas",
+      "categoryName": "Gas",
+      "priority": 36,
+      "autoApprove": true
+    },
+    {
+      "name": "canada revenue agency → Other Income",
+      "merchantMatch": "canada revenue agency",
+      "categoryName": "Other Income",
+      "priority": 37,
+      "autoApprove": true
+    },
+    {
+      "name": "b hydro pap bpy → Electric",
+      "merchantMatch": "b hydro pap bpy",
+      "categoryName": "Electric",
+      "priority": 38,
+      "autoApprove": true
+    },
+    {
+      "name": "easy park → Miscellaneous",
+      "merchantMatch": "easy park",
+      "categoryName": "Miscellaneous",
+      "priority": 39,
+      "autoApprove": true
+    },
+    {
+      "name": "spinhouse → Fitness",
+      "merchantMatch": "spinhouse",
+      "categoryName": "Fitness",
+      "priority": 40,
+      "autoApprove": true
+    },
+    {
+      "name": "spotify → Subscriptions",
+      "merchantMatch": "spotify",
+      "categoryName": "Subscriptions",
+      "priority": 41,
+      "autoApprove": true
+    },
+    {
+      "name": "dollarama → Miscellaneous",
+      "merchantMatch": "dollarama",
+      "categoryName": "Miscellaneous",
+      "priority": 42,
+      "autoApprove": true
+    },
+    {
+      "name": "oficinacurumim.com → Gym",
+      "merchantMatch": "oficinacurumim.com",
+      "categoryName": "Gym",
+      "priority": 43,
+      "autoApprove": true
+    },
+    {
+      "name": "telus → Internet & Cable",
+      "merchantMatch": "telus",
+      "categoryName": "Internet & Cable",
+      "priority": 44,
+      "autoApprove": true
+    },
+    {
+      "name": "red robin → Entertainment/Dining",
+      "merchantMatch": "red robin",
+      "categoryName": "Entertainment/Dining",
+      "priority": 45,
+      "autoApprove": true
+    },
+    {
+      "name": "menchie's frozen yogurt → Entertainment/Dining",
+      "merchantMatch": "menchie's frozen yogurt",
+      "categoryName": "Entertainment/Dining",
+      "priority": 46,
+      "autoApprove": true
+    },
+    {
+      "name": "fatburger → Entertainment/Dining",
+      "merchantMatch": "fatburger",
+      "categoryName": "Entertainment/Dining",
+      "priority": 47,
+      "autoApprove": true
+    },
+    {
+      "name": "square one insurance se vancouver → Home Insurance",
+      "merchantMatch": "square one insurance se vancouver",
+      "categoryName": "Home Insurance",
+      "priority": 48,
+      "autoApprove": true
+    },
+    {
+      "name": "craft vancouver → Entertainment/Dining",
+      "merchantMatch": "craft vancouver",
+      "categoryName": "Entertainment/Dining",
+      "priority": 49,
+      "autoApprove": true
+    },
+    {
+      "name": "d'oro gelato e caffe → Entertainment/Dining",
+      "merchantMatch": "d'oro gelato e caffe",
+      "categoryName": "Entertainment/Dining",
+      "priority": 50,
+      "autoApprove": true
+    },
+    {
+      "name": "opa park royal w vancouver → Entertainment/Dining",
+      "merchantMatch": "opa park royal w vancouver",
+      "categoryName": "Entertainment/Dining",
+      "priority": 51,
+      "autoApprove": true
+    },
+    {
+      "name": "firecrust pizzeria lang langley → Entertainment/Dining",
+      "merchantMatch": "firecrust pizzeria lang langley",
+      "categoryName": "Entertainment/Dining",
+      "priority": 52,
+      "autoApprove": true
+    },
+    {
+      "name": "next gen concessions i langley → Entertainment/Dining",
+      "merchantMatch": "next gen concessions i langley",
+      "categoryName": "Entertainment/Dining",
+      "priority": 53,
+      "autoApprove": true
+    },
+    {
+      "name": "paybyphone diamond par → Miscellaneous",
+      "merchantMatch": "paybyphone diamond par",
+      "categoryName": "Miscellaneous",
+      "priority": 54,
+      "autoApprove": true
+    },
+    {
+      "name": "paybyphone diamond par vancouver → Miscellaneous",
+      "merchantMatch": "paybyphone diamond par vancouver",
+      "categoryName": "Miscellaneous",
+      "priority": 55,
+      "autoApprove": true
+    },
+    {
+      "name": "white spot coqu coquitlam → Entertainment/Dining",
+      "merchantMatch": "white spot coqu coquitlam",
+      "categoryName": "Entertainment/Dining",
+      "priority": 56,
+      "autoApprove": true
+    },
+    {
+      "name": "party city → Miscellaneous",
+      "merchantMatch": "party city",
+      "categoryName": "Miscellaneous",
+      "priority": 57,
+      "autoApprove": true
+    },
+    {
+      "name": "super self storage tow → Motorhome",
+      "merchantMatch": "super self storage tow",
+      "categoryName": "Motorhome",
+      "priority": 58,
+      "autoApprove": true
+    },
+    {
+      "name": "this is blueprint manag surrey → Entertainment/Dining",
+      "merchantMatch": "this is blueprint manag surrey",
+      "categoryName": "Entertainment/Dining",
+      "priority": 59,
+      "autoApprove": true
+    },
+    {
+      "name": "this is blueprint manag vancouver → Entertainment/Dining",
+      "merchantMatch": "this is blueprint manag vancouver",
+      "categoryName": "Entertainment/Dining",
+      "priority": 60,
+      "autoApprove": true
+    },
+    {
+      "name": "projectplayac.com → Fun and Stuff",
+      "merchantMatch": "projectplayac.com",
+      "categoryName": "Fun and Stuff",
+      "priority": 61,
+      "autoApprove": true
+    },
+    {
+      "name": "baskin robbins → Entertainment/Dining",
+      "merchantMatch": "baskin robbins",
+      "categoryName": "Entertainment/Dining",
+      "priority": 62,
+      "autoApprove": true
+    },
+    {
+      "name": "local kitsilano vancouver → Entertainment/Dining",
+      "merchantMatch": "local kitsilano vancouver",
+      "categoryName": "Entertainment/Dining",
+      "priority": 63,
+      "autoApprove": true
+    },
+    {
+      "name": "marina's gelato → Entertainment/Dining",
+      "merchantMatch": "marina's gelato",
+      "categoryName": "Entertainment/Dining",
+      "priority": 64,
+      "autoApprove": true
+    },
+    {
+      "name": "super self storage → Motorhome",
+      "merchantMatch": "super self storage",
+      "categoryName": "Motorhome",
+      "priority": 65,
+      "autoApprove": true
+    },
+    {
+      "name": "e transfer → Daycare",
+      "merchantMatch": "e transfer",
+      "categoryName": "Daycare",
+      "priority": 66,
+      "autoApprove": true
+    },
+    {
+      "name": "maan farms abbotsford → Entertainment/Dining",
+      "merchantMatch": "maan farms abbotsford",
+      "categoryName": "Entertainment/Dining",
+      "priority": 67,
+      "autoApprove": true
+    },
+    {
+      "name": "buffalo wild wings → Entertainment/Dining",
+      "merchantMatch": "buffalo wild wings",
+      "categoryName": "Entertainment/Dining",
+      "priority": 68,
+      "autoApprove": true
+    },
+    {
+      "name": "tap & barrel bridges vancouver → Entertainment/Dining",
+      "merchantMatch": "tap & barrel bridges vancouver",
+      "categoryName": "Entertainment/Dining",
+      "priority": 69,
+      "autoApprove": true
+    },
+    {
+      "name": "impark → Miscellaneous",
+      "merchantMatch": "impark",
+      "categoryName": "Miscellaneous",
+      "priority": 70,
+      "autoApprove": true
+    },
+    {
+      "name": "brentwood parking lot burnaby → Miscellaneous",
+      "merchantMatch": "brentwood parking lot burnaby",
+      "categoryName": "Miscellaneous",
+      "priority": 71,
+      "autoApprove": true
+    },
+    {
+      "name": "a&w → Entertainment/Dining",
+      "merchantMatch": "a&w",
+      "categoryName": "Entertainment/Dining",
+      "priority": 72,
+      "autoApprove": true
+    },
+    {
+      "name": "loan payment → Auto Payment",
+      "merchantMatch": "loan payment",
+      "categoryName": "Auto Payment",
+      "priority": 73,
+      "autoApprove": true
+    },
+    {
+      "name": "pizza garden lounge langley → Entertainment/Dining",
+      "merchantMatch": "pizza garden lounge langley",
+      "categoryName": "Entertainment/Dining",
+      "priority": 75,
+      "autoApprove": true
+    },
+    {
+      "name": "opa langley → Entertainment/Dining",
+      "merchantMatch": "opa langley",
+      "categoryName": "Entertainment/Dining",
+      "priority": 76,
+      "autoApprove": true
+    },
+    {
+      "name": "ic premium fina bpy → Car Insurance",
+      "merchantMatch": "ic premium fina bpy",
+      "categoryName": "Car Insurance",
+      "priority": 77,
+      "autoApprove": true
+    },
+    {
+      "name": "elite insurance → Motorhome",
+      "merchantMatch": "elite insurance",
+      "categoryName": "Motorhome",
+      "priority": 78,
+      "autoApprove": true
+    },
+    {
+      "name": "google one → Subscriptions",
+      "merchantMatch": "google one",
+      "categoryName": "Subscriptions",
+      "priority": 79,
+      "autoApprove": true
+    },
+    {
+      "name": "homesense → Miscellaneous",
+      "merchantMatch": "homesense",
+      "categoryName": "Miscellaneous",
+      "priority": 80,
+      "autoApprove": true
+    },
+    {
+      "name": "loan → Motorhome",
+      "merchantMatch": "loan",
+      "categoryName": "Motorhome",
+      "priority": 81,
+      "autoApprove": true
+    },
+    {
+      "name": "paybyphone → Miscellaneous",
+      "merchantMatch": "paybyphone",
+      "categoryName": "Miscellaneous",
+      "priority": 82,
+      "autoApprove": true
+    },
+    {
+      "name": "icbc insurance → Car Insurance",
+      "merchantMatch": "icbc insurance",
+      "categoryName": "Car Insurance",
+      "priority": 83,
+      "autoApprove": true
+    },
+    {
+      "name": "chachi's tsawwassen mil calgary → Entertainment/Dining",
+      "merchantMatch": "chachi's tsawwassen mil calgary",
+      "categoryName": "Entertainment/Dining",
+      "priority": 84,
+      "autoApprove": true
+    },
+    {
+      "name": "inc toronto → Groceries",
+      "merchantMatch": "inc toronto",
+      "categoryName": "Groceries",
+      "priority": 85,
+      "autoApprove": true
+    },
+    {
+      "name": "google fiber → Subscriptions",
+      "merchantMatch": "google fiber",
+      "categoryName": "Subscriptions",
+      "priority": 86,
+      "autoApprove": true
+    },
+    {
+      "name": "chachi's tsawwassen mil delta → Entertainment/Dining",
+      "merchantMatch": "chachi's tsawwassen mil delta",
+      "categoryName": "Entertainment/Dining",
+      "priority": 87,
+      "autoApprove": true
+    },
+    {
+      "name": "kits vancouver → Miscellaneous",
+      "merchantMatch": "kits vancouver",
+      "categoryName": "Miscellaneous",
+      "priority": 88,
+      "autoApprove": true
+    },
+    {
+      "name": "telus → Phone",
+      "merchantMatch": "telus",
+      "categoryName": "Phone",
+      "priority": 89,
+      "autoApprove": true
+    },
+    {
+      "name": "bell media inc → Subscriptions",
+      "merchantMatch": "bell media inc",
+      "categoryName": "Subscriptions",
+      "priority": 90,
+      "autoApprove": true
+    },
+    {
+      "name": "auntie anne's → Entertainment/Dining",
+      "merchantMatch": "auntie anne's",
+      "categoryName": "Entertainment/Dining",
+      "priority": 91,
+      "autoApprove": true
+    },
+    {
+      "name": "ihop → Entertainment/Dining",
+      "merchantMatch": "ihop",
+      "categoryName": "Entertainment/Dining",
+      "priority": 92,
+      "autoApprove": true
+    },
+    {
+      "name": "marble slab creame langey → Entertainment/Dining",
+      "merchantMatch": "marble slab creame langey",
+      "categoryName": "Entertainment/Dining",
+      "priority": 93,
+      "autoApprove": true
+    },
+    {
+      "name": "firecrust pizzeria → Entertainment/Dining",
+      "merchantMatch": "firecrust pizzeria",
+      "categoryName": "Entertainment/Dining",
+      "priority": 94,
+      "autoApprove": true
+    },
+    {
+      "name": "olive garden → Entertainment/Dining",
+      "merchantMatch": "olive garden",
+      "categoryName": "Entertainment/Dining",
+      "priority": 95,
+      "autoApprove": true
+    },
+    {
+      "name": "google → Subscriptions",
+      "merchantMatch": "google",
+      "categoryName": "Subscriptions",
+      "priority": 96,
+      "autoApprove": true
+    },
+    {
+      "name": "membership fee installment → Financial Fees",
+      "merchantMatch": "membership fee installment",
+      "categoryName": "Financial Fees",
+      "priority": 97,
+      "autoApprove": true
+    },
+    {
+      "name": "google → Subscriptions",
+      "merchantMatch": "google",
+      "categoryName": "Subscriptions",
+      "priority": 98,
+      "autoApprove": true
+    },
+    {
+      "name": "petsmart → Groceries",
+      "merchantMatch": "petsmart",
+      "categoryName": "Groceries",
+      "priority": 99,
+      "autoApprove": true
+    },
+    {
+      "name": "oakberry acai bowls → Entertainment/Dining",
+      "merchantMatch": "oakberry acai bowls",
+      "categoryName": "Entertainment/Dining",
+      "priority": 100,
+      "autoApprove": true
+    },
+    {
+      "name": "auto insurance icbc → Car Insurance",
+      "merchantMatch": "auto insurance icbc",
+      "categoryName": "Car Insurance",
+      "priority": 101,
+      "autoApprove": true
+    },
+    {
+      "name": "firehouse subs → Entertainment/Dining",
+      "merchantMatch": "firehouse subs",
+      "categoryName": "Entertainment/Dining",
+      "priority": 102,
+      "autoApprove": true
+    },
+    {
+      "name": "tap & barrel - shipyards → Entertainment/Dining",
+      "merchantMatch": "tap & barrel - shipyards",
+      "categoryName": "Entertainment/Dining",
+      "priority": 103,
+      "autoApprove": true
+    },
+    {
+      "name": "bbq food truck → Entertainment/Dining",
+      "merchantMatch": "bbq food truck",
+      "categoryName": "Entertainment/Dining",
+      "priority": 104,
+      "autoApprove": true
+    },
+    {
+      "name": "street dogs surrey → Entertainment/Dining",
+      "merchantMatch": "street dogs surrey",
+      "categoryName": "Entertainment/Dining",
+      "priority": 105,
+      "autoApprove": true
+    },
+    {
+      "name": "shawarmatime & big red' surrey → Entertainment/Dining",
+      "merchantMatch": "shawarmatime & big red' surrey",
+      "categoryName": "Entertainment/Dining",
+      "priority": 106,
+      "autoApprove": true
+    },
+    {
+      "name": "mcdonald's → Entertainment/Dining",
+      "merchantMatch": "mcdonald's",
+      "categoryName": "Entertainment/Dining",
+      "priority": 107,
+      "autoApprove": true
+    },
+    {
+      "name": "chachi's guildford cent surrey → Entertainment/Dining",
+      "merchantMatch": "chachi's guildford cent surrey",
+      "categoryName": "Entertainment/Dining",
+      "priority": 108,
+      "autoApprove": true
+    },
+    {
+      "name": "scotia bank loan → Motorhome",
+      "merchantMatch": "scotia bank loan",
+      "categoryName": "Motorhome",
+      "priority": 109,
+      "autoApprove": true
+    },
+    {
+      "name": "fred meyer → Groceries",
+      "merchantMatch": "fred meyer",
+      "categoryName": "Groceries",
+      "priority": 110,
+      "autoApprove": true
+    },
+    {
+      "name": "e-transfer → Daycare",
+      "merchantMatch": "e-transfer",
+      "categoryName": "Daycare",
+      "priority": 111,
+      "autoApprove": true
+    },
+    {
+      "name": "pretty bird ice cream langley townshi → Entertainment/Dining",
+      "merchantMatch": "pretty bird ice cream langley townshi",
+      "categoryName": "Entertainment/Dining",
+      "priority": 112,
+      "autoApprove": true
+    },
+    {
+      "name": "j l perogies langley → Entertainment/Dining",
+      "merchantMatch": "j l perogies langley",
+      "categoryName": "Entertainment/Dining",
+      "priority": 113,
+      "autoApprove": true
+    },
+    {
+      "name": "garys kettle corn langley townshi → Entertainment/Dining",
+      "merchantMatch": "garys kettle corn langley townshi",
+      "categoryName": "Entertainment/Dining",
+      "priority": 114,
+      "autoApprove": true
+    },
+    {
+      "name": "fort langley eater → Entertainment/Dining",
+      "merchantMatch": "fort langley eater",
+      "categoryName": "Entertainment/Dining",
+      "priority": 115,
+      "autoApprove": true
+    },
+    {
+      "name": "bc liquor stores → Entertainment/Dining",
+      "merchantMatch": "bc liquor stores",
+      "categoryName": "Entertainment/Dining",
+      "priority": 116,
+      "autoApprove": true
+    },
+    {
+      "name": "starbucks → Entertainment/Dining",
+      "merchantMatch": "starbucks",
+      "categoryName": "Entertainment/Dining",
+      "priority": 117,
+      "autoApprove": true
+    },
+    {
+      "name": "marble slab creamery → Entertainment/Dining",
+      "merchantMatch": "marble slab creamery",
+      "categoryName": "Entertainment/Dining",
+      "priority": 119,
+      "autoApprove": true
+    },
+    {
+      "name": "brodeur's bistro langley → Entertainment/Dining",
+      "merchantMatch": "brodeur's bistro langley",
+      "categoryName": "Entertainment/Dining",
+      "priority": 120,
+      "autoApprove": true
+    },
+    {
+      "name": "rotato & potato express langley → Entertainment/Dining",
+      "merchantMatch": "rotato & potato express langley",
+      "categoryName": "Entertainment/Dining",
+      "priority": 121,
+      "autoApprove": true
+    },
+    {
+      "name": "rocky point ice cream → Entertainment/Dining",
+      "merchantMatch": "rocky point ice cream",
+      "categoryName": "Entertainment/Dining",
+      "priority": 122,
+      "autoApprove": true
+    },
+    {
+      "name": "boteco brasil langley → Entertainment/Dining",
+      "merchantMatch": "boteco brasil langley",
+      "categoryName": "Entertainment/Dining",
+      "priority": 123,
+      "autoApprove": true
+    },
+    {
+      "name": "openai → Subscriptions",
+      "merchantMatch": "openai",
+      "categoryName": "Subscriptions",
+      "priority": 124,
+      "autoApprove": true
+    },
+    {
+      "name": "loan fairstone finan → CC Debt",
+      "merchantMatch": "loan fairstone finan",
+      "categoryName": "CC Debt",
+      "priority": 125,
+      "autoApprove": true
+    },
+    {
+      "name": "opa! tsawwass tsawwassen → Entertainment/Dining",
+      "merchantMatch": "opa! tsawwass tsawwassen",
+      "categoryName": "Entertainment/Dining",
+      "priority": 126,
+      "autoApprove": true
+    },
+    {
+      "name": "flo services quebec → Miscellaneous",
+      "merchantMatch": "flo services quebec",
+      "categoryName": "Miscellaneous",
+      "priority": 127,
+      "autoApprove": true
+    },
+    {
+      "name": "chef of coxinha langley → Entertainment/Dining",
+      "merchantMatch": "chef of coxinha langley",
+      "categoryName": "Entertainment/Dining",
+      "priority": 128,
+      "autoApprove": true
+    },
+    {
+      "name": "zipby limited → Miscellaneous",
+      "merchantMatch": "zipby limited",
+      "categoryName": "Miscellaneous",
+      "priority": 129,
+      "autoApprove": true
+    },
+    {
+      "name": "flyoland → Fun and Stuff",
+      "merchantMatch": "flyoland",
+      "categoryName": "Fun and Stuff",
+      "priority": 130,
+      "autoApprove": true
+    },
+    {
+      "name": "play abby langley → Fun and Stuff",
+      "merchantMatch": "play abby langley",
+      "categoryName": "Fun and Stuff",
+      "priority": 131,
+      "autoApprove": true
+    },
+    {
+      "name": "coffee shop → Entertainment/Dining",
+      "merchantMatch": "coffee shop",
+      "categoryName": "Entertainment/Dining",
+      "priority": 132,
+      "autoApprove": true
+    },
+    {
+      "name": "barburrito fraser cross langley → Entertainment/Dining",
+      "merchantMatch": "barburrito fraser cross langley",
+      "categoryName": "Entertainment/Dining",
+      "priority": 133,
+      "autoApprove": true
+    },
+    {
+      "name": "five star north america calgary → Entertainment/Dining",
+      "merchantMatch": "five star north america calgary",
+      "categoryName": "Entertainment/Dining",
+      "priority": 134,
+      "autoApprove": true
+    },
+    {
+      "name": "uno gelato vancouver → Entertainment/Dining",
+      "merchantMatch": "uno gelato vancouver",
+      "categoryName": "Entertainment/Dining",
+      "priority": 135,
+      "autoApprove": true
+    },
+    {
+      "name": "online banking payment mastercard → Credit Card Payment",
+      "merchantMatch": "online banking payment mastercard",
+      "categoryName": "Credit Card Payment",
+      "priority": 136,
+      "autoApprove": true
+    },
+    {
+      "name": "uber eats → Entertainment/Dining",
+      "merchantMatch": "uber eats",
+      "categoryName": "Entertainment/Dining",
+      "priority": 137,
+      "autoApprove": true
+    },
+    {
+      "name": "triple o aldergrove → Entertainment/Dining",
+      "merchantMatch": "triple o aldergrove",
+      "categoryName": "Entertainment/Dining",
+      "priority": 138,
+      "autoApprove": true
+    },
+    {
+      "name": "trading post eate calgary → Entertainment/Dining",
+      "merchantMatch": "trading post eate calgary",
+      "categoryName": "Entertainment/Dining",
+      "priority": 139,
+      "autoApprove": true
+    },
+    {
+      "name": "bakeries → Entertainment/Dining",
+      "merchantMatch": "bakeries",
+      "categoryName": "Entertainment/Dining",
+      "priority": 140,
+      "autoApprove": true
+    },
+    {
+      "name": "rio brazilian steakhouse → Entertainment/Dining",
+      "merchantMatch": "rio brazilian steakhouse",
+      "categoryName": "Entertainment/Dining",
+      "priority": 141,
+      "autoApprove": true
+    },
+    {
+      "name": "ic premium fina → Car Insurance",
+      "merchantMatch": "ic premium fina",
+      "categoryName": "Car Insurance",
+      "priority": 142,
+      "autoApprove": true
+    },
+    {
+      "name": "square one insurance s vancouver → Home Insurance",
+      "merchantMatch": "square one insurance s vancouver",
+      "categoryName": "Home Insurance",
+      "priority": 143,
+      "autoApprove": true
+    },
+    {
+      "name": "fortisbc → Gas",
+      "merchantMatch": "fortisbc",
+      "categoryName": "Gas",
+      "priority": 144,
+      "autoApprove": true
+    },
+    {
+      "name": "sea to sky → Entertainment/Dining",
+      "merchantMatch": "sea to sky",
+      "categoryName": "Entertainment/Dining",
+      "priority": 145,
+      "autoApprove": true
+    },
+    {
+      "name": "greendale acres chilliwack → Entertainment/Dining",
+      "merchantMatch": "greendale acres chilliwack",
+      "categoryName": "Entertainment/Dining",
+      "priority": 146,
+      "autoApprove": true
+    },
+    {
+      "name": "no frills → Groceries",
+      "merchantMatch": "no frills",
+      "categoryName": "Groceries",
+      "priority": 147,
+      "autoApprove": true
+    },
+    {
+      "name": "white spot alde aldergrove → Entertainment/Dining",
+      "merchantMatch": "white spot alde aldergrove",
+      "categoryName": "Entertainment/Dining",
+      "priority": 148,
+      "autoApprove": true
+    },
+    {
+      "name": "j's disco dogs langley townshi → Entertainment/Dining",
+      "merchantMatch": "j's disco dogs langley townshi",
+      "categoryName": "Entertainment/Dining",
+      "priority": 149,
+      "autoApprove": true
+    },
+    {
+      "name": "fat bastard burrito → Entertainment/Dining",
+      "merchantMatch": "fat bastard burrito",
+      "categoryName": "Entertainment/Dining",
+      "priority": 150,
+      "autoApprove": true
+    },
+    {
+      "name": "artigiano → Entertainment/Dining",
+      "merchantMatch": "artigiano",
+      "categoryName": "Entertainment/Dining",
+      "priority": 151,
+      "autoApprove": true
+    },
+    {
+      "name": "bella brentwood mall → Entertainment/Dining",
+      "merchantMatch": "bella brentwood mall",
+      "categoryName": "Entertainment/Dining",
+      "priority": 152,
+      "autoApprove": true
+    },
+    {
+      "name": "ring premium → Subscriptions",
+      "merchantMatch": "ring premium",
+      "categoryName": "Subscriptions",
+      "priority": 153,
+      "autoApprove": true
+    },
+    {
+      "name": "payment received thank you → Credit Card Payment",
+      "merchantMatch": "payment received thank you",
+      "categoryName": "Credit Card Payment",
+      "priority": 154,
+      "autoApprove": true
+    },
+    {
+      "name": "payment uncategorized → Credit Card Payment",
+      "merchantMatch": "payment uncategorized",
+      "categoryName": "Credit Card Payment",
+      "priority": 155,
+      "autoApprove": true
+    },
+    {
+      "name": "chexy*qiuman zhang      langley townsh → Rent",
+      "merchantMatch": "chexy*qiuman zhang      langley townsh",
+      "categoryName": "Rent",
+      "priority": 156,
+      "autoApprove": true
+    },
+    {
+      "name": "chexy qiuman zhang → Rent",
+      "merchantMatch": "chexy qiuman zhang",
+      "categoryName": "Rent",
+      "priority": 157,
+      "autoApprove": true
+    },
+    {
+      "name": "ring → Subscriptions",
+      "merchantMatch": "ring",
+      "categoryName": "Subscriptions",
+      "priority": 158,
+      "autoApprove": true
+    },
+    {
+      "name": "white spot → Entertainment/Dining",
+      "merchantMatch": "white spot",
+      "categoryName": "Entertainment/Dining",
+      "priority": 159,
+      "autoApprove": true
+    },
+    {
+      "name": "zipby → Miscellaneous",
+      "merchantMatch": "zipby",
+      "categoryName": "Miscellaneous",
+      "priority": 160,
+      "autoApprove": true
+    },
+    {
+      "name": "chexy → Rent",
+      "merchantMatch": "chexy",
+      "categoryName": "Rent",
+      "priority": 161,
+      "autoApprove": true
+    },
+    {
+      "name": "lyft → Miscellaneous",
+      "merchantMatch": "lyft",
+      "categoryName": "Miscellaneous",
+      "priority": 162,
+      "autoApprove": true
+    },
+    {
+      "name": "gilda borges → Transfer",
+      "merchantMatch": "gilda borges",
+      "categoryName": "Transfer",
+      "priority": 163,
+      "autoApprove": true
+    },
+    {
+      "name": "j+l perogies → Entertainment/Dining",
+      "merchantMatch": "j+l perogies",
+      "categoryName": "Entertainment/Dining",
+      "priority": 164,
+      "autoApprove": true
+    },
+    {
+      "name": "goldie's donuts & baker → Entertainment/Dining",
+      "merchantMatch": "goldie's donuts & baker",
+      "categoryName": "Entertainment/Dining",
+      "priority": 165,
+      "autoApprove": true
+    },
+    {
+      "name": "fort langley may day → Entertainment/Dining",
+      "merchantMatch": "fort langley may day",
+      "categoryName": "Entertainment/Dining",
+      "priority": 166,
+      "autoApprove": true
+    },
+    {
+      "name": "personal loan spl → Motorhome",
+      "merchantMatch": "personal loan spl",
+      "categoryName": "Motorhome",
+      "priority": 167,
+      "autoApprove": true
+    },
+    {
+      "name": "subway → Entertainment/Dining",
+      "merchantMatch": "subway",
+      "categoryName": "Entertainment/Dining",
+      "priority": 168,
+      "autoApprove": true
+    },
+    {
+      "name": "rbc royal bank → Auto Payment",
+      "merchantMatch": "rbc royal bank",
+      "categoryName": "Auto Payment",
+      "priority": 169,
+      "autoApprove": true
+    },
+    {
+      "name": "interest → CC Debt",
+      "merchantMatch": "interest",
+      "categoryName": "CC Debt",
+      "priority": 170,
+      "autoApprove": true
+    },
+    {
+      "name": "econo self storage → Motorhome",
+      "merchantMatch": "econo self storage",
+      "categoryName": "Motorhome",
+      "priority": 171,
+      "autoApprove": true
+    },
+    {
+      "name": "crave g.co → Subscriptions",
+      "merchantMatch": "crave g.co",
+      "categoryName": "Subscriptions",
+      "priority": 172,
+      "autoApprove": false
+    },
+    {
+      "name": "store 25826 langley → Entertainment/Dining",
+      "merchantMatch": "store 25826 langley",
+      "categoryName": "Entertainment/Dining",
+      "priority": 173,
+      "autoApprove": false
+    },
+    {
+      "name": "store langley → Groceries",
+      "merchantMatch": "store langley",
+      "categoryName": "Groceries",
+      "priority": 174,
+      "autoApprove": false
+    },
+    {
+      "name": "moonflash limited london → Subscriptions",
+      "merchantMatch": "moonflash limited london",
+      "categoryName": "Subscriptions",
+      "priority": 175,
+      "autoApprove": false
+    }
+  ]
+}
