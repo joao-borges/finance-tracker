@@ -299,6 +299,8 @@ Monthly. Page mirrors the Monarch layout you sent: an Income section (planned vs
 
 Uncategorized transactions contribute to no category line by definition; surface a count somewhere so they don't silently distort your sense of the month.
 
+**Hidden categories.** A category can be `hidden` (set only on the Categories page) to declutter the budget page — distinct from `archived`. Hidden categories are excluded from the budget summary (lines and totals) unless a **Show hidden** toggle is on (`?includeHidden=true`). Giving a category a planned amount **auto-unhides** it; setting the amount back to 0 does *not* re-hide it (hiding stays a manual Categories-page action).
+
 ---
 
 ## Accounts

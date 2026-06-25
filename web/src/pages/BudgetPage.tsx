@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Box, Button, Chip, IconButton, Typography } from "@mui/material";
+import { Box, Button, Chip, FormControlLabel, IconButton, Switch, Typography } from "@mui/material";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { App as AntApp } from "antd";
@@ -46,6 +46,7 @@ export default function BudgetPage() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [merchants, setMerchants] = useState<Merchant[]>([]);
     const [drillLine, setDrillLine] = useState<BudgetLine | null>(null);
+    const [showHidden, setShowHidden] = useState(false);
     const dirty = useRef<Map<number, number | null>>(new Map());
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isPast = dayjs(`${month}-01`).isBefore(dayjs().startOf("month"));
@@ -60,13 +61,13 @@ export default function BudgetPage() {
 
     const load = useCallback(() => {
         budgetsApi
-            .summary(month)
+            .summary(month, showHidden)
             .then((result) => {
                 setSummary(result);
                 setPlanned(collectPlanned(result));
             })
             .catch((error: unknown) => message.error(errorText(error)));
-    }, [month, message]);
+    }, [month, showHidden, message]);
 
     useEffect(() => {
         cancelPending();
@@ -93,11 +94,11 @@ export default function BudgetPage() {
         dirty.current.clear();
         setSaving(true);
         budgetsApi
-            .setPlanned(month, entries)
+            .setPlanned(month, entries, showHidden)
             .then(setSummary)
             .catch((error: unknown) => message.error(errorText(error)))
             .finally(() => setSaving(false));
-    }, [month, message]);
+    }, [month, showHidden, message]);
 
     const setOne = (categoryId: number, value: number | null) => {
         if (isPast) {
@@ -158,15 +159,19 @@ export default function BudgetPage() {
                     color={summary.leftToBudget < 0 ? "error" : "primary"}
                     label={`Left to budget ${formatMoney(summary.leftToBudget)}`}
                 />
+                <FormControlLabel
+                    control={<Switch size="small" checked={showHidden} onChange={(event) => setShowHidden(event.target.checked)} />}
+                    label="Show hidden"
+                />
                 <Button size="small" component="a" href={`/api/budgets/${month}/export`}>
                     Export PDF
                 </Button>
                 {!isPast && (
                     <>
-                        <Button size="small" onClick={() => runAction(() => budgetsApi.copyPrevious(month))}>
+                        <Button size="small" onClick={() => runAction(() => budgetsApi.copyPrevious(month, showHidden))}>
                             Copy from previous month
                         </Button>
-                        <Button size="small" color="error" onClick={() => runAction(() => budgetsApi.clear(month))}>
+                        <Button size="small" color="error" onClick={() => runAction(() => budgetsApi.clear(month, showHidden))}>
                             Clear all
                         </Button>
                     </>

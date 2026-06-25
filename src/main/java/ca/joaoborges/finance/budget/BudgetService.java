@@ -37,6 +37,11 @@ public class BudgetService {
 
     @Transactional(readOnly = true)
     public BudgetSummary summary(final String month) {
+        return summary(month, false);
+    }
+
+    @Transactional(readOnly = true)
+    public BudgetSummary summary(final String month, final boolean includeHidden) {
         final YearMonth ym = parseMonth(month);
         final Instant start = ym.atDay(1).atStartOfDay(ZoneOffset.UTC).toInstant();
         final Instant end = ym.plusMonths(1).atDay(1).atStartOfDay(ZoneOffset.UTC).toInstant();
@@ -52,7 +57,7 @@ public class BudgetService {
         BigDecimal actualExpense = BigDecimal.ZERO;
 
         for (final Category category : categoryRepository.findAllByOrderBySortOrderAscNameAsc()) {
-            if (category.isArchived()) {
+            if (category.isArchived() || (category.isHidden() && !includeHidden)) {
                 continue;
             }
             final BigDecimal plan = planned.getOrDefault(category.getId(), BigDecimal.ZERO);
@@ -98,7 +103,7 @@ public class BudgetService {
     }
 
     @Transactional
-    public BudgetSummary setBudgets(final String month, final List<BudgetEntry> entries) {
+    public BudgetSummary setBudgets(final String month, final List<BudgetEntry> entries, final boolean includeHidden) {
         requireEditable(month);
         final Map<Long, Budget> existing = new java.util.HashMap<>();
         budgetRepository.findByMonth(month).forEach(b -> existing.put(b.getCategory().getId(), b));
@@ -115,41 +120,52 @@ public class BudgetService {
                 }
                 continue;
             }
+            final Category category = current != null ? current.getCategory()
+                    : categoryRepository.findById(entry.categoryId())
+                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown category " + entry.categoryId()));
+            // Giving a category a planned amount auto-unhides it on the budget page.
+            if (category.isHidden()) {
+                category.setHidden(false);
+                categoryRepository.save(category);
+            }
             if (current != null) {
                 current.setPlannedAmount(amount);
                 budgetRepository.save(current);
             } else {
-                final Category category = categoryRepository.findById(entry.categoryId())
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown category " + entry.categoryId()));
                 budgetRepository.save(Budget.builder().month(month).category(category).plannedAmount(amount).build());
             }
         }
-        return summary(month);
+        return summary(month, includeHidden);
     }
 
     /** Remove all planned amounts for the month. */
     @Transactional
-    public BudgetSummary clear(final String month) {
+    public BudgetSummary clear(final String month, final boolean includeHidden) {
         requireEditable(month);
         budgetRepository.deleteAll(budgetRepository.findByMonth(month));
-        return summary(month);
+        return summary(month, includeHidden);
     }
 
     /** Replace this month's planned amounts with the previous month's. */
     @Transactional
-    public BudgetSummary copyFromPrevious(final String month) {
+    public BudgetSummary copyFromPrevious(final String month, final boolean includeHidden) {
         final YearMonth ym = requireEditable(month);
         final List<Budget> sources = budgetRepository.findByMonth(ym.minusMonths(1).toString());
         budgetRepository.deleteAll(budgetRepository.findByMonth(month));
         budgetRepository.flush();
         for (final Budget source : sources) {
+            final Category category = source.getCategory();
+            if (category.isHidden()) {
+                category.setHidden(false);
+                categoryRepository.save(category);
+            }
             budgetRepository.save(Budget.builder()
                     .month(month)
-                    .category(source.getCategory())
+                    .category(category)
                     .plannedAmount(source.getPlannedAmount())
                     .build());
         }
-        return summary(month);
+        return summary(month, includeHidden);
     }
 
     private BudgetSummary.BudgetLine line(final Category category, final BigDecimal planned, final BigDecimal actual) {
@@ -157,6 +173,7 @@ public class BudgetService {
                 .categoryId(category.getId())
                 .name(category.getName())
                 .icon(category.getIcon())
+                .hidden(category.isHidden())
                 .planned(planned)
                 .actual(actual)
                 .remaining(planned.subtract(actual))

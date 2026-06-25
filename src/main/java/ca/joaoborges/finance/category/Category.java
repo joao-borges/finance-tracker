@@ -59,6 +59,15 @@ public class Category {
     @Column(nullable = false)
     private boolean archived = false;
 
+    /**
+     * Hidden from the budget page (decluttering) — distinct from archived.
+     * Setting a planned budget amount auto-unhides it; only the Categories page
+     * hides it.
+     */
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean hidden = false;
+
     /** Optional monthly spend threshold; crossing it fires a yellow Discord alert. */
     @Column(name = "alert_threshold", precision = 19, scale = 4)
     private BigDecimal alertThreshold;

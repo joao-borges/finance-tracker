@@ -21,6 +21,7 @@ export default function CategoriesPage() {
         { name: "alertThreshold", label: "Alert threshold", type: "number" },
         { name: "sortOrder", label: "Sort order", type: "number", initial: 0 },
         { name: "icon", label: "Icon", type: "emoji" },
+        { name: "hidden", label: "Hidden from budget", type: "boolean", initial: false },
         { name: "archived", label: "Archived", type: "boolean", initial: false },
     ];
 

@@ -26,7 +26,7 @@ public record BudgetSummary(
     }
 
     @Builder
-    public record BudgetLine(Long categoryId, String name, String icon, BigDecimal planned, BigDecimal actual, BigDecimal remaining) {
+    public record BudgetLine(Long categoryId, String name, String icon, boolean hidden, BigDecimal planned, BigDecimal actual, BigDecimal remaining) {
     }
 
 }

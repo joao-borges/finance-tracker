@@ -80,10 +80,11 @@ export default function BudgetSection({
                                             underline="hover"
                                             color="inherit"
                                             onClick={() => onOpenCategory?.(line)}
-                                            className={styles.categoryLink}
+                                            className={line.hidden ? `${styles.categoryLink} ${styles.hiddenName}` : styles.categoryLink}
                                         >
                                             {line.icon ? `${line.icon} ` : ""}
                                             {line.name}
+                                            {line.hidden ? " (hidden)" : ""}
                                         </Link>
                                     </TableCell>
                                     <TableCell>

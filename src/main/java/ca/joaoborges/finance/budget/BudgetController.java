@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -25,24 +26,28 @@ public class BudgetController {
     private final BudgetPdfExporter budgetPdfExporter;
 
     @GetMapping("/{month}/summary")
-    public BudgetSummary summary(@PathVariable final String month) {
-        return budgetService.summary(month);
+    public BudgetSummary summary(@PathVariable final String month,
+                                @RequestParam(defaultValue = "false") final boolean includeHidden) {
+        return budgetService.summary(month, includeHidden);
     }
 
     /** Bulk-set planned amounts for the month; returns the recomputed summary. */
     @PutMapping("/{month}")
-    public BudgetSummary setPlanned(@PathVariable final String month, @RequestBody final List<BudgetEntry> entries) {
-        return budgetService.setBudgets(month, entries);
+    public BudgetSummary setPlanned(@PathVariable final String month, @RequestBody final List<BudgetEntry> entries,
+                                    @RequestParam(defaultValue = "false") final boolean includeHidden) {
+        return budgetService.setBudgets(month, entries, includeHidden);
     }
 
     @DeleteMapping("/{month}")
-    public BudgetSummary clear(@PathVariable final String month) {
-        return budgetService.clear(month);
+    public BudgetSummary clear(@PathVariable final String month,
+                              @RequestParam(defaultValue = "false") final boolean includeHidden) {
+        return budgetService.clear(month, includeHidden);
     }
 
     @PostMapping("/{month}/copy-previous")
-    public BudgetSummary copyPrevious(@PathVariable final String month) {
-        return budgetService.copyFromPrevious(month);
+    public BudgetSummary copyPrevious(@PathVariable final String month,
+                                      @RequestParam(defaultValue = "false") final boolean includeHidden) {
+        return budgetService.copyFromPrevious(month, includeHidden);
     }
 
     @GetMapping("/{month}/export")

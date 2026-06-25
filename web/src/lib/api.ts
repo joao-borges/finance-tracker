@@ -43,6 +43,7 @@ export interface Category {
     income?: boolean;
     sortOrder?: number;
     archived?: boolean;
+    hidden?: boolean;
     alertThreshold?: number | null;
     groupId?: number | null;
     groupName?: string | null;
@@ -267,6 +268,7 @@ export interface BudgetLine {
     categoryId: number;
     name: string;
     icon?: string | null;
+    hidden: boolean;
     planned: number;
     actual: number;
     remaining: number;
@@ -297,11 +299,17 @@ export interface BudgetEntry {
     plannedAmount: number | null;
 }
 
+const hiddenQuery = (includeHidden: boolean) => (includeHidden ? "?includeHidden=true" : "");
+
 export const budgetsApi = {
-    summary: (month: string) => http<BudgetSummary>("GET", `/api/budgets/${month}/summary`),
-    setPlanned: (month: string, entries: BudgetEntry[]) => http<BudgetSummary>("PUT", `/api/budgets/${month}`, entries),
-    clear: (month: string) => http<BudgetSummary>("DELETE", `/api/budgets/${month}`),
-    copyPrevious: (month: string) => http<BudgetSummary>("POST", `/api/budgets/${month}/copy-previous`),
+    summary: (month: string, includeHidden = false) =>
+        http<BudgetSummary>("GET", `/api/budgets/${month}/summary${hiddenQuery(includeHidden)}`),
+    setPlanned: (month: string, entries: BudgetEntry[], includeHidden = false) =>
+        http<BudgetSummary>("PUT", `/api/budgets/${month}${hiddenQuery(includeHidden)}`, entries),
+    clear: (month: string, includeHidden = false) =>
+        http<BudgetSummary>("DELETE", `/api/budgets/${month}${hiddenQuery(includeHidden)}`),
+    copyPrevious: (month: string, includeHidden = false) =>
+        http<BudgetSummary>("POST", `/api/budgets/${month}/copy-previous${hiddenQuery(includeHidden)}`),
 };
 
 export const rulesExtraApi = {

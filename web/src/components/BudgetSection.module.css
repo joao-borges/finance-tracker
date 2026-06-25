@@ -43,3 +43,8 @@
 .plannedInput {
     width: 130px;
 }
+
+.hiddenName {
+    color: var(--text-secondary);
+    font-style: italic;
+}

@@ -12,6 +12,7 @@ public record CategoryDto(
         Boolean income,
         Integer sortOrder,
         Boolean archived,
+        Boolean hidden,
         BigDecimal alertThreshold,
         Long groupId,
         String groupName) {
