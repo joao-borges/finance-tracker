@@ -193,7 +193,9 @@ export default function BudgetPage() {
                 readOnly={isPast}
             />
 
-            {summary.groups.map((group) => {
+            {summary.groups
+                .filter((group) => group.categories.some((line) => !line.hidden))
+                .map((group) => {
                 return (
                     <BudgetSection
                         key={group.groupId ?? group.groupName}
