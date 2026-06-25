@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class MeController {
 
     @Builder
-    public record Me(boolean authenticated, String email, String name, String picture) {
+    public record Me(boolean authenticated, String email, String name, String givenName, String picture) {
     }
 
     @GetMapping
@@ -28,6 +28,7 @@ public class MeController {
                 .authenticated(true)
                 .email(user.getEmail())
                 .name(user.getFullName())
+                .givenName(user.getGivenName())
                 .picture(user.getPicture())
                 .build();
     }

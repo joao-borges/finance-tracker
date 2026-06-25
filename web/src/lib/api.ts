@@ -346,6 +346,7 @@ export interface Me {
     authenticated: boolean;
     email?: string | null;
     name?: string | null;
+    givenName?: string | null;
     picture?: string | null;
 }
 

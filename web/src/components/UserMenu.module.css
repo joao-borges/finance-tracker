@@ -4,6 +4,13 @@
     gap: 8px;
 }
 
-.email {
-    opacity: 0.9;
+.user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: default;
+}
+
+.name {
+    opacity: 0.95;
 }
