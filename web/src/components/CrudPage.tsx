@@ -54,6 +54,7 @@ export default function CrudPage<T extends { id: number }>({ title, fields, api,
     const [rows, setRows] = useState<T[]>([]);
     const [open, setOpen] = useState(false);
     const [editing, setEditing] = useState<T | null>(null);
+    const [filter, setFilter] = useState("");
     const [form] = Form.useForm();
 
     const reload = useCallback(() => {
@@ -107,6 +108,23 @@ export default function CrudPage<T extends { id: number }>({ title, fields, api,
     const tableFields = fields.filter((field) => !field.formOnly);
     const formFields = fields.filter((field) => !field.tableOnly);
 
+    // Simple client-side text filter over the textual table columns.
+    const query = filter.trim().toLowerCase();
+    const visibleRows = query === ""
+        ? rows
+        : rows.filter((row) =>
+              tableFields.some((field) => {
+                  if (field.renderCell || field.type === "boolean") {
+                      return false;
+                  }
+                  const value = (row as Record<string, unknown>)[field.name];
+                  const text = field.type === "select" && field.options
+                      ? field.options.find((option) => option.value === value)?.label ?? ""
+                      : value == null ? "" : String(value);
+                  return text.toLowerCase().includes(query);
+              }),
+          );
+
     const cell = (field: FieldDef<T>, row: T): ReactNode => {
         if (field.renderCell) {
             return field.renderCell(row);
@@ -149,6 +167,14 @@ export default function CrudPage<T extends { id: number }>({ title, fields, api,
                 </Button>
             </Box>
 
+            <Input
+                allowClear
+                placeholder={`Filter ${title.toLowerCase()}…`}
+                value={filter}
+                onChange={(event) => setFilter(event.target.value)}
+                className={styles.filterInput}
+            />
+
             <TableContainer component={Paper}>
                 <Table size="small">
                     <TableHead>
@@ -160,7 +186,7 @@ export default function CrudPage<T extends { id: number }>({ title, fields, api,
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {rows.map((row) => {
+                        {visibleRows.map((row) => {
                             return (
                                 <TableRow key={row.id} hover>
                                     {tableFields.map((field) => {
@@ -175,10 +201,12 @@ export default function CrudPage<T extends { id: number }>({ title, fields, api,
                                 </TableRow>
                             );
                         })}
-                        {rows.length === 0 && (
+                        {visibleRows.length === 0 && (
                             <TableRow>
                                 <TableCell colSpan={tableFields.length + 1}>
-                                    <Typography color="text.secondary">No {title.toLowerCase()} yet.</Typography>
+                                    <Typography color="text.secondary">
+                                        {query === "" ? `No ${title.toLowerCase()} yet.` : "No matches."}
+                                    </Typography>
                                 </TableCell>
                             </TableRow>
                         )}

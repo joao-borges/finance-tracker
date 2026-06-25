@@ -11,3 +11,8 @@
 .numberInput {
     width: 100%;
 }
+
+.filterInput {
+    max-width: 360px;
+    margin-bottom: 16px;
+}
