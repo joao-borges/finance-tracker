@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Box, Button, Chip, FormControlLabel, IconButton, Switch, Typography } from "@mui/material";
+import { Box, Button, Chip, IconButton, Typography } from "@mui/material";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { App as AntApp } from "antd";
@@ -46,8 +46,10 @@ export default function BudgetPage() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [merchants, setMerchants] = useState<Merchant[]>([]);
     const [drillLine, setDrillLine] = useState<BudgetLine | null>(null);
-    const [showHidden, setShowHidden] = useState(false);
+    const [shownHidden, setShownHidden] = useState<Record<string, boolean>>({});
     const dirty = useRef<Map<number, number | null>>(new Map());
+
+    const toggleHidden = (key: string) => setShownHidden((current) => ({ ...current, [key]: !current[key] }));
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isPast = dayjs(`${month}-01`).isBefore(dayjs().startOf("month"));
 
@@ -60,14 +62,15 @@ export default function BudgetPage() {
     };
 
     const load = useCallback(() => {
+        // Always load hidden categories; visibility is toggled per group in the UI.
         budgetsApi
-            .summary(month, showHidden)
+            .summary(month, true)
             .then((result) => {
                 setSummary(result);
                 setPlanned(collectPlanned(result));
             })
             .catch((error: unknown) => message.error(errorText(error)));
-    }, [month, showHidden, message]);
+    }, [month, message]);
 
     useEffect(() => {
         cancelPending();
@@ -94,11 +97,11 @@ export default function BudgetPage() {
         dirty.current.clear();
         setSaving(true);
         budgetsApi
-            .setPlanned(month, entries, showHidden)
+            .setPlanned(month, entries, true)
             .then(setSummary)
             .catch((error: unknown) => message.error(errorText(error)))
             .finally(() => setSaving(false));
-    }, [month, showHidden, message]);
+    }, [month, message]);
 
     const setOne = (categoryId: number, value: number | null) => {
         if (isPast) {
@@ -159,19 +162,15 @@ export default function BudgetPage() {
                     color={summary.leftToBudget < 0 ? "error" : "primary"}
                     label={`Left to budget ${formatMoney(summary.leftToBudget)}`}
                 />
-                <FormControlLabel
-                    control={<Switch size="small" checked={showHidden} onChange={(event) => setShowHidden(event.target.checked)} />}
-                    label="Show hidden"
-                />
                 <Button size="small" component="a" href={`/api/budgets/${month}/export`}>
                     Export PDF
                 </Button>
                 {!isPast && (
                     <>
-                        <Button size="small" onClick={() => runAction(() => budgetsApi.copyPrevious(month, showHidden))}>
+                        <Button size="small" onClick={() => runAction(() => budgetsApi.copyPrevious(month, true))}>
                             Copy from previous month
                         </Button>
-                        <Button size="small" color="error" onClick={() => runAction(() => budgetsApi.clear(month, showHidden))}>
+                        <Button size="small" color="error" onClick={() => runAction(() => budgetsApi.clear(month, true))}>
                             Clear all
                         </Button>
                     </>
@@ -189,6 +188,8 @@ export default function BudgetPage() {
                 planned={planned}
                 onPlanned={setOne}
                 onOpenCategory={setDrillLine}
+                showHidden={!!shownHidden.income}
+                onToggleHidden={() => toggleHidden("income")}
                 readOnly={isPast}
             />
 
@@ -207,6 +208,8 @@ export default function BudgetPage() {
                         onToggleCollapse={
                             group.groupId != null ? () => toggleGroup(group.groupId!, !group.collapsed) : undefined
                         }
+                        showHidden={!!shownHidden[String(group.groupId)]}
+                        onToggleHidden={() => toggleHidden(String(group.groupId))}
                         readOnly={isPast}
                     />
                 );

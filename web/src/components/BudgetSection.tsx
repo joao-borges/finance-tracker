@@ -9,10 +9,13 @@ import {
     TableContainer,
     TableHead,
     TableRow,
+    Tooltip,
     Typography,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { InputNumber } from "antd";
 import { Link } from "@mui/material";
 import { formatMoney } from "../lib/format";
@@ -30,6 +33,8 @@ interface Props {
     collapsible?: boolean;
     collapsed?: boolean;
     onToggleCollapse?: () => void;
+    showHidden?: boolean;
+    onToggleHidden?: () => void;
     readOnly?: boolean;
 }
 
@@ -43,16 +48,29 @@ export default function BudgetSection({
     collapsible,
     collapsed,
     onToggleCollapse,
+    showHidden,
+    onToggleHidden,
     readOnly,
 }: Props) {
+    const hasHidden = lines.some((line) => line.hidden);
+    const visibleLines = showHidden ? lines : lines.filter((line) => !line.hidden);
     return (
         <Box className={styles.section}>
             <Box className={styles.header}>
-                {collapsible && (
-                    <IconButton size="small" onClick={onToggleCollapse} aria-label={collapsed ? "expand" : "collapse"}>
-                        {collapsed ? <ChevronRightIcon /> : <ExpandMoreIcon />}
-                    </IconButton>
-                )}
+                <div className={styles.controls}>
+                    {collapsible && (
+                        <IconButton size="small" onClick={onToggleCollapse} aria-label={collapsed ? "expand" : "collapse"}>
+                            {collapsed ? <ChevronRightIcon /> : <ExpandMoreIcon />}
+                        </IconButton>
+                    )}
+                    {hasHidden && (
+                        <Tooltip title={showHidden ? "Hide hidden categories" : "Show hidden categories"}>
+                            <IconButton size="small" onClick={onToggleHidden} aria-label="toggle hidden categories">
+                                {showHidden ? <VisibilityIcon fontSize="small" /> : <VisibilityOffIcon fontSize="small" />}
+                            </IconButton>
+                        </Tooltip>
+                    )}
+                </div>
                 <Typography variant="h6" className={styles.title}>
                     {title}
                 </Typography>
@@ -70,7 +88,7 @@ export default function BudgetSection({
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {lines.map((line) => {
+                        {visibleLines.map((line) => {
                             return (
                                 <TableRow key={line.categoryId} hover>
                                     <TableCell>

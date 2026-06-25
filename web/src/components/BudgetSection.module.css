@@ -6,7 +6,12 @@
     display: flex;
     align-items: center;
     margin-bottom: 8px;
-    gap: 16px;
+    gap: 8px;
+}
+
+.controls {
+    display: flex;
+    align-items: center;
 }
 
 .title {
