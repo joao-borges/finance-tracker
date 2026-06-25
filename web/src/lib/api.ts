@@ -113,6 +113,11 @@ async function http<T>(method: string, path: string, body?: unknown): Promise<T>
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: body === undefined ? undefined : JSON.stringify(body),
     });
+    if (res.status === 401) {
+        // Session expired or not signed in — send the browser through Google login.
+        window.location.href = "/oauth2/authorization/google";
+        throw new Error("Not authenticated");
+    }
     if (!res.ok) {
         const text = await res.text();
         throw new Error(text || `${res.status} ${res.statusText}`);
@@ -315,4 +320,19 @@ export const simplefinApi = {
     status: () => http<SimpleFinStatus>("GET", "/api/simplefin/status"),
     setup: (token: string) => http<SimpleFinStatus>("POST", "/api/simplefin/setup", { token }),
     sync: () => http<ImportRun>("POST", "/api/simplefin/sync"),
+};
+
+export interface Me {
+    authenticated: boolean;
+    email?: string | null;
+    name?: string | null;
+    picture?: string | null;
+}
+
+export const authApi = {
+    me: () => http<Me>("GET", "/api/me"),
+    logout: async () => {
+        await fetch("/logout", { method: "POST" });
+        window.location.href = "/";
+    },
 };

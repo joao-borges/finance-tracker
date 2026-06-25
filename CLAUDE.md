@@ -67,6 +67,7 @@ The Spring Boot app is the project root; `web/` holds the React UI. Java package
 - **`merchant/`** — canonical merchants + favicon (logo) resolution.
 - **`dashboard/`** — landing-page summary (account groups, review count, budget alerts).
 - **`seed/`** — `DataSeeder` (an idempotent `ApplicationRunner`) that ensures the curated category groups, categories, and rules in `resources/seed/seed-data.json` (parsed from the operator's Monarch export) exist at startup.
+- **`auth/`** — Google sign-in (OIDC). `AllowlistOidcUserService` enforces the `finance.auth.allowed-emails` allowlist (fail-closed); `MeController` exposes `GET /api/me`. The security chain is `config/SecurityConfig`, gated by the `oauth` profile — no profile ⇒ auth off (local dev). See PLAN.md "Authentication".
 - **`common/`** — **shared query predicates (the flag table)** and other cross-cutting helpers.
 
 Keep controllers thin (HTTP boundary, `@Valid` DTOs); push behavior into the domain packages. CSV and SimpleFIN must share the ingest pipeline — CSV is a second *source*, not a second system.

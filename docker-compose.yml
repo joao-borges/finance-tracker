@@ -39,6 +39,12 @@ services:
       DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
       # Hard floor on imported transactions (ISO date, UTC). Blank = no floor.
       IMPORT_MIN_POSTED_DATE: ${IMPORT_MIN_POSTED_DATE:-}
+      # Google sign-in (for public exposure via Cloudflare). Set SPRING_PROFILES_ACTIVE=oauth
+      # plus the client id/secret and the email allowlist to require login; unset = auth off.
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      FINANCE_AUTH_ALLOWED_EMAILS: ${FINANCE_AUTH_ALLOWED_EMAILS:-}
     ports:
       - "8080:8080"
 

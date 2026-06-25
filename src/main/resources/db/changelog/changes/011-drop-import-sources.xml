@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+      Configurable per-institution CSV mappings were dropped from scope: the
+      hardcoded per-format parsers (SIMPLE/AMEX/RBC/PC_FINANCIAL) cover the banks
+      in use. Remove the now-unused import_sources table and its entity.
+    -->
+    <changeSet id="011-drop-import-sources" author="joao">
+        <dropTable tableName="import_sources"/>
+    </changeSet>
+
+</databaseChangeLog>

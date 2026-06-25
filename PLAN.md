@@ -14,7 +14,8 @@ Deliberately narrow for phase 1. The discipline is: build the spine that handles
 
 ### Phase 1 (this build)
 - SimpleFIN ingestion: pull accounts, balances, and **posted** transactions directly (no Firefly, no aggregator middleware)
-- CSV import as a fallback source: per-institution field mappings, feeding the *same* pipeline (dedup, rules, review) — backup for sync outages and for backfilling history older than SimpleFIN's ~90-day window
+- CSV import as a fallback source: per-format parsers (Simple, Amex CA, RBC, PC Financial) feeding the *same* pipeline (dedup, rules, review) — backup for sync outages and for backfilling history older than SimpleFIN's ~90-day window
+- Google sign-in (OAuth2/OIDC) with an email allowlist, so the app can be exposed publicly via Cloudflare
 - Accounts dashboard: balance pulled straight from the bank and displayed — no reconciliation
 - Transactions list with filters
 - Categories + category groups (Home, Kid, Car, …)
@@ -96,15 +97,6 @@ Transaction
   is_dedup (bool)      # quarantined duplicate
   notes, currency
   import_run_id
-
-ImportSource              # saved CSV mapping per institution
-  id, name                # e.g. "RBC chequing CSV", "Amex CA CSV"
-  account_id              # default account these rows belong to
-  date_column, date_format
-  amount_column, amount_sign_convention   # single signed col, or separate debit/credit cols
-  merchant_column
-  description_column      # optional
-  has_header (bool)
 
 Rule
   id, name
@@ -208,13 +200,13 @@ Same destination, same pipeline. A CSV row becomes a `Transaction` exactly like 
 - **Odd cases.** A one-off account you don't want to connect, or a manual correction batch.
 
 ### Flow
-1. User picks an `ImportSource` (saved mapping) or defines a new one, and uploads a file.
-2. Parse with the mapping: date column + format, amount handling (single signed column, or separate debit/credit columns → normalize to one signed `amount`, negative = outflow), merchant column, optional description.
-3. Each parsed row → `source = 'csv'`, `simplefin_id = null`, `account_id` from the mapping.
+1. User uploads a file and picks its **format** (`POST /api/imports/csv?format=SIMPLE|AMEX|RBC|PC_FINANCIAL`). One hardcoded parser per institution — no user-defined field mappings (dropped from scope; the four parsers cover the banks in use).
+2. The format's parser normalizes each row to a `ParsedTransaction` (account name, merchant, signed amount where negative = outflow, posted date).
+3. Each parsed row → `source = 'csv'`, `simplefin_id = null`, account found-or-created by name (`import_ref`).
 4. **Dedup** (see cross-source note below), then insert new rows `category_id = null`, `needs_review = true`.
 5. Run the rules engine over the new rows. Fire events. Write the `ImportRun` (`source = 'csv'`, `file_name`).
 
-Use a battle-tested CSV parser (e.g. **Apache Commons CSV** or **univocity**) — don't hand-roll quote/escape handling. Bank CSVs are full of commas-in-descriptions and inconsistent quoting.
+Parsing uses **Apache Commons CSV** — not hand-rolled — since bank CSVs are full of commas-in-descriptions and inconsistent quoting. A new institution = a new parser class + a `CsvFormat` enum value.
 
 ### Simplified CSV (bootstrap — built first)
 Before the full `ImportSource`-mapped flow exists, there's a minimal importer to exercise the **rules engine** end to end. Fixed header `account,name,value`:
@@ -330,6 +322,16 @@ Budget/threshold alerts are driven by `budget/BudgetAlertService.checkAfterSpend
 
 ---
 
+## Authentication (Google sign-in)
+
+The app is exposed publicly through a **Cloudflare tunnel**, so it needs its own auth. Spring Security `oauth2Login` with **Google** (OIDC), session-cookie based — no passwords stored, no user table.
+
+- **Allowlist, fail-closed.** `auth/AllowlistOidcUserService` accepts a sign-in only if the Google email is in `finance.auth.allowed-emails` (`FINANCE_AUTH_ALLOWED_EMAILS`, comma-separated). Empty list ⇒ nobody gets in. This is the whole "multi-user" story for the household — Joao + Amanda, by email.
+- **Profile-gated.** The Google client lives in `application-oauth.yml`, loaded only with `SPRING_PROFILES_ACTIVE=oauth`. Without it (local dev), no client is registered and `config/SecurityConfig` leaves everything open — so the app runs credential-free locally. With it, the whole app requires sign-in.
+- **SPA-friendly.** `/api/**` returns **401** when unauthenticated (the SPA's fetch wrapper turns that into a redirect to `/oauth2/authorization/google`); browser page loads redirect to Google directly. `GET /api/me` exposes the signed-in account for the UI; `POST /logout` ends the session.
+- **Behind Cloudflare.** `server.forward-headers-strategy=framework` so OAuth2 redirect URIs use the public https host, not the internal `http://localhost`. The Google OAuth client's authorized redirect URI is `https://<public-host>/login/oauth2/code/google`.
+- **CSRF.** The Spring CSRF filter is off; a `SameSite=Lax` session cookie is the baseline (blocks cross-site cookie-bearing POSTs) — acceptable for a single-household app.
+
 ## Performance & scaling
 
 The data set grows indefinitely on **one table only** — `transactions`. Everything else (accounts, categories, groups, merchants, rules, budgets) stays small and bounded. Tune for that asymmetry.
@@ -377,6 +379,11 @@ POST   /api/rules/:id/apply               # retroactive run over uncategorized
 GET    /api/transactions?from=&to=&accountIds=&merchantIds=&categoryIds=&review=&page=&size=
 PATCH  /api/transactions/:id              # categorize, link/create merchant, approve, exclude-from-budget
 GET/POST/PATCH/DELETE  /api/saved-filters # named shared filters
+
+# Auth (Google sign-in; active only with the "oauth" profile)
+GET    /api/me                            # signed-in account (authenticated flag, email, name)
+GET    /oauth2/authorization/google       # start sign-in
+POST   /logout                            # end session
 
 # Dashboard
 GET    /api/dashboard/summary             # account groups, review count, budget alerts
@@ -433,8 +440,9 @@ finance/
 │       ├── budget/
 │       ├── rule/                    # match + retroactive apply
 │       ├── simplefin/               # client, sync job, payload mapping
-│       ├── csv/                     # parser, ImportSource mappings, preview/commit
+│       ├── csv/                     # per-format parsers (Simple/Amex/RBC/PC) → ParsedTransaction
 │       ├── webhook/                 # dispatcher + discord formatter
+│       ├── auth/                    # Google sign-in: allowlist user service + /api/me
 │       └── common/                  # shared query predicates (the flag table!)
 │   └── src/main/resources/
 │       └── db/changelog/            # Liquibase changelogs (schema source of truth)
@@ -457,7 +465,7 @@ finance/
 7. Budget page + summary math.
 8. Splits + exclude-from-budget.
 9. Duplicates UI + restore.
-10. **CSV import** + ImportSource mappings, feeding the same pipeline from step 3. Test the cross-source dedup case explicitly: import a CSV overlapping data already synced from SimpleFIN, assert the overlap quarantines rather than duplicates.
+10. **CSV import** — per-format parsers feeding the same pipeline from step 3. Test the cross-source dedup case explicitly: import a CSV overlapping data already synced from SimpleFIN, assert the overlap quarantines rather than duplicates.
 11. Webhooks + Discord formatter.
 12. Backup service + restore test.
 
@@ -465,7 +473,7 @@ finance/
 
 ## Open decisions
 
-1. **Multi-user?** Single user is far simpler. If Amanda needs in, add an `owner` concept early — retrofitting auth later is painful.
+1. ~~**Multi-user?**~~ **Resolved:** Google sign-in with an email allowlist (Joao + Amanda). No `owner` column or per-user data partitioning — it's a shared household view, gated by who can log in. See the Authentication section.
 2. **Currency.** Amex sometimes posts USD. Phase 1 can assume CAD and store a per-transaction currency for later, or handle conversion now. Cheapest: store it, ignore it, revisit.
 3. **Rule match scope.** Match on raw `merchant` only, or also a normalized form (strip trailing store/order numbers)? Normalizing makes *contains* rules even more robust — worth a small util.
 4. **Large-transaction threshold.** One global number, or per-account? Start global.

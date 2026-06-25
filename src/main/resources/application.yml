@@ -41,6 +41,12 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
+    session:
+      cookie:
+        # SameSite=Lax on the session cookie is our CSRF baseline (CSRF filter is
+        # off); it blocks cross-site cookie-bearing POSTs while keeping the
+        # top-level Google sign-in redirect working.
+        same-site: lax
   cache:
     type: jcache
 
@@ -52,9 +58,16 @@ finance:
     # Hard floor (ISO date, UTC): transactions posted before this are dropped by
     # every ingest path (CSV + SimpleFIN). Blank = no floor.
     min-posted-date: ${IMPORT_MIN_POSTED_DATE:}
+  auth:
+    # Comma-separated Google account emails allowed to sign in. Required once
+    # GOOGLE_CLIENT_ID is set (fail-closed: empty = nobody gets in).
+    allowed-emails: ${FINANCE_AUTH_ALLOWED_EMAILS:}
 
 server:
   port: 8080
+  # Behind Cloudflare: trust X-Forwarded-* so OAuth2 redirect URIs use the public
+  # https host instead of the internal http://localhost.
+  forward-headers-strategy: framework
 
 management:
   endpoints:

@@ -4,6 +4,7 @@ import { AppBar, Box, IconButton, Toolbar, Typography } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import SavingsIcon from "@mui/icons-material/Savings";
 import Sidebar from "./components/Sidebar";
+import UserMenu from "./components/UserMenu";
 import ThemeControls from "./theme/ThemeControls";
 import Dashboard from "./pages/Dashboard";
 import TransactionsPage from "./pages/TransactionsPage";
@@ -41,6 +42,7 @@ export default function App() {
                         finance
                     </Typography>
                     <ThemeControls />
+                    <UserMenu />
                 </Toolbar>
             </AppBar>
 
