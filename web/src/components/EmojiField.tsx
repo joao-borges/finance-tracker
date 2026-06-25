@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button, Popover, Space } from "antd";
 import EmojiPicker, { EmojiStyle, Theme, type EmojiClickData } from "emoji-picker-react";
 import { useAppTheme } from "../theme/AppTheme";
+import styles from "./EmojiField.module.css";
 
 interface Props {
     value?: string;
@@ -34,7 +35,7 @@ export default function EmojiField({ value, onChange }: Props) {
                     />
                 }
             >
-                <Button>{value ? <span style={{ fontSize: 18 }}>{value}</span> : "Pick emoji"}</Button>
+                <Button>{value ? <span className={styles.emoji}>{value}</span> : "Pick emoji"}</Button>
             </Popover>
             {value && (
                 <Button type="text" onClick={() => onChange?.("")}>

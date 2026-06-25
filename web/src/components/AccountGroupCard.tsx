@@ -2,6 +2,7 @@ import { Box, Card, CardContent, List, ListItem, ListItemAvatar, ListItemText, T
 import EntityAvatar from "./EntityAvatar";
 import { formatMoney } from "../lib/format";
 import type { AccountGroup } from "../lib/api";
+import styles from "./AccountGroupCard.module.css";
 
 interface Props {
     group: AccountGroup;
@@ -11,8 +12,8 @@ export default function AccountGroupCard({ group }: Props) {
     return (
         <Card variant="outlined">
             <CardContent>
-                <Box sx={{ display: "flex", alignItems: "baseline", mb: 1 }}>
-                    <Typography variant="h6" sx={{ flex: 1 }}>
+                <Box className={styles.header}>
+                    <Typography variant="h6" className={styles.title}>
                         {group.label}
                     </Typography>
                     <Typography variant="subtitle1">{formatMoney(group.total)}</Typography>
@@ -25,7 +26,7 @@ export default function AccountGroupCard({ group }: Props) {
                                 disableGutters
                                 secondaryAction={<Typography variant="body2">{formatMoney(account.balance)}</Typography>}
                             >
-                                <ListItemAvatar sx={{ minWidth: 36 }}>
+                                <ListItemAvatar className={styles.avatar}>
                                     <EntityAvatar url={account.logoUrl} name={account.name} />
                                 </ListItemAvatar>
                                 <ListItemText primary={account.name} />

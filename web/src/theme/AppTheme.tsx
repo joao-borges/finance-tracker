@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { createTheme, CssBaseline, ThemeProvider as MuiThemeProvider, useMediaQuery } from "@mui/material";
 import { App as AntApp, ConfigProvider, theme as antdTheme } from "antd";
 
@@ -73,6 +73,14 @@ export default function AppTheme({ children }: { children: ReactNode }) {
         }),
         [effective, scheme.primary],
     );
+
+    // Expose the effective mode + accent to CSS modules via the theme variables
+    // in index.css, so static CSS classes track dark mode and the chosen scheme.
+    useEffect(() => {
+        const root = document.documentElement;
+        root.setAttribute("data-theme", effective);
+        root.style.setProperty("--color-primary", scheme.primary);
+    }, [effective, scheme.primary]);
 
     const value = useMemo<ThemeContextValue>(
         () => ({ mode, setMode, colorKey, setColorKey, effective }),

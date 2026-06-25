@@ -1,0 +1,41 @@
+.controls {
+    display: flex;
+    gap: 4px;
+}
+
+.swatch {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+}
+
+/* Per-scheme accent swatches shown in the color-scheme menu. These mirror the
+ * fixed COLOR_SCHEMES palette in AppTheme.tsx (data-driven preview colors, not
+ * the active theme), keyed by the scheme key via a data attribute. */
+.swatch[data-scheme="blue"] {
+    background-color: #1677ff;
+}
+
+.swatch[data-scheme="indigo"] {
+    background-color: #4f46e5;
+}
+
+.swatch[data-scheme="green"] {
+    background-color: #16a34a;
+}
+
+.swatch[data-scheme="teal"] {
+    background-color: #0d9488;
+}
+
+.swatch[data-scheme="purple"] {
+    background-color: #7c3aed;
+}
+
+.swatch[data-scheme="orange"] {
+    background-color: #ea580c;
+}
+
+.swatch[data-scheme="rose"] {
+    background-color: #e11d48;
+}

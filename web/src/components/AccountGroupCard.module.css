@@ -1,0 +1,13 @@
+.header {
+    display: flex;
+    align-items: baseline;
+    margin-bottom: 8px;
+}
+
+.title {
+    flex: 1;
+}
+
+.avatar {
+    min-width: 36px;
+}

@@ -1,0 +1,57 @@
+/*
+ * Cross-cutting utility classes shared by multiple components, so the same
+ * styling isn't duplicated per file. Component-specific styling stays in each
+ * component's own .module.css. Colors come from the theme variables in index.css.
+ */
+
+/* Truncate-with-ellipsis (works inside fixed-layout tables). */
+.ellipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.nowrap {
+    white-space: nowrap;
+}
+
+/* Full-width form control (antd inputs/selects). */
+.fullWidth {
+    width: 100%;
+}
+
+/* Muted secondary text. */
+.secondary {
+    color: var(--text-secondary);
+}
+
+/* Signed money amounts. */
+.amountPos {
+    color: var(--success);
+    font-variant-numeric: tabular-nums;
+}
+
+.amountNeg {
+    color: var(--error);
+    font-variant-numeric: tabular-nums;
+}
+
+.negative {
+    color: var(--error);
+}
+
+/* Icon + label row (avatar next to truncating text). */
+.iconRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+/* Centered block, e.g. a spinner. */
+.centerPad {
+    display: flex;
+    justify-content: center;
+    padding: 32px 0;
+}

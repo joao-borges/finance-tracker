@@ -14,6 +14,8 @@ import { InputNumber } from "antd";
 import { Link } from "@mui/material";
 import { formatMoney } from "../lib/format";
 import type { BudgetLine } from "../lib/api";
+import shared from "../styles/shared.module.css";
+import styles from "./BudgetSection.module.css";
 
 interface Props {
     title: string;
@@ -27,21 +29,21 @@ interface Props {
 
 export default function BudgetSection({ title, subtitle, lines, planned, onPlanned, onOpenCategory, readOnly }: Props) {
     return (
-        <Box sx={{ mb: 3 }}>
-            <Box sx={{ display: "flex", alignItems: "baseline", mb: 1, gap: 2 }}>
-                <Typography variant="h6" sx={{ flex: 1 }}>
+        <Box className={styles.section}>
+            <Box className={styles.header}>
+                <Typography variant="h6" className={styles.title}>
                     {title}
                 </Typography>
                 {subtitle}
             </Box>
             <TableContainer component={Paper}>
-                <Table size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
+                <Table size="small" className={styles.table}>
                     <TableHead>
                         <TableRow>
                             <TableCell>Category</TableCell>
-                            <TableCell sx={{ width: 160 }}>Planned</TableCell>
-                            <TableCell align="right" sx={{ width: 140 }}>Actual</TableCell>
-                            <TableCell align="right" sx={{ width: 140 }}>Remaining</TableCell>
+                            <TableCell className={styles.colPlanned}>Planned</TableCell>
+                            <TableCell align="right" className={styles.colActual}>Actual</TableCell>
+                            <TableCell align="right" className={styles.colRemaining}>Remaining</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -55,7 +57,7 @@ export default function BudgetSection({ title, subtitle, lines, planned, onPlann
                                             underline="hover"
                                             color="inherit"
                                             onClick={() => onOpenCategory?.(line)}
-                                            sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", textAlign: "left", width: "100%", cursor: "pointer" }}
+                                            className={styles.categoryLink}
                                         >
                                             {line.icon ? `${line.icon} ` : ""}
                                             {line.name}
@@ -63,7 +65,7 @@ export default function BudgetSection({ title, subtitle, lines, planned, onPlann
                                     </TableCell>
                                     <TableCell>
                                         <InputNumber
-                                            style={{ width: 130 }}
+                                            className={styles.plannedInput}
                                             min={0}
                                             step={10}
                                             disabled={readOnly}
@@ -72,13 +74,13 @@ export default function BudgetSection({ title, subtitle, lines, planned, onPlann
                                             prefix="$"
                                         />
                                     </TableCell>
-                                    <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
+                                    <TableCell align="right" className={shared.nowrap}>
                                         {formatMoney(line.actual)}
                                     </TableCell>
-                                    <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
+                                    <TableCell align="right" className={shared.nowrap}>
                                         <Typography
                                             component="span"
-                                            sx={{ color: line.remaining < 0 ? "error.main" : "text.primary" }}
+                                            className={line.remaining < 0 ? shared.negative : undefined}
                                         >
                                             {formatMoney(line.remaining)}
                                         </Typography>

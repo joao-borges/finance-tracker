@@ -7,3 +7,26 @@ body,
 body {
     margin: 0;
 }
+
+/*
+ * Semantic theme variables consumed by every component's CSS module. Values flip
+ * with dark mode via the data-theme attribute on <html> (set in AppTheme); the
+ * selectable accent is injected as --color-primary from the chosen scheme. Keep
+ * component .module.css files referencing these vars — never hardcode colors.
+ */
+:root {
+    --text-secondary: #6b7280;
+    --error: #d32f2f;
+    --success: #2e7d32;
+    --warning: #ed6c02;
+    --border: rgba(0, 0, 0, 0.12);
+    --color-primary: #1677ff;
+}
+
+:root[data-theme="dark"] {
+    --text-secondary: #9aa4b2;
+    --error: #f44336;
+    --success: #66bb6a;
+    --warning: #ffa726;
+    --border: rgba(255, 255, 255, 0.16);
+}

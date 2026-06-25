@@ -1,9 +1,9 @@
 import { Avatar } from "@mui/material";
+import styles from "./EntityAvatar.module.css";
 
 interface EntityAvatarProps {
     url?: string | null;
     name?: string | null;
-    size?: number;
 }
 
 /**
@@ -11,9 +11,9 @@ interface EntityAvatarProps {
  * character of the name (or emoji) as a fallback. Used in lists for accounts
  * and merchants.
  */
-export default function EntityAvatar({ url, name, size = 22 }: EntityAvatarProps) {
+export default function EntityAvatar({ url, name }: EntityAvatarProps) {
     return (
-        <Avatar src={url ?? undefined} sx={{ width: size, height: size, fontSize: size * 0.6 }}>
+        <Avatar src={url ?? undefined} className={styles.avatar}>
             {(name ?? "?").charAt(0)}
         </Avatar>
     );

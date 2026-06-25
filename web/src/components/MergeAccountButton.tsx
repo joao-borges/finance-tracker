@@ -4,6 +4,7 @@ import CallMergeIcon from "@mui/icons-material/CallMerge";
 import { App as AntApp, Modal, Select, Typography } from "antd";
 import { accountsApi, type Account } from "../lib/api";
 import { errorText } from "../lib/format";
+import shared from "../styles/shared.module.css";
 
 interface Props {
     account: Account;
@@ -61,7 +62,7 @@ export default function MergeAccountButton({ account, reload }: Props) {
                 <Select
                     showSearch
                     optionFilterProp="label"
-                    style={{ width: "100%" }}
+                    className={shared.fullWidth}
                     placeholder="Target account"
                     value={targetId}
                     onChange={(value: number) => setTargetId(value)}

@@ -6,6 +6,7 @@ import SettingsBrightnessIcon from "@mui/icons-material/SettingsBrightness";
 import PaletteIcon from "@mui/icons-material/Palette";
 import CheckIcon from "@mui/icons-material/Check";
 import { COLOR_SCHEMES, useAppTheme, type Mode } from "./AppTheme";
+import styles from "./ThemeControls.module.css";
 
 const MODE_OPTIONS: { key: Mode; label: string; icon: ReactNode }[] = [
     { key: "light", label: "Light", icon: <LightModeIcon fontSize="small" /> },
@@ -19,7 +20,7 @@ export default function ThemeControls() {
     const [colorAnchor, setColorAnchor] = useState<HTMLElement | null>(null);
 
     return (
-        <Box sx={{ display: "flex", gap: 0.5 }}>
+        <Box className={styles.controls}>
             <Tooltip title="Color scheme">
                 <IconButton color="inherit" onClick={(event) => setColorAnchor(event.currentTarget)}>
                     <PaletteIcon />
@@ -62,7 +63,7 @@ export default function ThemeControls() {
                             }}
                         >
                             <ListItemIcon>
-                                <Box sx={{ width: 16, height: 16, borderRadius: "50%", bgcolor: scheme.primary }} />
+                                <Box className={styles.swatch} data-scheme={scheme.key} />
                             </ListItemIcon>
                             <ListItemText>{scheme.label}</ListItemText>
                             {colorKey === scheme.key && <CheckIcon fontSize="small" />}

@@ -1,6 +1,7 @@
 import { Button, DatePicker, Select, Space } from "antd";
 import dayjs from "dayjs";
 import type { Account, Category, Merchant, TransactionFilters } from "../lib/api";
+import styles from "./TransactionFilterBar.module.css";
 
 const { RangePicker } = DatePicker;
 
@@ -19,7 +20,7 @@ export default function TransactionFilterBar({ filters, accounts, merchants, cat
         filters.from && filters.to ? [dayjs(filters.from), dayjs(filters.to)] : undefined;
 
     return (
-        <Space wrap style={{ marginBottom: 16 }}>
+        <Space wrap className={styles.bar}>
             <RangePicker
                 value={range}
                 onChange={(dates) => {
@@ -35,7 +36,7 @@ export default function TransactionFilterBar({ filters, accounts, merchants, cat
                 allowClear
                 maxTagCount="responsive"
                 placeholder="Accounts"
-                style={{ minWidth: 180 }}
+                className={styles.select}
                 value={filters.accountIds}
                 onChange={(value: number[]) => onChange({ accountIds: value })}
                 options={accounts.map((account) => ({ label: account.name, value: account.id }))}
@@ -47,7 +48,7 @@ export default function TransactionFilterBar({ filters, accounts, merchants, cat
                 optionFilterProp="label"
                 maxTagCount="responsive"
                 placeholder="Merchants"
-                style={{ minWidth: 180 }}
+                className={styles.select}
                 value={filters.merchantIds}
                 onChange={(value: number[]) => onChange({ merchantIds: value })}
                 options={merchants.map((merchant) => ({
@@ -60,7 +61,7 @@ export default function TransactionFilterBar({ filters, accounts, merchants, cat
                 allowClear
                 maxTagCount="responsive"
                 placeholder="Categories"
-                style={{ minWidth: 180 }}
+                className={styles.select}
                 value={filters.categoryIds}
                 onChange={(value: number[]) => onChange({ categoryIds: value })}
                 options={categories.map((category) => ({
@@ -69,7 +70,7 @@ export default function TransactionFilterBar({ filters, accounts, merchants, cat
                 }))}
             />
             <Select
-                style={{ minWidth: 140 }}
+                className={styles.reviewSelect}
                 value={reviewValue}
                 onChange={(value: string) => onChange({ review: value === "all" ? undefined : value === "needs" })}
                 options={[

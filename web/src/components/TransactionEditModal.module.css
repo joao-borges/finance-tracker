@@ -1,0 +1,22 @@
+.categorySelect {
+    width: 100%;
+    margin-top: 4px;
+}
+
+.firstParagraph {
+    margin-top: 0;
+}
+
+.statementParagraph {
+    margin-bottom: 16px;
+}
+
+.merchantRadioGroup {
+    display: block;
+    margin: 8px 0;
+}
+
+.ruleSpace {
+    width: 100%;
+    margin-top: 8px;
+}

@@ -1,5 +1,4 @@
 import {
-    Box,
     Chip,
     IconButton,
     Paper,
@@ -14,90 +13,85 @@ import {
 } from "@mui/material";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
 import EditIcon from "@mui/icons-material/Edit";
-import type { CSSProperties } from "react";
 import EntityAvatar from "./EntityAvatar";
 import { formatDate, formatMoney } from "../lib/format";
 import type { Transaction } from "../lib/api";
+import shared from "../styles/shared.module.css";
+import styles from "./TransactionsTable.module.css";
 
 interface Props {
     rows: Transaction[];
     onOpen: (row: Transaction) => void;
 }
 
-// Truncate-with-ellipsis for flexible cells (works because the table is fixed-layout).
-const ELLIPSIS: CSSProperties = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 };
-
 export default function TransactionsTable({ rows, onOpen }: Props) {
     return (
         <TableContainer component={Paper}>
-            <Table size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
+            <Table size="small" className={styles.table}>
                 <TableHead>
                     <TableRow>
-                        <TableCell sx={{ width: 110, whiteSpace: "nowrap" }}>Date</TableCell>
-                        <TableCell sx={{ width: 180 }}>Account</TableCell>
+                        <TableCell className={styles.colDate}>Date</TableCell>
+                        <TableCell className={styles.colAccount}>Account</TableCell>
                         <TableCell>Merchant</TableCell>
-                        <TableCell sx={{ width: 160 }}>Category</TableCell>
-                        <TableCell align="right" sx={{ width: 120, whiteSpace: "nowrap" }}>Amount</TableCell>
-                        <TableCell sx={{ width: 150 }}>Status</TableCell>
-                        <TableCell align="right" sx={{ width: 56 }} />
+                        <TableCell className={styles.colCategory}>Category</TableCell>
+                        <TableCell align="right" className={styles.colAmount}>Amount</TableCell>
+                        <TableCell className={styles.colStatus}>Status</TableCell>
+                        <TableCell align="right" className={styles.colActions} />
                     </TableRow>
                 </TableHead>
                 <TableBody>
                     {rows.map((row) => {
                         return (
                             <TableRow key={row.id} hover>
-                                <TableCell sx={{ whiteSpace: "nowrap" }}>{formatDate(row.postedAt)}</TableCell>
+                                <TableCell className={shared.nowrap}>{formatDate(row.postedAt)}</TableCell>
                                 <TableCell>
-                                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
+                                    <div className={shared.iconRow}>
                                         <EntityAvatar url={row.accountLogoUrl} name={row.accountName} />
-                                        <span style={ELLIPSIS}>{row.accountName}</span>
-                                    </Box>
+                                        <span className={shared.ellipsis}>{row.accountName}</span>
+                                    </div>
                                 </TableCell>
                                 <TableCell>
                                     <Tooltip title={`Statement: ${row.merchantName}`}>
-                                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
+                                        <div className={shared.iconRow}>
                                             {row.merchantLogoUrl ? (
                                                 <EntityAvatar url={row.merchantLogoUrl} name={row.merchant ?? row.merchantName} />
                                             ) : row.merchantIcon ? (
-                                                <span style={{ fontSize: 18 }}>{row.merchantIcon}</span>
+                                                <span className={styles.merchantIcon}>{row.merchantIcon}</span>
                                             ) : (
                                                 <EntityAvatar name={row.merchant ?? row.merchantName} />
                                             )}
-                                            <span style={ELLIPSIS}>{row.merchant ?? row.merchantName}</span>
-                                        </Box>
+                                            <span className={shared.ellipsis}>{row.merchant ?? row.merchantName}</span>
+                                        </div>
                                     </Tooltip>
                                 </TableCell>
                                 <TableCell>
                                     {row.categoryName ? (
-                                        <span style={{ ...ELLIPSIS, display: "block" }}>
+                                        <span className={`${shared.ellipsis} ${styles.categoryName}`}>
                                             {row.categoryIcon ? `${row.categoryIcon} ` : ""}
                                             {row.categoryName}
                                         </span>
                                     ) : (
-                                        <Typography component="span" color="text.secondary">
+                                        <Typography component="span" className={shared.secondary}>
                                             Uncategorized
                                         </Typography>
                                     )}
                                 </TableCell>
-                                <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
+                                <TableCell align="right" className={shared.nowrap}>
                                     <Typography
                                         component="span"
-                                        sx={{
-                                            color: row.amount < 0 ? "error.main" : "success.main",
-                                            fontVariantNumeric: "tabular-nums",
-                                        }}
+                                        className={row.amount < 0 ? shared.amountNeg : shared.amountPos}
                                     >
                                         {formatMoney(row.amount, row.currency)}
                                     </Typography>
                                 </TableCell>
-                                <TableCell sx={{ whiteSpace: "nowrap" }}>
+                                <TableCell className={shared.nowrap}>
                                     {row.needsReview ? (
                                         <Chip size="small" color="warning" label="Review" />
                                     ) : (
                                         <Chip size="small" color="success" label="Reviewed" />
                                     )}
                                     {row.excludedFromBudget && (
-                                        <Chip size="small" label="Excluded" sx={{ ml: 0.5 }} variant="outlined" />
+                                        <Chip size="small" label="Excluded" className={styles.excludedChip} variant="outlined" />
                                     )}
                                 </TableCell>
                                 <TableCell align="right">
@@ -121,7 +115,7 @@ export default function TransactionsTable({ rows, onOpen }: Props) {
                     {rows.length === 0 && (
                         <TableRow>
                             <TableCell colSpan={7}>
-                                <Typography color="text.secondary">No transactions match.</Typography>
+                                <Typography className={shared.secondary}>No transactions match.</Typography>
                             </TableCell>
                         </TableRow>
                     )}

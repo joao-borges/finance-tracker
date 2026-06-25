@@ -1,0 +1,43 @@
+.table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.colDate {
+    width: 110px;
+    white-space: nowrap;
+}
+
+.colAccount {
+    width: 180px;
+}
+
+.colCategory {
+    width: 160px;
+}
+
+.colAmount {
+    width: 120px;
+    white-space: nowrap;
+}
+
+.colStatus {
+    width: 150px;
+    white-space: nowrap;
+}
+
+.colActions {
+    width: 56px;
+}
+
+.categoryName {
+    display: block;
+}
+
+.merchantIcon {
+    font-size: 18px;
+}
+
+.excludedChip {
+    margin-left: 4px;
+}

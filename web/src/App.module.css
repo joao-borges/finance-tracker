@@ -1,0 +1,25 @@
+.root {
+    display: flex;
+}
+
+.appBar {
+    z-index: 1201;
+}
+
+.menuButton {
+    margin-right: 8px;
+}
+
+.logo {
+    margin-right: 8px;
+}
+
+.title {
+    flex-grow: 1;
+}
+
+.main {
+    flex-grow: 1;
+    padding: 24px;
+    min-width: 0;
+}

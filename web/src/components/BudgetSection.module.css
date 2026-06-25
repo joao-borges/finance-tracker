@@ -1,0 +1,45 @@
+.section {
+    margin-bottom: 24px;
+}
+
+.header {
+    display: flex;
+    align-items: baseline;
+    margin-bottom: 8px;
+    gap: 16px;
+}
+
+.title {
+    flex: 1;
+}
+
+.table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.colPlanned {
+    width: 160px;
+}
+
+.colActual {
+    width: 140px;
+}
+
+.colRemaining {
+    width: 140px;
+}
+
+.categoryLink {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+    text-align: left;
+    width: 100%;
+    cursor: pointer;
+}
+
+.plannedInput {
+    width: 130px;
+}

@@ -16,6 +16,7 @@ import {
     type Merchant,
 } from "../lib/api";
 import { errorText, formatMoney } from "../lib/format";
+import styles from "./BudgetPage.module.css";
 
 const SAVE_DEBOUNCE_MS = 600;
 
@@ -131,17 +132,17 @@ export default function BudgetPage() {
 
     return (
         <Box>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1, flexWrap: "wrap" }}>
+            <Box className={styles.toolbar}>
                 <IconButton onClick={() => shiftMonth(-1)} aria-label="previous month">
                     <ChevronLeftIcon />
                 </IconButton>
-                <Typography variant="h5" sx={{ minWidth: 170, textAlign: "center" }}>
+                <Typography variant="h5" className={styles.monthLabel}>
                     {dayjs(`${month}-01`).format("MMMM YYYY")}
                 </Typography>
                 <IconButton onClick={() => shiftMonth(1)} aria-label="next month">
                     <ChevronRightIcon />
                 </IconButton>
-                <Box sx={{ flex: 1 }} />
+                <Box className={styles.spacer} />
                 <Chip
                     color={summary.leftToBudget < 0 ? "error" : "primary"}
                     label={`Left to budget ${formatMoney(summary.leftToBudget)}`}
@@ -161,7 +162,7 @@ export default function BudgetPage() {
                 )}
             </Box>
 
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, height: 20 }}>
+            <Typography variant="body2" color="text.secondary" className={styles.status}>
                 {isPast ? "Past month — read only" : saving ? "Saving…" : "Changes save automatically"}
             </Typography>
 

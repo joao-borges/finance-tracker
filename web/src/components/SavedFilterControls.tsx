@@ -6,6 +6,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import { App as AntApp, Input, Modal } from "antd";
 import { savedFiltersApi, type SavedFilter, type TransactionFilters } from "../lib/api";
 import { errorText } from "../lib/format";
+import shared from "../styles/shared.module.css";
 
 interface Props {
     filters: TransactionFilters;
@@ -88,7 +89,7 @@ export default function SavedFilterControls({ filters, loadedId, loadedName, set
     };
 
     return (
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box className={shared.iconRow}>
             {loadedId !== undefined && (
                 <Chip color="primary" variant="outlined" label={loadedName} onDelete={() => setLoaded(undefined, "")} />
             )}

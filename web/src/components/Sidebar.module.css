@@ -1,0 +1,41 @@
+.drawer {
+    flex-shrink: 0;
+    white-space: nowrap;
+    width: 224px;
+}
+
+.drawer :global(.MuiDrawer-paper) {
+    width: 224px;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    transition: width 200ms;
+}
+
+.drawer[data-collapsed="true"] {
+    width: 64px;
+}
+
+.drawer[data-collapsed="true"] :global(.MuiDrawer-paper) {
+    width: 64px;
+}
+
+.navButton {
+    min-height: 48px;
+    padding-left: 20px;
+    padding-right: 20px;
+    justify-content: initial;
+}
+
+.drawer[data-collapsed="true"] .navButton {
+    justify-content: center;
+}
+
+.navIcon {
+    min-width: 0;
+    margin-right: 20px;
+    justify-content: center;
+}
+
+.drawer[data-collapsed="true"] .navIcon {
+    margin-right: 0;
+}

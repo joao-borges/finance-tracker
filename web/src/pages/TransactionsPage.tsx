@@ -17,6 +17,7 @@ import {
     type TransactionFilters,
 } from "../lib/api";
 import { errorText } from "../lib/format";
+import styles from "./TransactionsPage.module.css";
 
 const PAGE_SIZE = 25;
 
@@ -108,8 +109,8 @@ export default function TransactionsPage() {
 
     return (
         <Box>
-            <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 1 }}>
-                <Typography variant="h5" sx={{ flexGrow: 1 }}>
+            <Box className={styles.header}>
+                <Typography variant="h5" className={styles.title}>
                     Transactions
                 </Typography>
                 <SavedFilterControls
@@ -135,7 +136,7 @@ export default function TransactionsPage() {
 
             <TransactionsTable rows={rows} onOpen={setEditing} />
 
-            <Box ref={sentinelRef} sx={{ display: "flex", justifyContent: "center", py: 2, minHeight: 32 }}>
+            <Box ref={sentinelRef} className={styles.sentinel}>
                 {loading && <CircularProgress size={24} />}
                 {!loading && !hasNext && rows.length > 0 && (
                     <Typography variant="body2" color="text.secondary">

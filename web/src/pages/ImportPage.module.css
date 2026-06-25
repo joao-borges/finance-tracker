@@ -1,0 +1,19 @@
+.title {
+    margin-bottom: 16px;
+}
+
+.subheading {
+    margin-bottom: 8px;
+}
+
+.controls {
+    margin-bottom: 12px;
+}
+
+.formatSelect {
+    min-width: 240px;
+}
+
+.hint {
+    margin-bottom: 16px;
+}

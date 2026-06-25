@@ -5,6 +5,7 @@ import LinkIcon from "@mui/icons-material/Link";
 import { App as AntApp } from "antd";
 import { simplefinApi, type SimpleFinStatus } from "../lib/api";
 import { errorText } from "../lib/format";
+import styles from "./SimpleFinSection.module.css";
 
 /** SimpleFIN connect + manual sync. The access URL never leaves the server. */
 export default function SimpleFinSection({ onSynced }: { onSynced: () => void }) {
@@ -51,8 +52,8 @@ export default function SimpleFinSection({ onSynced }: { onSynced: () => void })
     };
 
     return (
-        <Paper sx={{ p: 2, mb: 3 }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+        <Paper className={styles.paper}>
+            <Box className={styles.header}>
                 <Typography variant="h6">SimpleFIN</Typography>
                 {status?.connected ? (
                     <Chip size="small" color="success" label="Connected" />
@@ -66,17 +67,17 @@ export default function SimpleFinSection({ onSynced }: { onSynced: () => void })
                 )}
             </Box>
 
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            <Typography variant="body2" color="text.secondary" className={styles.hint}>
                 Paste a SimpleFIN setup token to connect, or sync now. Syncs also run automatically twice a day.
             </Typography>
 
-            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center" }}>
+            <Box className={styles.controls}>
                 <TextField
                     size="small"
                     label="Setup token"
                     value={token}
                     onChange={(event) => setToken(event.target.value)}
-                    sx={{ flex: 1, minWidth: 280 }}
+                    className={styles.tokenField}
                 />
                 <Button variant="outlined" startIcon={<LinkIcon />} onClick={connect} disabled={busy || !token.trim()}>
                     Connect

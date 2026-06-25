@@ -12,6 +12,8 @@ import {
 } from "../lib/api";
 import EmojiField from "./EmojiField";
 import { errorText, formatMoney } from "../lib/format";
+import shared from "../styles/shared.module.css";
+import styles from "./TransactionEditModal.module.css";
 
 type MerchantMode = "existing" | "new" | "keep";
 
@@ -125,13 +127,12 @@ export default function TransactionEditModal({ transaction, categories, merchant
             onOk={save}
             onCancel={onClose}
             width={520}
-            zIndex={1400}
         >
-            <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
+            <Typography.Paragraph type="secondary" className={styles.firstParagraph}>
                 {new Date(transaction.postedAt).toLocaleDateString()} · {transaction.accountName} ·{" "}
                 {formatMoney(transaction.amount, transaction.currency)}
             </Typography.Paragraph>
-            <Typography.Paragraph style={{ marginBottom: 16 }}>
+            <Typography.Paragraph className={styles.statementParagraph}>
                 <strong>Statement:</strong> {transaction.merchantName}
             </Typography.Paragraph>
 
@@ -139,7 +140,7 @@ export default function TransactionEditModal({ transaction, categories, merchant
             <Select
                 showSearch
                 optionFilterProp="label"
-                style={{ width: "100%", marginTop: 4 }}
+                className={styles.categorySelect}
                 placeholder="Choose category"
                 value={categoryId}
                 onChange={(value: number) => setCategoryId(value)}
@@ -152,7 +153,7 @@ export default function TransactionEditModal({ transaction, categories, merchant
             <Divider />
             <Typography.Text strong>Merchant</Typography.Text>
             <Radio.Group
-                style={{ display: "block", margin: "8px 0" }}
+                className={styles.merchantRadioGroup}
                 value={merchantMode}
                 onChange={(event) => setMerchantMode(event.target.value as MerchantMode)}
             >
@@ -164,7 +165,7 @@ export default function TransactionEditModal({ transaction, categories, merchant
                 <Select
                     showSearch
                     optionFilterProp="label"
-                    style={{ width: "100%" }}
+                    className={shared.fullWidth}
                     placeholder="Choose merchant"
                     value={existingMerchantId}
                     onChange={(value: number) => setExistingMerchantId(value)}
@@ -175,7 +176,7 @@ export default function TransactionEditModal({ transaction, categories, merchant
                 />
             )}
             {merchantMode === "new" && (
-                <Space direction="vertical" style={{ width: "100%" }}>
+                <Space direction="vertical" className={shared.fullWidth}>
                     <Input placeholder="Merchant name" value={newName} onChange={(event) => setNewName(event.target.value)} />
                     <EmojiField value={newIcon} onChange={setNewIcon} />
                     <Input placeholder="Website (optional, for logo)" value={newWebsite} onChange={(event) => setNewWebsite(event.target.value)} />
@@ -202,7 +203,7 @@ export default function TransactionEditModal({ transaction, categories, merchant
                 Create a rule from this transaction
             </Checkbox>
             {makeRule && (
-                <Space direction="vertical" style={{ width: "100%", marginTop: 8 }}>
+                <Space direction="vertical" className={styles.ruleSpace}>
                     <div>
                         <Typography.Text type="secondary">Match when statement contains</Typography.Text>
                         <Input value={ruleMatch} onChange={(event) => setRuleMatch(event.target.value)} />

@@ -16,6 +16,7 @@ import { App as AntApp, Select, Space } from "antd";
 import { importApi, type CsvFormat, type ImportRun } from "../lib/api";
 import { errorText } from "../lib/format";
 import SimpleFinSection from "../components/SimpleFinSection";
+import styles from "./ImportPage.module.css";
 
 const FORMATS: { label: string; value: CsvFormat }[] = [
     { label: "Simple (account,name,value)", value: "SIMPLE" },
@@ -56,18 +57,18 @@ export default function ImportPage() {
 
     return (
         <Box>
-            <Typography variant="h5" sx={{ mb: 2 }}>
+            <Typography variant="h5" className={styles.title}>
                 Import
             </Typography>
 
             <SimpleFinSection onSynced={reload} />
 
-            <Typography variant="h6" sx={{ mb: 1 }}>
+            <Typography variant="h6" className={styles.subheading}>
                 CSV upload
             </Typography>
-            <Space wrap style={{ marginBottom: 12 }}>
+            <Space wrap className={styles.controls}>
                 <Select
-                    style={{ minWidth: 240 }}
+                    className={styles.formatSelect}
                     value={format}
                     onChange={(value: CsvFormat) => setFormat(value)}
                     options={FORMATS}
@@ -77,7 +78,7 @@ export default function ImportPage() {
                     <input hidden type="file" accept=".csv,text/csv" onChange={onFile} />
                 </Button>
             </Space>
-            <Typography color="text.secondary" sx={{ mb: 2 }}>
+            <Typography color="text.secondary" className={styles.hint}>
                 Pick the format that matches your bank's export, then upload its CSV.
             </Typography>
 

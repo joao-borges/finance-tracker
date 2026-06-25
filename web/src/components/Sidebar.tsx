@@ -19,6 +19,7 @@ import CategoryIcon from "@mui/icons-material/Category";
 import FolderIcon from "@mui/icons-material/Folder";
 import GavelIcon from "@mui/icons-material/Gavel";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
+import styles from "./Sidebar.module.css";
 
 export const SIDEBAR_WIDTH_EXPANDED = 224;
 export const SIDEBAR_WIDTH_COLLAPSED = 64;
@@ -50,7 +51,6 @@ interface Props {
 
 export default function Sidebar({ collapsed }: Props) {
     const location = useLocation();
-    const width = collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
 
     const renderNav = (items: NavItem[]) => {
         return items.map((item) => {
@@ -60,9 +60,9 @@ export default function Sidebar({ collapsed }: Props) {
                         component={Link}
                         to={item.to}
                         selected={location.pathname === item.to}
-                        sx={{ minHeight: 48, px: 2.5, justifyContent: collapsed ? "center" : "initial" }}
+                        className={styles.navButton}
                     >
-                        <ListItemIcon sx={{ minWidth: 0, mr: collapsed ? 0 : 2.5, justifyContent: "center" }}>
+                        <ListItemIcon className={styles.navIcon}>
                             {item.icon}
                         </ListItemIcon>
                         {!collapsed && <ListItemText primary={item.label} />}
@@ -75,18 +75,8 @@ export default function Sidebar({ collapsed }: Props) {
     return (
         <Drawer
             variant="permanent"
-            sx={{
-                width,
-                flexShrink: 0,
-                whiteSpace: "nowrap",
-                "& .MuiDrawer-paper": {
-                    width,
-                    boxSizing: "border-box",
-                    overflowX: "hidden",
-                    transition: (theme) =>
-                        theme.transitions.create("width", { duration: theme.transitions.duration.shorter }),
-                },
-            }}
+            className={styles.drawer}
+            data-collapsed={collapsed}
         >
             <Toolbar />
             <List>{renderNav(MAIN_NAV)}</List>

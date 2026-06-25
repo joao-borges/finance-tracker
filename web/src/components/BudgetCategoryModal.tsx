@@ -1,15 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import {
-    Box,
-    CircularProgress,
-    Dialog,
-    DialogContent,
-    DialogTitle,
-    IconButton,
-    Typography,
-} from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
-import { App as AntApp } from "antd";
+import { App as AntApp, Modal, Spin, Typography } from "antd";
 import dayjs from "dayjs";
 import TransactionsTable from "./TransactionsTable";
 import TransactionEditModal from "./TransactionEditModal";
@@ -21,6 +11,7 @@ import {
     type Transaction,
 } from "../lib/api";
 import { errorText, formatMoney } from "../lib/format";
+import styles from "./BudgetCategoryModal.module.css";
 
 interface Props {
     line: BudgetLine | null;
@@ -65,39 +56,33 @@ export default function BudgetCategoryModal({ line, month, categories, merchants
         onChanged();
     };
 
+    const title = line ? (
+        <span>
+            {line.icon ? `${line.icon} ` : ""}
+            {line.name}
+            <Typography.Text type="secondary" className={styles.meta}>
+                {dayjs(`${month}-01`).format("MMMM YYYY")} · planned {formatMoney(line.planned ?? 0)} · actual{" "}
+                {formatMoney(line.actual)}
+            </Typography.Text>
+        </span>
+    ) : null;
+
     return (
-        <Dialog open={line !== null} onClose={onClose} maxWidth="lg" fullWidth disableEnforceFocus>
-            <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box sx={{ flex: 1 }}>
-                    {line?.icon ? `${line.icon} ` : ""}
-                    {line?.name}
-                    {line && (
-                        <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                            {dayjs(`${month}-01`).format("MMMM YYYY")} · planned {formatMoney(line.planned ?? 0)} · actual{" "}
-                            {formatMoney(line.actual)}
-                        </Typography>
-                    )}
-                </Box>
-                <IconButton onClick={onClose} aria-label="close">
-                    <CloseIcon />
-                </IconButton>
-            </DialogTitle>
-            <DialogContent dividers>
-                {loading ? (
-                    <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-                        <CircularProgress size={24} />
-                    </Box>
-                ) : (
-                    <TransactionsTable rows={rows} onOpen={setEditing} />
-                )}
-                <TransactionEditModal
-                    transaction={editing}
-                    categories={categories}
-                    merchants={merchants}
-                    onClose={() => setEditing(null)}
-                    onSaved={onSaved}
-                />
-            </DialogContent>
-        </Dialog>
+        <Modal open={line !== null} title={title} footer={null} onCancel={onClose} width={960} destroyOnClose>
+            {loading ? (
+                <div className={styles.loading}>
+                    <Spin />
+                </div>
+            ) : (
+                <TransactionsTable rows={rows} onOpen={setEditing} />
+            )}
+            <TransactionEditModal
+                transaction={editing}
+                categories={categories}
+                merchants={merchants}
+                onClose={() => setEditing(null)}
+                onSaved={onSaved}
+            />
+        </Modal>
     );
 }

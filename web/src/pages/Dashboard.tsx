@@ -4,6 +4,7 @@ import { Alert } from "antd";
 import AccountGroupCard from "../components/AccountGroupCard";
 import { dashboardApi, type DashboardSummary } from "../lib/api";
 import { errorText, formatMoney } from "../lib/format";
+import styles from "./Dashboard.module.css";
 
 export default function Dashboard() {
     const [summary, setSummary] = useState<DashboardSummary | null>(null);
@@ -22,10 +23,10 @@ export default function Dashboard() {
 
     return (
         <Box>
-            <Box sx={{ display: "flex", alignItems: "baseline", gap: 2, mb: 3, flexWrap: "wrap" }}>
+            <Box className={styles.header}>
                 <Typography variant="h4">Overview</Typography>
                 <Typography color="text.secondary">{summary.month}</Typography>
-                <Box sx={{ flex: 1 }} />
+                <Box className={styles.spacer} />
                 <Chip color="primary" label={`Net worth ${formatMoney(summary.netWorth)}`} />
                 <Chip
                     color={summary.pendingReviewCount > 0 ? "warning" : "default"}
@@ -34,7 +35,7 @@ export default function Dashboard() {
             </Box>
 
             {summary.budgetAlerts.length > 0 && (
-                <Box sx={{ mb: 3, display: "flex", flexDirection: "column", gap: 1 }}>
+                <Box className={styles.alerts}>
                     {summary.budgetAlerts.map((alert) => {
                         return (
                             <Alert

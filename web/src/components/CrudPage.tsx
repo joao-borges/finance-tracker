@@ -18,6 +18,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import { App as AntApp, Form, Input, InputNumber, Modal, Select, Switch } from "antd";
 import EmojiField from "./EmojiField";
 import type { Crud } from "../lib/api";
+import styles from "./CrudPage.module.css";
 
 export interface SelectOption {
     label: string;
@@ -123,7 +124,7 @@ export default function CrudPage<T extends { id: number }>({ title, fields, api,
 
     const control = (field: FieldDef<T>) => {
         if (field.type === "number") {
-            return <InputNumber style={{ width: "100%" }} />;
+            return <InputNumber className={styles.numberInput} />;
         }
         if (field.type === "boolean") {
             return <Switch />;
@@ -139,8 +140,8 @@ export default function CrudPage<T extends { id: number }>({ title, fields, api,
 
     return (
         <Box>
-            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                <Typography variant="h5" sx={{ flex: 1 }}>
+            <Box className={styles.header}>
+                <Typography variant="h5" className={styles.title}>
                     {title}
                 </Typography>
                 <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>

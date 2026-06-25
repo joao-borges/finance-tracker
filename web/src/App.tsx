@@ -14,6 +14,7 @@ import CategoriesPage from "./pages/CategoriesPage";
 import CategoryGroupsPage from "./pages/CategoryGroupsPage";
 import RulesPage from "./pages/RulesPage";
 import ImportPage from "./pages/ImportPage";
+import styles from "./App.module.css";
 
 const COLLAPSE_KEY = "ft.sidebar.collapsed";
 
@@ -29,14 +30,14 @@ export default function App() {
     };
 
     return (
-        <Box sx={{ display: "flex" }}>
-            <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+        <Box className={styles.root}>
+            <AppBar position="fixed" className={styles.appBar}>
                 <Toolbar>
-                    <IconButton color="inherit" edge="start" onClick={toggle} sx={{ mr: 1 }} aria-label="toggle menu">
+                    <IconButton color="inherit" edge="start" onClick={toggle} className={styles.menuButton} aria-label="toggle menu">
                         <MenuIcon />
                     </IconButton>
-                    <SavingsIcon sx={{ mr: 1 }} />
-                    <Typography variant="h6" noWrap sx={{ flexGrow: 1 }}>
+                    <SavingsIcon className={styles.logo} />
+                    <Typography variant="h6" noWrap className={styles.title}>
                         finance
                     </Typography>
                     <ThemeControls />
@@ -45,7 +46,7 @@ export default function App() {
 
             <Sidebar collapsed={collapsed} />
 
-            <Box component="main" sx={{ flexGrow: 1, p: 3, minWidth: 0 }}>
+            <Box component="main" className={styles.main}>
                 <Toolbar />
                 <Routes>
                     <Route path="/" element={<Dashboard />} />
