@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import CrudPage, { type FieldDef } from "../components/CrudPage";
+import CategoryRowToggles from "../components/CategoryRowToggles";
 import { categoriesApi, categoryGroupsApi, type Category, type CategoryGroup } from "../lib/api";
 
 export default function CategoriesPage() {
@@ -21,9 +22,16 @@ export default function CategoriesPage() {
         { name: "alertThreshold", label: "Alert threshold", type: "number" },
         { name: "sortOrder", label: "Sort order", type: "number", initial: 0 },
         { name: "icon", label: "Icon", type: "emoji" },
-        { name: "hidden", label: "Hidden from budget", type: "boolean", initial: false },
-        { name: "archived", label: "Archived", type: "boolean", initial: false },
+        { name: "hidden", label: "Hidden from budget", type: "boolean", initial: false, formOnly: true },
+        { name: "archived", label: "Archived", type: "boolean", initial: false, formOnly: true },
     ];
 
-    return <CrudPage<Category> title="Categories" fields={fields} api={categoriesApi} />;
+    return (
+        <CrudPage<Category>
+            title="Categories"
+            fields={fields}
+            api={categoriesApi}
+            rowActions={(row, reload) => <CategoryRowToggles category={row} reload={reload} />}
+        />
+    );
 }
