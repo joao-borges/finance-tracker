@@ -37,6 +37,8 @@ services:
       DB_USER: ${POSTGRES_USER:-finance}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-finance}
       DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
+      # Hard floor on imported transactions (ISO date, UTC). Blank = no floor.
+      IMPORT_MIN_POSTED_DATE: ${IMPORT_MIN_POSTED_DATE:-}
     ports:
       - "8080:8080"
 

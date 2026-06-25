@@ -6,6 +6,7 @@ import ca.joaoborges.finance.account.AccountType;
 import ca.joaoborges.finance.budget.BudgetAlertService;
 import ca.joaoborges.finance.category.Category;
 import ca.joaoborges.finance.common.ContentHashing;
+import ca.joaoborges.finance.common.ImportCutoff;
 import ca.joaoborges.finance.common.SourceType;
 import ca.joaoborges.finance.csv.ParsedTransaction;
 import ca.joaoborges.finance.rule.Rule;
@@ -15,6 +16,7 @@ import ca.joaoborges.finance.transaction.Transaction;
 import ca.joaoborges.finance.transaction.TransactionRepository;
 import ca.joaoborges.finance.webhook.DiscordNotifier;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +38,7 @@ import java.util.Map;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class IngestService {
 
     private static final String DEFAULT_CURRENCY = "CAD";
@@ -47,6 +50,7 @@ public class IngestService {
     private final RuleEngine ruleEngine;
     private final DiscordNotifier discordNotifier;
     private final BudgetAlertService budgetAlertService;
+    private final ImportCutoff importCutoff;
 
     /** Per category+month spend added by this import, for budget/threshold crossing checks. */
     private record AlertKey(Long categoryId, YearMonth month) {
@@ -69,12 +73,17 @@ public class IngestService {
         int newCount = 0;
         int reviewed = 0;
         int needsReview = 0;
+        int skippedBeforeCutoff = 0;
 
         for (final ParsedTransaction row : rows) {
+            final Instant postedAt = row.postedAt() != null ? row.postedAt() : fallbackPostedAt;
+            if (importCutoff.excludes(postedAt)) {
+                skippedBeforeCutoff++;
+                continue;
+            }
             final Account account = resolveAccount(row.accountName());
             byAccount.merge(account.getName(), 1, Integer::sum);
 
-            final Instant postedAt = row.postedAt() != null ? row.postedAt() : fallbackPostedAt;
             final String hash = ContentHashing.of(account.getName(), row.amount(), row.merchantName());
             final Transaction transaction = Transaction.builder()
                     .account(account)
@@ -104,6 +113,10 @@ public class IngestService {
                 spendByCategoryMonth.merge(key, transaction.getAmount().negate(), BigDecimal::add);
                 categoriesById.putIfAbsent(category.getId(), category);
             }
+        }
+
+        if (skippedBeforeCutoff > 0) {
+            log.info("Import '{}': skipped {} row(s) posted before the import cutoff", fileName, skippedBeforeCutoff);
         }
 
         run.setNewCount(newCount);

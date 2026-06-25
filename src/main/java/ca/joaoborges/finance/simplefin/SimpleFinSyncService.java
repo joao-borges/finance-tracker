@@ -6,6 +6,7 @@ import ca.joaoborges.finance.account.AccountType;
 import ca.joaoborges.finance.budget.BudgetAlertService;
 import ca.joaoborges.finance.category.Category;
 import ca.joaoborges.finance.common.ContentHashing;
+import ca.joaoborges.finance.common.ImportCutoff;
 import ca.joaoborges.finance.common.SourceType;
 import ca.joaoborges.finance.ingest.ImportRun;
 import ca.joaoborges.finance.ingest.ImportRunRepository;
@@ -56,6 +57,7 @@ public class SimpleFinSyncService {
     private final RuleEngine ruleEngine;
     private final DiscordNotifier discordNotifier;
     private final BudgetAlertService budgetAlertService;
+    private final ImportCutoff importCutoff;
 
     private record AlertKey(Long categoryId, YearMonth month) {
     }
@@ -85,7 +87,10 @@ public class SimpleFinSyncService {
     public ImportRun sync() {
         final SimpleFinConnection connection = connectionRepository.findFirstByOrderByIdAsc()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "SimpleFIN is not connected"));
-        final Instant startDate = simpleFinClient.defaultStartDate(Instant.now());
+        Instant startDate = simpleFinClient.defaultStartDate(Instant.now());
+        if (importCutoff.minPostedAt().isPresent() && importCutoff.minPostedAt().get().isAfter(startDate)) {
+            startDate = importCutoff.minPostedAt().get();
+        }
         final JsonNode root = objectMapper.readTree(
                 simpleFinClient.fetchAccounts(connection.getAccessUrl(), startDate));
 
@@ -126,13 +131,16 @@ public class SimpleFinSyncService {
                 if (posted <= 0 || !StringUtils.hasText(txId)) {
                     continue;
                 }
+                final Instant postedAt = Instant.ofEpochSecond(posted);
+                if (importCutoff.excludes(postedAt)) {
+                    continue;
+                }
                 if (transactionRepository.existsBySimplefinId(txId)) {
                     dedupCount++;
                     continue;
                 }
 
                 final BigDecimal amount = new BigDecimal(txNode.path("amount").asString("0"));
-                final Instant postedAt = Instant.ofEpochSecond(posted);
                 final String merchant = merchantOf(txNode, txId);
                 final String hash = ContentHashing.of(canonical.getName(), amount, merchant);
                 final Transaction transaction = Transaction.builder()

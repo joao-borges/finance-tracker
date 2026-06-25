@@ -48,6 +48,10 @@ finance:
   discord:
     # Discord channel webhook URL; notifications are skipped when blank.
     webhook-url: ${DISCORD_WEBHOOK_URL:}
+  import:
+    # Hard floor (ISO date, UTC): transactions posted before this are dropped by
+    # every ingest path (CSV + SimpleFIN). Blank = no floor.
+    min-posted-date: ${IMPORT_MIN_POSTED_DATE:}
 
 server:
   port: 8080

@@ -46,6 +46,10 @@ IDE runs stay fast and node-free — only `mvn package` builds the UI (skip it w
 API from a single process on :8080; in dev the Vite server on :3000 proxies
 `/api` to the backend.
 
+**Import floor.** `finance.import.min-posted-date` (`IMPORT_MIN_POSTED_DATE` env, ISO date, UTC) is a hard floor enforced by `common/ImportCutoff` on every ingest path (CSV + SimpleFIN) — transactions posted earlier are dropped before persistence. Blank = no floor.
+
+**Bootstrap.** `scripts/initial-setup.sh` is an idempotent, re-runnable bootstrap that drives a *running* instance over its REST API: optional SimpleFIN connect+sync, PC Financial CSV import, account shaping (rename/type/logo/merge/hide), and the initial monthly budget. Needs `curl` + `jq`.
+
 ## Architecture
 
 The Spring Boot app is the project root; `web/` holds the React UI. Java package root: `src/main/java/ca/joaoborges/finance/`. Packages mirror the domain (see `PLAN.md` repo layout):
