@@ -27,7 +27,7 @@ public class CategoryController {
     @GetMapping
     @Transactional(readOnly = true)
     public List<CategoryDto> list() {
-        return categoryRepository.findAllByOrderBySortOrderAscNameAsc().stream()
+        return categoryRepository.findAllByOrderByNameAsc().stream()
                 .map(categoryMapper::toDto)
                 .toList();
     }

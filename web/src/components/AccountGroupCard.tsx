@@ -27,7 +27,7 @@ export default function AccountGroupCard({ group }: Props) {
                                 secondaryAction={<Typography variant="body2">{formatMoney(account.balance)}</Typography>}
                             >
                                 <ListItemAvatar className={styles.avatar}>
-                                    <EntityAvatar url={account.logoUrl} name={account.name} />
+                                    <EntityAvatar url={account.logoUrl} name={account.name} size="lg" />
                                 </ListItemAvatar>
                                 <ListItemText primary={account.name} />
                             </ListItem>

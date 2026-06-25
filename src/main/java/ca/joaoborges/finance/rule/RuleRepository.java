@@ -13,6 +13,8 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
 
     List<Rule> findAllByOrderByPriorityAscIdAsc();
 
+    List<Rule> findAllByOrderByNameAsc();
+
     boolean existsByName(String name);
 
     java.util.Optional<Rule> findFirstByName(String name);

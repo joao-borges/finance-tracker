@@ -11,6 +11,8 @@ public interface CategoryGroupRepository extends JpaRepository<CategoryGroup, Lo
 
     List<CategoryGroup> findAllByOrderBySortOrderAscNameAsc();
 
+    List<CategoryGroup> findAllByOrderByNameAsc();
+
     Optional<CategoryGroup> findByName(String name);
 
 }

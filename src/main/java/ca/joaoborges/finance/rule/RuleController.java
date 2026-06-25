@@ -40,7 +40,7 @@ public class RuleController {
     @GetMapping
     @Transactional(readOnly = true)
     public List<RuleDto> list() {
-        return ruleRepository.findAllByOrderByPriorityAscIdAsc().stream().map(ruleMapper::toDto).toList();
+        return ruleRepository.findAllByOrderByNameAsc().stream().map(ruleMapper::toDto).toList();
     }
 
     @PostMapping

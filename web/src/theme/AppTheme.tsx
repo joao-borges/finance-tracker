@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { createTheme, CssBaseline, ThemeProvider as MuiThemeProvider, useMediaQuery } from "@mui/material";
+import { createTheme, CssBaseline, StyledEngineProvider, ThemeProvider as MuiThemeProvider, useMediaQuery } from "@mui/material";
 import { App as AntApp, ConfigProvider, theme as antdTheme } from "antd";
 
 export type Mode = "light" | "dark" | "system";
@@ -89,12 +89,15 @@ export default function AppTheme({ children }: { children: ReactNode }) {
 
     return (
         <ThemeContext.Provider value={value}>
-            <MuiThemeProvider theme={muiTheme}>
-                <CssBaseline />
-                <ConfigProvider theme={antdConfig}>
-                    <AntApp>{children}</AntApp>
-                </ConfigProvider>
-            </MuiThemeProvider>
+            {/* injectFirst puts MUI's runtime styles first so our CSS Modules win. */}
+            <StyledEngineProvider injectFirst>
+                <MuiThemeProvider theme={muiTheme}>
+                    <CssBaseline />
+                    <ConfigProvider theme={antdConfig}>
+                        <AntApp>{children}</AntApp>
+                    </ConfigProvider>
+                </MuiThemeProvider>
+            </StyledEngineProvider>
         </ThemeContext.Provider>
     );
 }

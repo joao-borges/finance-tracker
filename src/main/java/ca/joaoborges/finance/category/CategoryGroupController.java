@@ -25,7 +25,7 @@ public class CategoryGroupController {
 
     @GetMapping
     public List<CategoryGroupDto> list() {
-        return categoryGroupRepository.findAllByOrderBySortOrderAscNameAsc().stream()
+        return categoryGroupRepository.findAllByOrderByNameAsc().stream()
                 .map(categoryGroupMapper::toDto)
                 .toList();
     }
