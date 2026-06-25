@@ -22,17 +22,22 @@ import styles from "./TransactionsTable.module.css";
 interface Props {
     rows: Transaction[];
     onOpen: (row: Transaction) => void;
+    // In tight layouts (the budget drill-down modal), show only the account logo
+    // so the merchant column has room.
+    accountIconOnly?: boolean;
 }
 
-export default function TransactionsTable({ rows, onOpen }: Props) {
+export default function TransactionsTable({ rows, onOpen, accountIconOnly }: Props) {
     return (
         <TableContainer component={Paper}>
             <Table size="small" className={styles.table}>
                 <TableHead>
                     <TableRow>
                         <TableCell className={styles.colDate}>Date</TableCell>
-                        <TableCell className={styles.colAccount}>Account</TableCell>
-                        <TableCell>Merchant</TableCell>
+                        <TableCell className={accountIconOnly ? styles.colAccountIcon : styles.colAccount}>
+                            {accountIconOnly ? "" : "Account"}
+                        </TableCell>
+                        <TableCell className={shared.nowrap}>Merchant</TableCell>
                         <TableCell className={styles.colCategory}>Category</TableCell>
                         <TableCell align="right" className={styles.colAmount}>Amount</TableCell>
                         <TableCell className={styles.colStatus}>Status</TableCell>
@@ -45,10 +50,18 @@ export default function TransactionsTable({ rows, onOpen }: Props) {
                             <TableRow key={row.id} hover>
                                 <TableCell className={shared.nowrap}>{formatDate(row.postedAt)}</TableCell>
                                 <TableCell>
-                                    <div className={shared.iconRow}>
-                                        <EntityAvatar url={row.accountLogoUrl} name={row.accountName} />
-                                        <span className={shared.ellipsis}>{row.accountName}</span>
-                                    </div>
+                                    {accountIconOnly ? (
+                                        <Tooltip title={row.accountName}>
+                                            <span>
+                                                <EntityAvatar url={row.accountLogoUrl} name={row.accountName} />
+                                            </span>
+                                        </Tooltip>
+                                    ) : (
+                                        <div className={shared.iconRow}>
+                                            <EntityAvatar url={row.accountLogoUrl} name={row.accountName} />
+                                            <span className={shared.ellipsis}>{row.accountName}</span>
+                                        </div>
+                                    )}
                                 </TableCell>
                                 <TableCell>
                                     <Tooltip title={`Statement: ${row.merchantName}`}>

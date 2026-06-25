@@ -74,7 +74,7 @@ export default function BudgetCategoryModal({ line, month, categories, merchants
                     <Spin />
                 </div>
             ) : (
-                <TransactionsTable rows={rows} onOpen={setEditing} />
+                <TransactionsTable rows={rows} onOpen={setEditing} accountIconOnly />
             )}
             <TransactionEditModal
                 transaction={editing}
