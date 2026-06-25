@@ -20,7 +20,7 @@ interface Props {
     categories: Category[];
     merchants: Merchant[];
     onClose: () => void;
-    onSaved: () => void;
+    onSaved: (updated: Transaction) => void;
 }
 
 export default function TransactionEditModal({ transaction, categories, merchants, onClose, onSaved }: Props) {
@@ -86,7 +86,7 @@ export default function TransactionEditModal({ transaction, categories, merchant
                 needsReview: !reviewed,
                 excludedFromBudget: excluded,
             };
-            await transactionsApi.update(transaction.id, body);
+            const updated = await transactionsApi.update(transaction.id, body);
 
             if (makeRule && ruleMatch.trim() !== "" && categoryId !== undefined) {
                 const rule = await rulesApi.create({
@@ -107,7 +107,7 @@ export default function TransactionEditModal({ transaction, categories, merchant
             } else {
                 message.success("Saved");
             }
-            onSaved();
+            onSaved(updated);
             onClose();
         } catch (error: unknown) {
             message.error(errorText(error));
@@ -125,6 +125,7 @@ export default function TransactionEditModal({ transaction, categories, merchant
             onOk={save}
             onCancel={onClose}
             width={520}
+            zIndex={1400}
         >
             <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
                 {new Date(transaction.postedAt).toLocaleDateString()} · {transaction.accountName} ·{" "}

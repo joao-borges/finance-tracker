@@ -66,7 +66,7 @@ export default function BudgetCategoryModal({ line, month, categories, merchants
     };
 
     return (
-        <Dialog open={line !== null} onClose={onClose} maxWidth="lg" fullWidth>
+        <Dialog open={line !== null} onClose={onClose} maxWidth="lg" fullWidth disableEnforceFocus>
             <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <Box sx={{ flex: 1 }}>
                     {line?.icon ? `${line.icon} ` : ""}
