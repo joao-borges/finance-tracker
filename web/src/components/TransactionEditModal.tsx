@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { App as AntApp, Checkbox, Divider, Input, Modal, Radio, Select, Space, Switch, Typography } from "antd";
+import { App as AntApp, Button, Checkbox, Divider, Input, Modal, Radio, Select, Space, Switch, Typography } from "antd";
 import {
     merchantsApi,
     rulesApi,
@@ -11,6 +11,7 @@ import {
     type TransactionUpdate,
 } from "../lib/api";
 import EmojiField from "./EmojiField";
+import SplitModal from "./SplitModal";
 import { errorText, formatMoney } from "../lib/format";
 import shared from "../styles/shared.module.css";
 import styles from "./TransactionEditModal.module.css";
@@ -23,10 +24,12 @@ interface Props {
     merchants: Merchant[];
     onClose: () => void;
     onSaved: (updated: Transaction) => void;
+    onStructuralChange?: () => void;
 }
 
-export default function TransactionEditModal({ transaction, categories, merchants, onClose, onSaved }: Props) {
+export default function TransactionEditModal({ transaction, categories, merchants, onClose, onSaved, onStructuralChange }: Props) {
     const { message } = AntApp.useApp();
+    const [splitOpen, setSplitOpen] = useState(false);
     const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
     const [merchantMode, setMerchantMode] = useState<MerchantMode>("existing");
     const [existingMerchantId, setExistingMerchantId] = useState<number | undefined>(undefined);
@@ -118,7 +121,22 @@ export default function TransactionEditModal({ transaction, categories, merchant
         }
     };
 
+    const unsplit = async () => {
+        if (transaction.splitParentId == null) {
+            return;
+        }
+        try {
+            await transactionsApi.unsplit(transaction.splitParentId);
+            message.success("Split undone");
+            onStructuralChange?.();
+            onClose();
+        } catch (error: unknown) {
+            message.error(errorText(error));
+        }
+    };
+
     return (
+        <>
         <Modal
             open
             title={transaction.needsReview ? "Review transaction" : "Edit transaction"}
@@ -219,6 +237,29 @@ export default function TransactionEditModal({ transaction, categories, merchant
                     </Typography.Text>
                 </Space>
             )}
+
+            <Divider />
+            {transaction.splitParentId == null ? (
+                <Button block onClick={() => setSplitOpen(true)}>
+                    Split transaction…
+                </Button>
+            ) : (
+                <Button block danger onClick={unsplit}>
+                    Un-split (restore original)
+                </Button>
+            )}
         </Modal>
+
+        <SplitModal
+            transaction={transaction}
+            categories={categories}
+            open={splitOpen}
+            onClose={() => setSplitOpen(false)}
+            onDone={() => {
+                onStructuralChange?.();
+                onClose();
+            }}
+        />
+        </>
     );
 }

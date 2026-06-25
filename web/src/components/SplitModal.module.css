@@ -1,0 +1,28 @@
+.row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.amount {
+    width: 140px;
+}
+
+.category {
+    flex: 1;
+}
+
+.addBtn {
+    width: 100%;
+    margin: 8px 0;
+}
+
+.remaining {
+    margin-top: 8px;
+    color: var(--text-secondary);
+}
+
+.remainingOff {
+    color: var(--warning);
+}

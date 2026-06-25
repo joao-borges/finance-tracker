@@ -33,6 +33,7 @@ export interface CategoryGroup {
     sortOrder?: number;
     icon?: string | null;
     color?: string | null;
+    collapsed?: boolean;
 }
 
 export interface Category {
@@ -170,6 +171,7 @@ export interface Transaction {
     source: string;
     needsReview: boolean;
     excludedFromBudget: boolean;
+    splitParentId?: number | null;
 }
 
 export interface TransactionFilters {
@@ -221,6 +223,11 @@ export interface Page<T> {
     total: number;
 }
 
+export interface SplitLine {
+    amount: number;
+    categoryId: number;
+}
+
 export const transactionsApi = {
     list: (filters: TransactionFilters = {}, page = 0, size = 25) => {
         const qs = queryString(filters);
@@ -228,6 +235,10 @@ export const transactionsApi = {
         return http<Page<Transaction>>("GET", `/api/transactions${qs}${sep}page=${page}&size=${size}`);
     },
     update: (id: number, body: TransactionUpdate) => http<Transaction>("PATCH", `/api/transactions/${id}`, body),
+    duplicates: () => http<Transaction[]>("GET", "/api/transactions/duplicates"),
+    restore: (id: number) => http<Transaction>("POST", `/api/transactions/${id}/restore`),
+    split: (id: number, splits: SplitLine[]) => http<Transaction>("POST", `/api/transactions/${id}/split`, { splits }),
+    unsplit: (id: number) => http<Transaction>("POST", `/api/transactions/${id}/unsplit`),
 };
 
 export interface SavedFilter {
@@ -264,6 +275,7 @@ export interface BudgetLine {
 export interface BudgetGroup {
     groupId?: number | null;
     groupName: string;
+    collapsed: boolean;
     planned: number;
     actual: number;
     categories: BudgetLine[];

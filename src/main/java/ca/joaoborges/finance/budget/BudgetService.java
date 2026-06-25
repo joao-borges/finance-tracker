@@ -32,7 +32,7 @@ public class BudgetService {
     private final CategoryRepository categoryRepository;
     private final TransactionRepository transactionRepository;
 
-    private record GroupAccumulator(String name, List<BudgetSummary.BudgetLine> lines) {
+    private record GroupAccumulator(String name, boolean collapsed, List<BudgetSummary.BudgetLine> lines) {
     }
 
     @Transactional(readOnly = true)
@@ -67,7 +67,8 @@ public class BudgetService {
                 final BigDecimal actual = sum.negate();
                 final Long groupId = category.getGroup() == null ? null : category.getGroup().getId();
                 final String groupName = category.getGroup() == null ? "Ungrouped" : category.getGroup().getName();
-                expenseGroups.computeIfAbsent(groupId, key -> new GroupAccumulator(groupName, new ArrayList<>()))
+                final boolean collapsed = category.getGroup() != null && category.getGroup().isCollapsed();
+                expenseGroups.computeIfAbsent(groupId, key -> new GroupAccumulator(groupName, collapsed, new ArrayList<>()))
                         .lines().add(line(category, plan, actual));
                 plannedExpense = plannedExpense.add(plan);
                 actualExpense = actualExpense.add(actual);
@@ -78,6 +79,7 @@ public class BudgetService {
         expenseGroups.forEach((groupId, acc) -> groups.add(BudgetSummary.BudgetGroup.builder()
                 .groupId(groupId)
                 .groupName(acc.name())
+                .collapsed(acc.collapsed())
                 .planned(acc.lines().stream().map(BudgetSummary.BudgetLine::planned).reduce(BigDecimal.ZERO, BigDecimal::add))
                 .actual(acc.lines().stream().map(BudgetSummary.BudgetLine::actual).reduce(BigDecimal.ZERO, BigDecimal::add))
                 .categories(acc.lines())

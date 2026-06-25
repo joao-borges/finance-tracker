@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import {
     Box,
+    IconButton,
     Paper,
     Table,
     TableBody,
@@ -10,6 +11,8 @@ import {
     TableRow,
     Typography,
 } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { InputNumber } from "antd";
 import { Link } from "@mui/material";
 import { formatMoney } from "../lib/format";
@@ -24,18 +27,38 @@ interface Props {
     planned: Record<number, number | null>;
     onPlanned: (categoryId: number, value: number | null) => void;
     onOpenCategory?: (line: BudgetLine) => void;
+    collapsible?: boolean;
+    collapsed?: boolean;
+    onToggleCollapse?: () => void;
     readOnly?: boolean;
 }
 
-export default function BudgetSection({ title, subtitle, lines, planned, onPlanned, onOpenCategory, readOnly }: Props) {
+export default function BudgetSection({
+    title,
+    subtitle,
+    lines,
+    planned,
+    onPlanned,
+    onOpenCategory,
+    collapsible,
+    collapsed,
+    onToggleCollapse,
+    readOnly,
+}: Props) {
     return (
         <Box className={styles.section}>
             <Box className={styles.header}>
+                {collapsible && (
+                    <IconButton size="small" onClick={onToggleCollapse} aria-label={collapsed ? "expand" : "collapse"}>
+                        {collapsed ? <ChevronRightIcon /> : <ExpandMoreIcon />}
+                    </IconButton>
+                )}
                 <Typography variant="h6" className={styles.title}>
                     {title}
                 </Typography>
                 {subtitle}
             </Box>
+            {!collapsed && (
             <TableContainer component={Paper}>
                 <Table size="small" className={styles.table}>
                     <TableHead>
@@ -91,6 +114,7 @@ export default function BudgetSection({ title, subtitle, lines, planned, onPlann
                     </TableBody>
                 </Table>
             </TableContainer>
+            )}
         </Box>
     );
 }

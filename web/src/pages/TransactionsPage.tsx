@@ -28,6 +28,7 @@ export default function TransactionsPage() {
     const [page, setPage] = useState(0);
     const [hasNext, setHasNext] = useState(true);
     const [loading, setLoading] = useState(false);
+    const [reloadKey, setReloadKey] = useState(0);
     const [accounts, setAccounts] = useState<Account[]>([]);
     const [merchants, setMerchants] = useState<Merchant[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
@@ -79,7 +80,7 @@ export default function TransactionsPage() {
         return () => {
             cancelled = true;
         };
-    }, [page, filtersKey, message]);
+    }, [page, filtersKey, reloadKey, message]);
 
     // Infinite scroll: load the next page when the sentinel scrolls into view.
     useEffect(() => {
@@ -104,6 +105,13 @@ export default function TransactionsPage() {
     // Update just the edited row so the infinite-scroll list keeps its position.
     const onEdited = (updated: Transaction) => {
         setRows((current) => current.map((row) => (row.id === updated.id ? updated : row)));
+        loadMerchants();
+    };
+
+    // Splits/unsplits change which rows exist, so reload the list from the top.
+    const refresh = () => {
+        setPage(0);
+        setReloadKey((key) => key + 1);
         loadMerchants();
     };
 
@@ -151,6 +159,7 @@ export default function TransactionsPage() {
                 merchants={merchants}
                 onClose={() => setEditing(null)}
                 onSaved={onEdited}
+                onStructuralChange={refresh}
             />
         </Box>
     );

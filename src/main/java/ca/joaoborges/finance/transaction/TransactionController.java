@@ -6,6 +6,8 @@ import ca.joaoborges.finance.category.CategoryRepository;
 import ca.joaoborges.finance.common.PageResponse;
 import ca.joaoborges.finance.merchant.Merchant;
 import ca.joaoborges.finance.merchant.MerchantService;
+import ca.joaoborges.finance.rule.RuleEngine;
+import ca.joaoborges.finance.rule.RuleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -16,14 +18,17 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.time.YearMonth;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -43,6 +48,15 @@ public class TransactionController {
     private final CategoryRepository categoryRepository;
     private final BudgetAlertService budgetAlertService;
     private final MerchantService merchantService;
+    private final RuleEngine ruleEngine;
+    private final RuleRepository ruleRepository;
+
+    /** One leg of a split: an amount and the category it belongs to. */
+    public record SplitLine(BigDecimal amount, Long categoryId) {
+    }
+
+    public record SplitRequest(List<SplitLine> splits) {
+    }
 
     @GetMapping
     @Transactional(readOnly = true)
@@ -85,6 +99,86 @@ public class TransactionController {
                     YearMonth.from(transaction.getPostedAt().atZone(ZoneOffset.UTC)), transaction.getAmount().negate());
         }
         return dto;
+    }
+
+    /** Quarantined duplicates, for the restore UI. */
+    @GetMapping("/duplicates")
+    @Transactional(readOnly = true)
+    public List<TransactionDto> duplicates() {
+        return transactionRepository.findByDedupTrueOrderByPostedAtDesc().stream().map(transactionMapper::toDto).toList();
+    }
+
+    /** Restore a quarantined duplicate: clear the dedup flag and run it through the rules. */
+    @PostMapping("/{id}/restore")
+    @Transactional
+    public TransactionDto restore(@PathVariable final Long id) {
+        final Transaction transaction = transactionRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found"));
+        if (!transaction.isDedup()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Transaction is not quarantined");
+        }
+        transaction.setDedup(false);
+        ruleEngine.categorize(transaction, ruleRepository.findByEnabledTrueOrderByPriorityAscIdAsc());
+        return transactionMapper.toDto(transactionRepository.save(transaction));
+    }
+
+    /**
+     * Split a transaction into child rows of {@code (amount, category)}. The parent
+     * is hidden ({@code is_split}); the children behave as normal transactions.
+     * Re-running replaces any existing children.
+     */
+    @PostMapping("/{id}/split")
+    @Transactional
+    public TransactionDto split(@PathVariable final Long id, @RequestBody final SplitRequest request) {
+        final Transaction parent = transactionRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found"));
+        if (parent.getSplitParent() != null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot split a split child");
+        }
+        if (request == null || request.splits() == null || request.splits().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one split line is required");
+        }
+        transactionRepository.deleteAll(transactionRepository.findBySplitParent(parent));
+
+        final List<Transaction> children = new ArrayList<>();
+        int index = 0;
+        for (final SplitLine split : request.splits()) {
+            if (split.amount() == null || split.categoryId() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Each split line needs an amount and a category");
+            }
+            children.add(Transaction.builder()
+                    .account(parent.getAccount())
+                    .source(parent.getSource())
+                    .merchantName(parent.getMerchantName())
+                    .merchant(parent.getMerchant())
+                    .amount(split.amount())
+                    .postedAt(parent.getPostedAt())
+                    .currency(parent.getCurrency())
+                    .category(resolveCategory(split.categoryId()))
+                    .contentHash(parent.getContentHash() + "#s" + index)
+                    .dedupKey(parent.getDedupKey() + ":s" + index)
+                    .splitParent(parent)
+                    .needsReview(false)
+                    .importRun(parent.getImportRun())
+                    .build());
+            index++;
+        }
+        transactionRepository.saveAll(children);
+
+        parent.setSplit(true);
+        parent.setNeedsReview(false);
+        return transactionMapper.toDto(transactionRepository.save(parent));
+    }
+
+    /** Undo a split: delete the children and make the parent a normal transaction again. */
+    @PostMapping("/{id}/unsplit")
+    @Transactional
+    public TransactionDto unsplit(@PathVariable final Long id) {
+        final Transaction parent = transactionRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found"));
+        transactionRepository.deleteAll(transactionRepository.findBySplitParent(parent));
+        parent.setSplit(false);
+        return transactionMapper.toDto(transactionRepository.save(parent));
     }
 
     private Category resolveCategory(final Long categoryId) {

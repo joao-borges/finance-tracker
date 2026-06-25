@@ -1,0 +1,30 @@
+.title {
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    margin-bottom: 16px;
+}
+
+.table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.colDate {
+    width: 110px;
+    white-space: nowrap;
+}
+
+.colAccount {
+    width: 240px;
+}
+
+.colAmount {
+    width: 120px;
+    white-space: nowrap;
+}
+
+.colActions {
+    width: 120px;
+}

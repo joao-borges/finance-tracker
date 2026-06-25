@@ -29,5 +29,6 @@ public record TransactionDto(
         String currency,
         String source,
         boolean needsReview,
-        boolean excludedFromBudget) {
+        boolean excludedFromBudget,
+        Long splitParentId) {
 }

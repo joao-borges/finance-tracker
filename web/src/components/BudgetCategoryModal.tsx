@@ -82,6 +82,7 @@ export default function BudgetCategoryModal({ line, month, categories, merchants
                 merchants={merchants}
                 onClose={() => setEditing(null)}
                 onSaved={onSaved}
+                onStructuralChange={onSaved}
             />
         </Modal>
     );

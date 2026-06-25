@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import StorefrontIcon from "@mui/icons-material/Storefront";
@@ -42,6 +43,7 @@ const SETUP_NAV: NavItem[] = [
     { to: "/categories", label: "Categories", icon: <CategoryIcon /> },
     { to: "/category-groups", label: "Category Groups", icon: <FolderIcon /> },
     { to: "/rules", label: "Rules", icon: <GavelIcon /> },
+    { to: "/duplicates", label: "Duplicates", icon: <ContentCopyIcon /> },
     { to: "/import", label: "Import", icon: <UploadFileIcon /> },
 ];
 

@@ -22,7 +22,7 @@ public record BudgetSummary(
         List<BudgetGroup> groups) {
 
     @Builder
-    public record BudgetGroup(Long groupId, String groupName, BigDecimal planned, BigDecimal actual, List<BudgetLine> categories) {
+    public record BudgetGroup(Long groupId, String groupName, boolean collapsed, BigDecimal planned, BigDecimal actual, List<BudgetLine> categories) {
     }
 
     @Builder

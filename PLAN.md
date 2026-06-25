@@ -378,6 +378,10 @@ POST   /api/rules/:id/apply               # retroactive run over uncategorized
 # Transactions  (visible rows only; newest first; paginated)
 GET    /api/transactions?from=&to=&accountIds=&merchantIds=&categoryIds=&review=&page=&size=
 PATCH  /api/transactions/:id              # categorize, link/create merchant, approve, exclude-from-budget
+POST   /api/transactions/:id/split        # split into (amount, category) children
+POST   /api/transactions/:id/unsplit      # undo a split
+GET    /api/transactions/duplicates       # quarantined dups
+POST   /api/transactions/:id/restore      # un-quarantine + re-run rules
 GET/POST/PATCH/DELETE  /api/saved-filters # named shared filters
 
 # Auth (Google sign-in; active only with the "oauth" profile)
@@ -392,7 +396,7 @@ GET    /api/dashboard/summary             # account groups, review count, budget
 GET    /api/budgets/:month/summary        # planned vs actual vs remaining, grouped
 PUT    /api/budgets/:month                # set planned amounts (bulk upsert)
 
-# Phase 2+ (planned): /api/sync (SimpleFIN), transaction split + duplicates/restore, search
+# Phase 2+ (planned): full-text search
 ```
 
 ---

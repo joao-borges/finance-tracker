@@ -43,4 +43,9 @@ public class CategoryGroup {
 
     private String color;
 
+    /** Whether the group is collapsed on the budget page; persisted so it loads the same everywhere. */
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean collapsed = false;
+
 }

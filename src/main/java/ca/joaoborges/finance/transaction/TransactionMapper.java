@@ -17,6 +17,7 @@ public interface TransactionMapper {
     @Mapping(target = "categoryId", source = "category.id")
     @Mapping(target = "categoryName", source = "category.name")
     @Mapping(target = "categoryIcon", source = "category.icon")
+    @Mapping(target = "splitParentId", source = "splitParent.id")
     TransactionDto toDto(Transaction transaction);
 
 }

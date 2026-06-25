@@ -9,6 +9,7 @@ import BudgetCategoryModal from "../components/BudgetCategoryModal";
 import {
     budgetsApi,
     categoriesApi,
+    categoryGroupsApi,
     merchantsApi,
     type BudgetLine,
     type BudgetSummary,
@@ -126,6 +127,16 @@ export default function BudgetPage() {
 
     const shiftMonth = (delta: number) => setMonth(dayjs(`${month}-01`).add(delta, "month").format("YYYY-MM"));
 
+    // Persist the group's collapsed state server-side so it loads the same everywhere.
+    const toggleGroup = (groupId: number, collapsed: boolean) => {
+        setSummary((current) =>
+            current
+                ? { ...current, groups: current.groups.map((g) => (g.groupId === groupId ? { ...g, collapsed } : g)) }
+                : current,
+        );
+        categoryGroupsApi.update(groupId, { collapsed }).catch((error: unknown) => message.error(errorText(error)));
+    };
+
     if (!summary) {
         return <Typography color="text.secondary">Loading…</Typography>;
     }
@@ -186,6 +197,11 @@ export default function BudgetPage() {
                         planned={planned}
                         onPlanned={setOne}
                         onOpenCategory={setDrillLine}
+                        collapsible={group.groupId != null}
+                        collapsed={group.collapsed}
+                        onToggleCollapse={
+                            group.groupId != null ? () => toggleGroup(group.groupId!, !group.collapsed) : undefined
+                        }
                         readOnly={isPast}
                     />
                 );

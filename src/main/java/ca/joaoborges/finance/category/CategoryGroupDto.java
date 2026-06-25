@@ -8,5 +8,6 @@ public record CategoryGroupDto(
         String name,
         Integer sortOrder,
         String icon,
-        String color) {
+        String color,
+        Boolean collapsed) {
 }

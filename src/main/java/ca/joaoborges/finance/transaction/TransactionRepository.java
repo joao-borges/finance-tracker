@@ -31,6 +31,12 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
     /** Default transaction list: visible rows (no split parents, no quarantined dups), newest first. */
     List<Transaction> findBySplitFalseAndDedupFalseOrderByPostedAtDesc();
 
+    /** Quarantined duplicates for the restore UI, newest first. */
+    List<Transaction> findByDedupTrueOrderByPostedAtDesc();
+
+    /** Children of a split parent (for re-split / unsplit). */
+    List<Transaction> findBySplitParent(Transaction parent);
+
     /** Reassign all of a merged source account's transactions to the canonical account. */
     @Modifying
     @Query("UPDATE Transaction t SET t.account = :target WHERE t.account = :source")
