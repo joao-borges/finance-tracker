@@ -21,6 +21,10 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
     /** SimpleFIN dedup: has this provider transaction id already been imported? */
     boolean existsBySimplefinId(String simplefinId);
 
+    /** Content hashes of all live (non-quarantined) transactions, for cross-source dedup. */
+    @Query("SELECT t.contentHash FROM Transaction t WHERE t.dedup = false")
+    List<String> findLiveContentHashes();
+
     /** Uncategorized transactions eligible for a retroactive rule run. */
     List<Transaction> findByCategoryIsNullAndSplitFalseAndDedupFalse();
 

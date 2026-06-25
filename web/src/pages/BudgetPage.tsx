@@ -5,7 +5,16 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { App as AntApp } from "antd";
 import dayjs from "dayjs";
 import BudgetSection from "../components/BudgetSection";
-import { budgetsApi, type BudgetSummary } from "../lib/api";
+import BudgetCategoryModal from "../components/BudgetCategoryModal";
+import {
+    budgetsApi,
+    categoriesApi,
+    merchantsApi,
+    type BudgetLine,
+    type BudgetSummary,
+    type Category,
+    type Merchant,
+} from "../lib/api";
 import { errorText, formatMoney } from "../lib/format";
 
 const SAVE_DEBOUNCE_MS = 600;
@@ -32,6 +41,9 @@ export default function BudgetPage() {
     const [summary, setSummary] = useState<BudgetSummary | null>(null);
     const [planned, setPlanned] = useState<Record<number, number | null>>({});
     const [saving, setSaving] = useState(false);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [merchants, setMerchants] = useState<Merchant[]>([]);
+    const [drillLine, setDrillLine] = useState<BudgetLine | null>(null);
     const dirty = useRef<Map<number, number | null>>(new Map());
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isPast = dayjs(`${month}-01`).isBefore(dayjs().startOf("month"));
@@ -58,6 +70,11 @@ export default function BudgetPage() {
         cancelPending();
         load();
     }, [load]);
+
+    useEffect(() => {
+        categoriesApi.list().then(setCategories).catch(() => setCategories([]));
+        merchantsApi.list().then(setMerchants).catch(() => setMerchants([]));
+    }, []);
 
     useEffect(() => {
         return () => cancelPending();
@@ -154,6 +171,7 @@ export default function BudgetPage() {
                 lines={summary.income}
                 planned={planned}
                 onPlanned={setOne}
+                onOpenCategory={setDrillLine}
                 readOnly={isPast}
             />
 
@@ -166,10 +184,20 @@ export default function BudgetPage() {
                         lines={group.categories}
                         planned={planned}
                         onPlanned={setOne}
+                        onOpenCategory={setDrillLine}
                         readOnly={isPast}
                     />
                 );
             })}
+
+            <BudgetCategoryModal
+                line={drillLine}
+                month={month}
+                categories={categories}
+                merchants={merchants}
+                onClose={() => setDrillLine(null)}
+                onChanged={load}
+            />
         </Box>
     );
 }

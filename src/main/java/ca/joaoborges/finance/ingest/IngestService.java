@@ -25,10 +25,12 @@ import java.time.Instant;
 import java.time.YearMonth;
 import java.time.ZoneOffset;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Shared ingest pipeline: turns parsed rows (from any CSV format) into
@@ -67,10 +69,16 @@ public class IngestService {
 
         final List<Rule> enabledRules = ruleRepository.findByEnabledTrueOrderByPriorityAscIdAsc();
         final Instant fallbackPostedAt = Instant.now();
+        // Live content hashes already in the DB (from prior runs / SimpleFIN). A row
+        // matching one is a re-import overlap → quarantine it (is_dedup), restorable.
+        // We deliberately do NOT add this run's own hashes, so same-day identical
+        // legitimate charges in one file all survive.
+        final Set<String> existingHashes = new HashSet<>(transactionRepository.findLiveContentHashes());
         final Map<String, Integer> byAccount = new LinkedHashMap<>();
         final Map<AlertKey, BigDecimal> spendByCategoryMonth = new HashMap<>();
         final Map<Long, Category> categoriesById = new HashMap<>();
         int newCount = 0;
+        int dedupCount = 0;
         int reviewed = 0;
         int needsReview = 0;
         int skippedBeforeCutoff = 0;
@@ -82,9 +90,8 @@ public class IngestService {
                 continue;
             }
             final Account account = resolveAccount(row.accountName());
-            byAccount.merge(account.getName(), 1, Integer::sum);
-
-            final String hash = ContentHashing.of(account.getName(), row.amount(), row.merchantName());
+            final String hash = ContentHashing.of(account.getName(), postedAt, row.amount(), row.merchantName());
+            final boolean duplicate = existingHashes.contains(hash);
             final Transaction transaction = Transaction.builder()
                     .account(account)
                     .source(source)
@@ -94,12 +101,20 @@ public class IngestService {
                     .currency(account.getCurrency())
                     .contentHash(hash)
                     .dedupKey(hash)
-                    .needsReview(true)
+                    .dedup(duplicate)
+                    .needsReview(!duplicate)
                     .importRun(run)
                     .build();
 
+            if (duplicate) {
+                transactionRepository.save(transaction);
+                dedupCount++;
+                continue;
+            }
+
             ruleEngine.categorize(transaction, enabledRules);
             transactionRepository.save(transaction);
+            byAccount.merge(account.getName(), 1, Integer::sum);
             newCount++;
             if (transaction.isNeedsReview()) {
                 needsReview++;
@@ -120,6 +135,7 @@ public class IngestService {
         }
 
         run.setNewCount(newCount);
+        run.setDedupCount(dedupCount);
         run.setAccountCount(byAccount.size());
         run.setStatus(ImportStatus.SUCCESS);
         run.setFinishedAt(Instant.now());

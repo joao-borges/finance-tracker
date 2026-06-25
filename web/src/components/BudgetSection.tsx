@@ -11,6 +11,7 @@ import {
     Typography,
 } from "@mui/material";
 import { InputNumber } from "antd";
+import { Link } from "@mui/material";
 import { formatMoney } from "../lib/format";
 import type { BudgetLine } from "../lib/api";
 
@@ -20,10 +21,11 @@ interface Props {
     lines: BudgetLine[];
     planned: Record<number, number | null>;
     onPlanned: (categoryId: number, value: number | null) => void;
+    onOpenCategory?: (line: BudgetLine) => void;
     readOnly?: boolean;
 }
 
-export default function BudgetSection({ title, subtitle, lines, planned, onPlanned, readOnly }: Props) {
+export default function BudgetSection({ title, subtitle, lines, planned, onPlanned, onOpenCategory, readOnly }: Props) {
     return (
         <Box sx={{ mb: 3 }}>
             <Box sx={{ display: "flex", alignItems: "baseline", mb: 1, gap: 2 }}>
@@ -47,10 +49,17 @@ export default function BudgetSection({ title, subtitle, lines, planned, onPlann
                             return (
                                 <TableRow key={line.categoryId} hover>
                                     <TableCell>
-                                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
+                                        <Link
+                                            component="button"
+                                            type="button"
+                                            underline="hover"
+                                            color="inherit"
+                                            onClick={() => onOpenCategory?.(line)}
+                                            sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", textAlign: "left", width: "100%", cursor: "pointer" }}
+                                        >
                                             {line.icon ? `${line.icon} ` : ""}
                                             {line.name}
-                                        </span>
+                                        </Link>
                                     </TableCell>
                                     <TableCell>
                                         <InputNumber

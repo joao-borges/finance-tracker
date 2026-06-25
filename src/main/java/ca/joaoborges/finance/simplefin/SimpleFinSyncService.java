@@ -142,7 +142,7 @@ public class SimpleFinSyncService {
 
                 final BigDecimal amount = new BigDecimal(txNode.path("amount").asString("0"));
                 final String merchant = merchantOf(txNode, txId);
-                final String hash = ContentHashing.of(canonical.getName(), amount, merchant);
+                final String hash = ContentHashing.of(canonical.getName(), postedAt, amount, merchant);
                 final Transaction transaction = Transaction.builder()
                         .account(canonical)
                         .source(SourceType.SIMPLEFIN)

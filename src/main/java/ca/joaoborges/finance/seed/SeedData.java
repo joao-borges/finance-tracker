@@ -7,7 +7,7 @@ import java.util.List;
  * rules exported from Monarch (parsed from the saved page source) that
  * {@link DataSeeder} ensures exist at startup.
  */
-public record SeedData(List<SeedGroup> groups, List<SeedRule> rules) {
+public record SeedData(List<SeedGroup> groups, List<SeedRule> rules, List<SeedMerchant> merchants) {
 
     public record SeedGroup(String name, int sortOrder, boolean income, List<SeedCategory> categories) {
     }
@@ -15,7 +15,11 @@ public record SeedData(List<SeedGroup> groups, List<SeedRule> rules) {
     public record SeedCategory(String name, String icon, int sortOrder) {
     }
 
-    public record SeedRule(String name, String merchantMatch, String categoryName, int priority, boolean autoApprove) {
+    public record SeedRule(String name, String merchantMatch, String categoryName, int priority,
+                           boolean autoApprove, String merchantName) {
+    }
+
+    public record SeedMerchant(String name, String website) {
     }
 
 }

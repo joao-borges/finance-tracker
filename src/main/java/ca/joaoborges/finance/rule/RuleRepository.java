@@ -15,4 +15,6 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
 
     boolean existsByName(String name);
 
+    java.util.Optional<Rule> findFirstByName(String name);
+
 }

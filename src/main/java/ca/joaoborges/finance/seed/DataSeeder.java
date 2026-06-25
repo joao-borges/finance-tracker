@@ -4,6 +4,9 @@ import ca.joaoborges.finance.category.Category;
 import ca.joaoborges.finance.category.CategoryGroup;
 import ca.joaoborges.finance.category.CategoryGroupRepository;
 import ca.joaoborges.finance.category.CategoryRepository;
+import ca.joaoborges.finance.common.FaviconService;
+import ca.joaoborges.finance.merchant.Merchant;
+import ca.joaoborges.finance.merchant.MerchantRepository;
 import ca.joaoborges.finance.rule.Rule;
 import ca.joaoborges.finance.rule.RuleRepository;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +41,8 @@ public class DataSeeder implements ApplicationRunner {
     private final CategoryGroupRepository groupRepository;
     private final CategoryRepository categoryRepository;
     private final RuleRepository ruleRepository;
+    private final MerchantRepository merchantRepository;
+    private final FaviconService faviconService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -45,9 +50,10 @@ public class DataSeeder implements ApplicationRunner {
     public void run(final ApplicationArguments args) {
         final SeedData seed = load();
         final Map<String, Category> categoriesByName = seedCategories(seed);
-        final int newRules = seedRules(seed, categoriesByName);
-        log.info("Seed complete: {} category group(s), {} categor(ies), {} new rule(s)",
-                seed.groups().size(), categoriesByName.size(), newRules);
+        final Map<String, Merchant> merchantsByName = seedMerchants(seed);
+        final int linkedRules = seedRules(seed, categoriesByName, merchantsByName);
+        log.info("Seed complete: {} category group(s), {} categor(ies), {} merchant(s), {} rule(s) (re)linked",
+                seed.groups().size(), categoriesByName.size(), merchantsByName.size(), linkedRules);
     }
 
     private SeedData load() {
@@ -81,10 +87,43 @@ public class DataSeeder implements ApplicationRunner {
         return byName;
     }
 
-    private int seedRules(final SeedData seed, final Map<String, Category> categoriesByName) {
-        int created = 0;
+    private Map<String, Merchant> seedMerchants(final SeedData seed) {
+        final Map<String, Merchant> byName = new HashMap<>();
+        if (seed.merchants() == null) {
+            return byName;
+        }
+        for (final SeedData.SeedMerchant seedMerchant : seed.merchants()) {
+            final Merchant merchant = merchantRepository.findByNameIgnoreCase(seedMerchant.name())
+                    .orElseGet(() -> merchantRepository.save(Merchant.builder()
+                            .name(seedMerchant.name())
+                            .website(seedMerchant.website())
+                            .logoUrl(faviconService.resolveLogoUrl(seedMerchant.website()))
+                            .build()));
+            byName.put(merchant.getName(), merchant);
+        }
+        return byName;
+    }
+
+    /**
+     * Creates missing rules and ensures each rule's structured merchant link is
+     * set — including rules already in the DB from an earlier seed run that
+     * predates merchant seeding. Returns how many rules ended up linked.
+     */
+    private int seedRules(final SeedData seed, final Map<String, Category> categoriesByName,
+                          final Map<String, Merchant> merchantsByName) {
+        int linked = 0;
         for (final SeedData.SeedRule seedRule : seed.rules()) {
-            if (ruleRepository.existsByName(seedRule.name())) {
+            final Merchant merchant = seedRule.merchantName() == null
+                    ? null : merchantsByName.get(seedRule.merchantName());
+            final Rule existing = ruleRepository.findFirstByName(seedRule.name()).orElse(null);
+            if (existing != null) {
+                if (merchant != null && existing.getMerchant() == null) {
+                    existing.setMerchant(merchant);
+                    ruleRepository.save(existing);
+                }
+                if (existing.getMerchant() != null) {
+                    linked++;
+                }
                 continue;
             }
             final Category category = categoriesByName.get(seedRule.categoryName());
@@ -96,13 +135,16 @@ public class DataSeeder implements ApplicationRunner {
                     .name(seedRule.name())
                     .merchantMatch(seedRule.merchantMatch())
                     .category(category)
+                    .merchant(merchant)
                     .autoApprove(seedRule.autoApprove())
                     .priority(seedRule.priority())
                     .enabled(true)
                     .build());
-            created++;
+            if (merchant != null) {
+                linked++;
+            }
         }
-        return created;
+        return linked;
     }
 
 }
