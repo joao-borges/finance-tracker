@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Money bag">
+  <rect width="512" height="512" rx="104" fill="#1f9d55"/>
+  <!-- gathered, ruffled top of the sack -->
+  <path d="M212 116 q44 -18 88 0 q16 7 7 22 l-14 30 q-37 -11 -74 0 l-14 -30 q-9 -15 7 -22 z" fill="#efdaa0"/>
+  <!-- bag body -->
+  <path d="M256 166 c -76 34 -124 118 -124 192 0 58 56 88 124 88 s 124 -30 124 -88 c 0 -74 -48 -158 -124 -192 z" fill="#f6e7bd"/>
+  <!-- cinch band -->
+  <path d="M206 168 q50 -24 100 0 q-50 20 -100 0 z" fill="#e7cf8c"/>
+  <!-- dollar sign -->
+  <text x="256" y="402" font-family="Arial, Helvetica, sans-serif" font-size="196" font-weight="700" text-anchor="middle" fill="#1f7a45">$</text>
+</svg>

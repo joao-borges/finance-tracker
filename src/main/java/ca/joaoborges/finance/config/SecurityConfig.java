@@ -26,6 +26,9 @@ public class SecurityConfig {
 
     private static final String[] PUBLIC_PATHS = {
             "/api/ping", "/actuator/health", "/oauth2/**", "/login/**", "/error",
+            // Branding/PWA assets — reachable without auth so the browser/iOS icon
+            // fetcher (which carries no session) can load them.
+            "/icons/**",
     };
 
     @Bean

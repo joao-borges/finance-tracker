@@ -3,7 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>finance</title>
+    <!-- All branding/PWA assets live under /icons/ so a single Cloudflare Access
+         bypass rule (icons/*) and one Spring Security permit rule keep them
+         reachable without auth — iOS's icon fetcher carries no session. -->
+    <link rel="icon" href="/icons/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/icons/site.webmanifest" />
+    <meta name="theme-color" content="#1f9d55" />
+    <title>Finance</title>
   </head>
   <body>
     <div id="root"></div>

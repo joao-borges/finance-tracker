@@ -1,0 +1,49 @@
+# Production deployment (server: joaoborges-server).
+#
+# Postgres stays internal (no host port); the app publishes only on 127.0.0.1:8080
+# so the host's caddy reverse-proxies finance.joaoborges.ca -> 127.0.0.1:8080.
+# Secrets come from a .env file alongside this (never committed) — see .env.example.
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+services:
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-finance}
+      POSTGRES_USER: ${POSTGRES_USER:-finance}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      # Postgres 18 images store data under a version subdir; mount the parent.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-finance} -d ${POSTGRES_DB:-finance}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    image: finance-tracker:latest
+    container_name: finance-tracker
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-finance}
+      DB_USER: ${POSTGRES_USER:-finance}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      # Hard floor on imported transactions (ISO date, UTC). Blank = no floor.
+      IMPORT_MIN_POSTED_DATE: ${IMPORT_MIN_POSTED_DATE:-}
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
+      # Google sign-in (required in prod).
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-oauth}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?set GOOGLE_CLIENT_ID in .env}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:?set GOOGLE_CLIENT_SECRET in .env}
+      FINANCE_AUTH_ALLOWED_EMAILS: ${FINANCE_AUTH_ALLOWED_EMAILS:?set FINANCE_AUTH_ALLOWED_EMAILS in .env}
+    ports:
+      - "127.0.0.1:8080:8080"
+
+volumes:
+  pgdata:
