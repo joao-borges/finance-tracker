@@ -38,6 +38,7 @@ export default function TransactionEditModal({ transaction, categories, merchant
     const [newWebsite, setNewWebsite] = useState("");
     const [reviewed, setReviewed] = useState(true);
     const [excluded, setExcluded] = useState(false);
+    const [awaiting, setAwaiting] = useState(false);
     const [makeRule, setMakeRule] = useState(false);
     const [ruleMatch, setRuleMatch] = useState("");
     const [ruleAuto, setRuleAuto] = useState(true);
@@ -56,6 +57,7 @@ export default function TransactionEditModal({ transaction, categories, merchant
         setNewWebsite("");
         setReviewed(true);
         setExcluded(transaction.excludedFromBudget);
+        setAwaiting(transaction.awaitingRefund);
         setMakeRule(false);
         setRuleMatch(transaction.merchantName);
         setRuleAuto(true);
@@ -90,6 +92,7 @@ export default function TransactionEditModal({ transaction, categories, merchant
                 merchantId,
                 needsReview: !reviewed,
                 excludedFromBudget: excluded,
+                awaitingRefund: awaiting,
             };
             const updated = await transactionsApi.update(transaction.id, body);
 
@@ -128,6 +131,17 @@ export default function TransactionEditModal({ transaction, categories, merchant
         try {
             await transactionsApi.unsplit(transaction.splitParentId);
             message.success("Split undone");
+            onStructuralChange?.();
+            onClose();
+        } catch (error: unknown) {
+            message.error(errorText(error));
+        }
+    };
+
+    const unmatch = async () => {
+        try {
+            await transactionsApi.unmatch(transaction.id);
+            message.success("Unmatched");
             onStructuralChange?.();
             onClose();
         } catch (error: unknown) {
@@ -214,6 +228,10 @@ export default function TransactionEditModal({ transaction, categories, merchant
                 <span>
                     <Switch checked={excluded} onChange={(value) => setExcluded(value)} /> &nbsp; Exclude from budget
                 </span>
+                <span>
+                    <Switch checked={awaiting} onChange={(value) => setAwaiting(value)} /> &nbsp; Awaiting refund (won't
+                    count until refunded)
+                </span>
             </Space>
 
             <Divider />
@@ -239,6 +257,11 @@ export default function TransactionEditModal({ transaction, categories, merchant
             )}
 
             <Divider />
+            {transaction.matchType && (
+                <Button block danger onClick={unmatch} className={styles.unmatchButton}>
+                    Unmatch ({transaction.matchType === "TRANSFER" ? "transfer" : "refund"})
+                </Button>
+            )}
             {transaction.splitParentId == null ? (
                 <Button block onClick={() => setSplitOpen(true)}>
                     Split transaction…

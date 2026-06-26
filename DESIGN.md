@@ -28,10 +28,12 @@ Deliberately narrow for phase 1. The discipline is: build the spine that handles
 - Webhook notifications (Discord)
 - Automated Postgres backup to NAS
 
+### Phase 2 (built)
+- **Transfer / CC-payment matching** and **refund matching** — see the Matching section.
+- **Awaiting-refund flag** — exclude a known-future-refund purchase from the current budget.
+
 ### Explicitly deferred (phase 2+)
 - Complex rules (AND/OR, amount/account conditions, multiple actions)
-- Transfer matching (Monarch doesn't do this either — not missing anything)
-- Refund auto-handling (handled manually, same as today)
 - Pending transactions (ignored entirely — posted only)
 - Net worth chart (not wanted)
 - **MCP server (bring-your-own-AI):** a read-only MCP server in front of the Postgres — tools to query transactions, budget status, and balances — so Claude (or any MCP client) can answer "what did I spend on dining this month" against real data. This is the one feature where building your own beats every commercial option in Canada: Era productizes exactly this but is locked to US aggregators, while you own the data layer and SimpleFIN covers your banks. Small addition once the core data model and the shared query predicates exist — it reuses them directly.
@@ -92,11 +94,17 @@ Transaction
   category_id          # nullable — everything lands uncategorized
   needs_review (bool)  # in the review queue
   excluded_from_budget (bool)
+  awaiting_refund (bool)  # known-future refund — excluded from the current budget
   is_split (bool)      # this is a split PARENT
   split_parent_id      # nullable FK — set on split CHILDREN
   is_dedup (bool)      # quarantined duplicate
+  matched_with_id      # nullable self-FK — paired transfer/refund leg
+  match_type           # 'transfer' | 'refund' | null
   notes, currency
   import_run_id
+
+MatchSuggestion          # medium-confidence pair awaiting Confirm/Reject
+  id, leg_a_id, leg_b_id, type ('transfer'|'refund'), dismissed (bool), created_at
 
 Rule
   id, name
@@ -136,7 +144,8 @@ Every subtle bug in this app comes from one of these flags being mishandled in o
 | normal | ✅ | ✅ | |
 | `is_split = true` (parent) | ❌ | ❌ | Replaced by its children. Visible only inside the split-detail UI. |
 | `split_parent_id != null` (child) | ✅ | ✅ | Behaves like a normal transaction; has its own category. |
-| `excluded_from_budget = true` | ✅ | ❌ | Still appears in lists **and** category summaries — just not in budget math. |
+| `excluded_from_budget = true` | ✅ | ❌ | Still appears in lists **and** category summaries — just not in budget math. Set on both legs of a matched transfer. |
+| `awaiting_refund = true` | ✅ | ❌ | Manual flag for a purchase you expect to be refunded later — drops out of the current budget immediately. |
 | `is_dedup = true` | ❌ | ❌ | Hidden from normal lists; visible in the Duplicates review UI; restorable. |
 | `needs_review = true` | ✅ | ✅ if categorized | Appears in review queue too. Uncategorized → counts toward no category line. |
 
@@ -152,6 +161,7 @@ WHERE category_id = :cat
   AND is_split = false
   AND is_dedup = false
   AND excluded_from_budget = false
+  AND awaiting_refund = false
 ```
 
 Splits never double-count because the parent (`is_split=true`) is excluded and only the children carry categories. That's the whole trick.
@@ -287,6 +297,32 @@ Optionally validate that child amounts sum to the parent amount, but don't enfor
 
 ---
 
+## Matching (refunds & transfers)
+
+Two transactions are *paired* into one logical event. Both kinds are detected by `match/MatchingService` after the rules engine on every ingest (CSV + SimpleFIN), plus a manual **scan** for the backlog. High-confidence pairs are applied automatically; weaker ones become a `MatchSuggestion` for the Matches page. A pair is stored as `matched_with_id` + `match_type` on both legs; **unmatch** unlinks them and returns both to review.
+
+### Transfers (incl. credit-card payments)
+- **Detect:** opposite signs, equal `|amount|`, two *different* accounts, posted within ±5 days, and neither already matched.
+- **Auto** when there's a payment signal — the inflow leg's account is a credit card, or a descriptor contains `payment`/`transfer`/`e-transfer`/etc. Otherwise → suggestion.
+- **Category by where the +cash lands:** inflow account is `CREDIT_CARD` → **Credit Card Payment**, else **Transfer**.
+- **Effect:** both legs `excluded_from_budget = true`, `needs_review = false` (internal money movement, never spend).
+
+### Refunds (partials allowed)
+- **Detect:** an inflow on the **same account** + **same merchant** as an earlier purchase, `refund ≤ purchase`, within ≤90 days, purchase not already matched.
+- **Auto** on exact amount + same canonical merchant; partial/looser → suggestion.
+- **Effect:** the refund inherits the purchase's `category_id` so the `+` nets the `−` in that category — *unless* the purchase is `awaiting_refund`, in which case **both legs are excluded** (a known refund that should never have counted), and the flag resolves.
+
+### Awaiting-refund flag
+Manual, set on the Categories/transaction UI ahead of the refund: a purchase you *know* will be refunded weeks/months out. It sets `awaiting_refund = true`, which the budget predicate excludes — so it drops out of the current month immediately, without waiting. When the matching refund finally lands, the refund step (above) excludes both legs and clears the flag.
+
+### Tiers & control
+- **Auto** (high confidence) — applied silently, shown with a `⇄ Transfer` / `↩ Refund` chip in the list.
+- **Suggested** (medium) — the **Matches** page (Confirm applies it, Reject dismisses so it isn't proposed again).
+- **Manual** — pair two transactions explicitly; **Unmatch** undoes any match.
+Dedup/split rows are skipped; a manually-set or already-matched row is never auto-touched.
+
+---
+
 ## Budgets
 
 Monthly. Page mirrors the Monarch layout you sent: an Income section (planned vs actual) and expense **groups** containing categories, each row showing planned / actual / remaining.
@@ -384,7 +420,15 @@ POST   /api/transactions/:id/split        # split into (amount, category) childr
 POST   /api/transactions/:id/unsplit      # undo a split
 GET    /api/transactions/duplicates       # quarantined dups
 POST   /api/transactions/:id/restore      # un-quarantine + re-run rules
+POST   /api/transactions/:id/unmatch      # unlink a transfer/refund pair
 GET/POST/PATCH/DELETE  /api/saved-filters # named shared filters
+
+# Matching (transfers & refunds)
+GET    /api/matches/suggestions           # medium-confidence pairs to review
+POST   /api/matches/suggestions/:id/confirm
+POST   /api/matches/suggestions/:id/dismiss
+POST   /api/matches {aId,bId,type}        # manual pair
+POST   /api/matches/scan                  # backfill existing transactions
 
 # Auth (Google sign-in; active only with the "oauth" profile)
 GET    /api/me                            # signed-in account (authenticated flag, email, name)
@@ -448,6 +492,7 @@ finance/
 │       ├── simplefin/               # client, sync job, payload mapping
 │       ├── csv/                     # per-format parsers (Simple/Amex/RBC/PC) → ParsedTransaction
 │       ├── webhook/                 # dispatcher + discord formatter
+│       ├── match/                   # transfer/refund matching: service, suggestions, controller
 │       ├── auth/                    # Google sign-in: allowlist user service + /api/me
 │       └── common/                  # shared query predicates (the flag table!)
 │   └── src/main/resources/

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Refund & transfer matching, plus the awaiting-refund flag. -->
+    <changeSet id="014-transaction-matching-columns" author="joao">
+        <addColumn tableName="transactions">
+            <column name="awaiting_refund" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="matched_with_id" type="bigint"/>
+            <column name="match_type" type="varchar(16)"/>
+        </addColumn>
+        <addForeignKeyConstraint baseTableName="transactions" baseColumnNames="matched_with_id"
+                                 constraintName="fk_transactions_matched_with"
+                                 referencedTableName="transactions" referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+        <createIndex tableName="transactions" indexName="idx_transactions_matched_with">
+            <column name="matched_with_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="014-match-suggestion" author="joao">
+        <createTable tableName="match_suggestion">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="leg_a_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="leg_b_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="varchar(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="dismissed" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="match_suggestion" baseColumnNames="leg_a_id"
+                                 constraintName="fk_match_suggestion_leg_a"
+                                 referencedTableName="transactions" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="match_suggestion" baseColumnNames="leg_b_id"
+                                 constraintName="fk_match_suggestion_leg_b"
+                                 referencedTableName="transactions" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
+</databaseChangeLog>

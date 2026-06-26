@@ -50,10 +50,19 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
             SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t
             WHERE t.category.id = :categoryId
               AND t.postedAt >= :start AND t.postedAt < :end
-              AND t.split = false AND t.dedup = false AND t.excludedFromBudget = false
+              AND t.split = false AND t.dedup = false
+              AND t.excludedFromBudget = false AND t.awaitingRefund = false
             """)
     BigDecimal sumForCategoryInMonth(@Param("categoryId") Long categoryId,
                                      @Param("start") Instant start,
                                      @Param("end") Instant end);
+
+    /** Live (non-split, non-dedup), not-yet-matched transactions in a date window, for the matcher. */
+    @Query("""
+            SELECT t FROM Transaction t
+            WHERE t.split = false AND t.dedup = false AND t.matchedWith IS NULL
+              AND t.postedAt >= :start AND t.postedAt < :end
+            """)
+    List<Transaction> findMatchCandidates(@Param("start") Instant start, @Param("end") Instant end);
 
 }

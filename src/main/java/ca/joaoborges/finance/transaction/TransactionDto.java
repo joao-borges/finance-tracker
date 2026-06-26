@@ -1,5 +1,6 @@
 package ca.joaoborges.finance.transaction;
 
+import ca.joaoborges.finance.match.MatchType;
 import lombok.Builder;
 
 import java.math.BigDecimal;
@@ -30,5 +31,8 @@ public record TransactionDto(
         String source,
         boolean needsReview,
         boolean excludedFromBudget,
+        boolean awaitingRefund,
+        MatchType matchType,
+        Long matchedWithId,
         Long splitParentId) {
 }

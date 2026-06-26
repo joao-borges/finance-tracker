@@ -57,6 +57,7 @@ public class SimpleFinSyncService {
     private final RuleEngine ruleEngine;
     private final DiscordNotifier discordNotifier;
     private final BudgetAlertService budgetAlertService;
+    private final ca.joaoborges.finance.match.MatchingService matchingService;
 
     private record AlertKey(Long categoryId, YearMonth month) {
     }
@@ -170,6 +171,7 @@ public class SimpleFinSyncService {
 
                 ruleEngine.categorize(transaction, enabledRules);
                 transactionRepository.save(transaction);
+                matchingService.matchNewTransaction(transaction);
                 newCount++;
                 byAccount.merge(canonical.getName(), 1, Integer::sum);
                 if (transaction.isNeedsReview()) {

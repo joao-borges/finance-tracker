@@ -18,5 +18,6 @@
     <include file="changes/011-drop-import-sources.xml" relativeToChangelogFile="true"/>
     <include file="changes/012-category-group-collapsed.xml" relativeToChangelogFile="true"/>
     <include file="changes/013-category-hidden.xml" relativeToChangelogFile="true"/>
+    <include file="changes/014-matching.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

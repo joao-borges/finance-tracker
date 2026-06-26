@@ -1,6 +1,6 @@
 // Typed API client. All calls hit the same origin under /api (proxied to the
 // Spring Boot backend in dev). Repositories are never exposed directly — these
-// map to the per-entity controllers. See PLAN.md for the endpoint sketch.
+// map to the per-entity controllers. See DESIGN.md for the endpoint sketch.
 
 export type AccountType = "CHECKING" | "SAVINGS" | "CREDIT_CARD" | "LOAN" | "CASH";
 
@@ -172,8 +172,13 @@ export interface Transaction {
     source: string;
     needsReview: boolean;
     excludedFromBudget: boolean;
+    awaitingRefund: boolean;
+    matchType?: MatchType | null;
+    matchedWithId?: number | null;
     splitParentId?: number | null;
 }
+
+export type MatchType = "TRANSFER" | "REFUND";
 
 export interface TransactionFilters {
     from?: string;
@@ -214,6 +219,7 @@ export interface TransactionUpdate {
     newMerchantName?: string | null;
     needsReview?: boolean | null;
     excludedFromBudget?: boolean | null;
+    awaitingRefund?: boolean | null;
 }
 
 export interface Page<T> {
@@ -240,6 +246,22 @@ export const transactionsApi = {
     restore: (id: number) => http<Transaction>("POST", `/api/transactions/${id}/restore`),
     split: (id: number, splits: SplitLine[]) => http<Transaction>("POST", `/api/transactions/${id}/split`, { splits }),
     unsplit: (id: number) => http<Transaction>("POST", `/api/transactions/${id}/unsplit`),
+    unmatch: (id: number) => http<Transaction>("POST", `/api/transactions/${id}/unmatch`),
+};
+
+export interface MatchSuggestion {
+    id: number;
+    type: MatchType;
+    legA: Transaction;
+    legB: Transaction;
+}
+
+export const matchesApi = {
+    suggestions: () => http<MatchSuggestion[]>("GET", "/api/matches/suggestions"),
+    confirm: (id: number) => http<void>("POST", `/api/matches/suggestions/${id}/confirm`),
+    dismiss: (id: number) => http<void>("POST", `/api/matches/suggestions/${id}/dismiss`),
+    match: (aId: number, bId: number, type: MatchType) => http<Transaction>("POST", "/api/matches", { aId, bId, type }),
+    scan: () => http<{ applied: number }>("POST", "/api/matches/scan"),
 };
 
 export interface SavedFilter {

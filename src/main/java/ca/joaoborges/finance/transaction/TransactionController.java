@@ -4,6 +4,7 @@ import ca.joaoborges.finance.budget.BudgetAlertService;
 import ca.joaoborges.finance.category.Category;
 import ca.joaoborges.finance.category.CategoryRepository;
 import ca.joaoborges.finance.common.PageResponse;
+import ca.joaoborges.finance.match.MatchingService;
 import ca.joaoborges.finance.merchant.Merchant;
 import ca.joaoborges.finance.merchant.MerchantService;
 import ca.joaoborges.finance.rule.RuleEngine;
@@ -50,6 +51,7 @@ public class TransactionController {
     private final MerchantService merchantService;
     private final RuleEngine ruleEngine;
     private final RuleRepository ruleRepository;
+    private final MatchingService matchingService;
 
     /** One leg of a split: an amount and the category it belongs to. */
     public record SplitLine(BigDecimal amount, Long categoryId) {
@@ -89,6 +91,9 @@ public class TransactionController {
         }
         if (body.excludedFromBudget() != null) {
             transaction.setExcludedFromBudget(body.excludedFromBudget());
+        }
+        if (body.awaitingRefund() != null) {
+            transaction.setAwaitingRefund(body.awaitingRefund());
         }
         final TransactionDto dto = transactionMapper.toDto(transactionRepository.save(transaction));
 
@@ -168,6 +173,13 @@ public class TransactionController {
         parent.setSplit(true);
         parent.setNeedsReview(false);
         return transactionMapper.toDto(transactionRepository.save(parent));
+    }
+
+    /** Undo a transfer/refund match: unlink both legs and return them to review. */
+    @PostMapping("/{id}/unmatch")
+    @Transactional
+    public TransactionDto unmatch(@PathVariable final Long id) {
+        return transactionMapper.toDto(matchingService.unmatch(id));
     }
 
     /** Undo a split: delete the children and make the parent a normal transaction again. */

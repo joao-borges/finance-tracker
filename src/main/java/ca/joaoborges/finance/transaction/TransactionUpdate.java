@@ -11,5 +11,6 @@ public record TransactionUpdate(
         Long merchantId,
         String newMerchantName,
         Boolean needsReview,
-        Boolean excludedFromBudget) {
+        Boolean excludedFromBudget,
+        Boolean awaitingRefund) {
 }

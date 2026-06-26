@@ -4,6 +4,7 @@ import ca.joaoborges.finance.account.Account;
 import ca.joaoborges.finance.category.Category;
 import ca.joaoborges.finance.common.SourceType;
 import ca.joaoborges.finance.ingest.ImportRun;
+import ca.joaoborges.finance.match.MatchType;
 import ca.joaoborges.finance.merchant.Merchant;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -34,7 +35,7 @@ import java.time.Instant;
  *
  * <p>The boolean flags drive the two predicates that matter — the default
  * transaction list and the budget sum. See the flag-semantics table in
- * {@code PLAN.md}; implement those predicates once in {@code common/}, never as
+ * {@code DESIGN.md}; implement those predicates once in {@code common/}, never as
  * scattered {@code if}s.
  */
 @Entity
@@ -120,6 +121,24 @@ public class Transaction {
     @Builder.Default
     @Column(name = "is_dedup", nullable = false)
     private boolean dedup = false;
+
+    /**
+     * Known-future refund: excluded from the current budget (a manual flag for
+     * purchases you expect to be refunded later). See the flag table in DESIGN.md.
+     */
+    @Builder.Default
+    @Column(name = "awaiting_refund", nullable = false)
+    private boolean awaitingRefund = false;
+
+    /** The paired transaction when this is a matched transfer or refund leg. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "matched_with_id")
+    private Transaction matchedWith;
+
+    /** Kind of match on {@code matchedWith}; null when unmatched. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "match_type")
+    private MatchType matchType;
 
     private String notes;
 

@@ -3,7 +3,7 @@
 A self-hosted personal finance tracker. Auto-syncs transactions from SimpleFIN,
 categorizes them with merchant-match rules, and tracks monthly budgets.
 
-See **[PLAN.md](PLAN.md)** for the full design (scope, data model, the
+See **[DESIGN.md](DESIGN.md)** for the full design (scope, data model, the
 flag-semantics table, dedup tiers, build order) and **[CLAUDE.md](CLAUDE.md)**
 for code-style conventions.
 
@@ -75,7 +75,7 @@ mismatch between the JPA entities and the schema fails fast at boot.
 cd web && npm run build        # type-checks via tsc, then builds
 ```
 
-## Next steps (per PLAN.md build order)
+## Next steps (per DESIGN.md build order)
 
 1. Capture real SimpleFIN payloads into `fixtures/`.
 2. Build the ingest spine (dedup → rules → review) against those fixtures.

@@ -22,7 +22,7 @@ import java.util.Map;
 /**
  * Budget math: planned (from {@link Budget} rows) vs actual (from the budget
  * transaction predicate) per category, grouped, for a month. See the Budgets
- * section of {@code PLAN.md}.
+ * section of {@code DESIGN.md}.
  */
 @Service
 @RequiredArgsConstructor

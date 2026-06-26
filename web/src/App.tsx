@@ -15,6 +15,7 @@ import MerchantsPage from "./pages/MerchantsPage";
 import CategoriesPage from "./pages/CategoriesPage";
 import CategoryGroupsPage from "./pages/CategoryGroupsPage";
 import RulesPage from "./pages/RulesPage";
+import MatchesPage from "./pages/MatchesPage";
 import DuplicatesPage from "./pages/DuplicatesPage";
 import ImportPage from "./pages/ImportPage";
 import styles from "./App.module.css";
@@ -68,6 +69,7 @@ export default function App() {
                     <Route path="/categories" element={<CategoriesPage />} />
                     <Route path="/category-groups" element={<CategoryGroupsPage />} />
                     <Route path="/rules" element={<RulesPage />} />
+                    <Route path="/matches" element={<MatchesPage />} />
                     <Route path="/duplicates" element={<DuplicatesPage />} />
                     <Route path="/import" element={<ImportPage />} />
                 </Routes>

@@ -15,7 +15,7 @@ import java.util.Locale;
  * amount + normalized-merchant}. Stable and order-independent so the same logical
  * transaction hashes identically whether it arrives via SimpleFIN or CSV. The
  * date is the UTC posting day, so a SimpleFIN {@code posted} timestamp and a CSV
- * date column for the same charge align. See the dedup notes in {@code PLAN.md}.
+ * date column for the same charge align. See the dedup notes in {@code DESIGN.md}.
  */
 public final class ContentHashing {
 

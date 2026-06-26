@@ -15,4 +15,6 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
 
     Optional<Category> findByGroupAndName(CategoryGroup group, String name);
 
+    Optional<Category> findFirstByNameIgnoreCase(String name);
+
 }

@@ -97,15 +97,22 @@ export default function TransactionsTable({ rows, onOpen, accountIconOnly }: Pro
                                         {formatMoney(row.amount, row.currency)}
                                     </Typography>
                                 </TableCell>
-                                <TableCell className={shared.nowrap}>
-                                    {row.needsReview ? (
-                                        <Chip size="small" color="warning" label="Review" />
-                                    ) : (
-                                        <Chip size="small" color="success" label="Reviewed" />
-                                    )}
-                                    {row.excludedFromBudget && (
-                                        <Chip size="small" label="Excluded" className={styles.excludedChip} variant="outlined" />
-                                    )}
+                                <TableCell>
+                                    <div className={styles.statusCell}>
+                                        {row.matchType === "TRANSFER" && <Chip size="small" color="info" label="⇄ Transfer" />}
+                                        {row.matchType === "REFUND" && <Chip size="small" color="info" label="↩ Refund" />}
+                                        {row.awaitingRefund && (
+                                            <Chip size="small" color="warning" variant="outlined" label="Awaiting refund" />
+                                        )}
+                                        {row.needsReview ? (
+                                            <Chip size="small" color="warning" label="Review" />
+                                        ) : (
+                                            <Chip size="small" color="success" label="Reviewed" />
+                                        )}
+                                        {row.excludedFromBudget && !row.matchType && (
+                                            <Chip size="small" label="Excluded" variant="outlined" />
+                                        )}
+                                    </div>
                                 </TableCell>
                                 <TableCell align="right">
                                     {row.needsReview ? (

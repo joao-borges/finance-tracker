@@ -6,11 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A self-hosted personal finance tracker. Auto-syncs transactions from **SimpleFIN**, categorizes them with a merchant-match rules engine, and tracks monthly budgets. CSV import is a fallback source feeding the *same* ingest pipeline (dedup → rules → review).
 
-**`PLAN.md` is the design source of truth** — scope, data model, the flag-semantics table, dedup tiers, and build order all live there. Read it before making design decisions; this file only covers *how* to write code in the repo.
+**`DESIGN.md` is the design source of truth** — scope, data model, the flag-semantics table, dedup tiers, and build order all live there. Read it before making design decisions; this file only covers *how* to write code in the repo.
 
-Two things from `PLAN.md` are load-bearing and easy to get subtly wrong:
+Two things from `DESIGN.md` are load-bearing and easy to get subtly wrong:
 
-- **The flag-semantics table** (`PLAN.md`, "The flag semantics" section). `is_split` / `split_parent_id` / `excluded_from_budget` / `is_dedup` / `needs_review` behave differently in the two places that matter — the transaction list and the budget sum. Implement them as **shared query predicates** in `common/`, never as ad-hoc `if`s scattered around.
+- **The flag-semantics table** (`DESIGN.md`, "The flag semantics" section). `is_split` / `split_parent_id` / `excluded_from_budget` / `is_dedup` / `needs_review` behave differently in the two places that matter — the transaction list and the budget sum. Implement them as **shared query predicates** in `common/`, never as ad-hoc `if`s scattered around.
 - **Dedup is two-tier and soft.** SimpleFIN `id + posted_ts` → silent skip; no-id/CSV content hash → *quarantine* (`is_dedup = true`, restorable), never auto-drop. Same-day identical legitimate charges (two ABC Fitness $31.49) must survive.
 
 ## Technology Stack
@@ -52,7 +52,7 @@ API from a single process on :8080; in dev the Vite server on :3000 proxies
 
 ## Architecture
 
-The Spring Boot app is the project root; `web/` holds the React UI. Java package root: `src/main/java/ca/joaoborges/finance/`. Packages mirror the domain (see `PLAN.md` repo layout):
+The Spring Boot app is the project root; `web/` holds the React UI. Java package root: `src/main/java/ca/joaoborges/finance/`. Packages mirror the domain (see `DESIGN.md` repo layout):
 
 - **`account/`** — accounts + balances pulled from the bank, displayed as-is (no reconciliation).
 - **`transaction/`** — transaction model + split, exclusion, and dedup logic.
@@ -66,8 +66,9 @@ The Spring Boot app is the project root; `web/` holds the React UI. Java package
 - **`webhook/`** — `DiscordNotifier` (Discord-only, fire-and-forget; fires after each import).
 - **`merchant/`** — canonical merchants + favicon (logo) resolution.
 - **`dashboard/`** — landing-page summary (account groups, review count, budget alerts).
+- **`match/`** — transfer/refund matching (`MatchingService`): pairs legs (`matched_with_id`/`match_type`), auto-applies high-confidence, proposes `MatchSuggestion`s; runs in the ingest pipeline after rules. See DESIGN.md "Matching".
 - **`seed/`** — `DataSeeder` (an idempotent `ApplicationRunner`) that ensures the curated category groups, categories, and rules in `resources/seed/seed-data.json` (parsed from the operator's Monarch export) exist at startup.
-- **`auth/`** — Google sign-in (OIDC). `AllowlistOidcUserService` enforces the `finance.auth.allowed-emails` allowlist (fail-closed); `MeController` exposes `GET /api/me`. The security chain is `config/SecurityConfig`, gated by the `oauth` profile — no profile ⇒ auth off (local dev). See PLAN.md "Authentication".
+- **`auth/`** — Google sign-in (OIDC). `AllowlistOidcUserService` enforces the `finance.auth.allowed-emails` allowlist (fail-closed); `MeController` exposes `GET /api/me`. The security chain is `config/SecurityConfig`, gated by the `oauth` profile — no profile ⇒ auth off (local dev). See DESIGN.md "Authentication".
 - **`common/`** — **shared query predicates (the flag table)** and other cross-cutting helpers.
 
 Keep controllers thin (HTTP boundary, `@Valid` DTOs); push behavior into the domain packages. CSV and SimpleFIN must share the ingest pipeline — CSV is a second *source*, not a second system.
@@ -76,7 +77,7 @@ Keep controllers thin (HTTP boundary, `@Valid` DTOs); push behavior into the dom
 
 - **Never expose repositories over HTTP.** Every entity has its own Spring Data repository annotated `@RepositoryRestResource(exported = false)`, and `spring.data.rest.detection-strategy=annotated` so nothing is auto-exposed. All HTTP access goes through a thin `@RestController` per entity exposing exactly what's needed (typically list `GET`, create `POST`, update `PATCH`).
 - **Controllers speak DTOs, never entities.** DTOs are `record`s with `@Builder`. Entity↔DTO mapping is **MapStruct** — one `@Mapper(config = MapStructConfig.class)` per entity (`toDto` flattens relations to ids/names; `toEntity` builds via the Lombok builder; `update(@MappingTarget …)` with null-ignore gives PATCH semantics). Controllers still resolve relations (repo lookups) and derived fields (favicon). List/read endpoints that touch lazy associations are `@Transactional(readOnly = true)`.
-- **Performance:** index `transactions` to real query shapes only (it's the one unbounded table). The Hibernate L2 cache is **JCache + EhCache 3**, regions created explicitly in `config/CacheConfiguration` (one per cacheable entity); entities opt in with `@Cache(usage = NONSTRICT_READ_WRITE, region = CacheRegions.X)` — only small read-heavy reference entities, never `Transaction`/`Budget`/`ImportRun`. Adding a cacheable entity means adding its region name to `common/CacheRegions` AND the create-list in `CacheConfiguration` (else boot fails fast). See PLAN.md "Performance & scaling".
+- **Performance:** index `transactions` to real query shapes only (it's the one unbounded table). The Hibernate L2 cache is **JCache + EhCache 3**, regions created explicitly in `config/CacheConfiguration` (one per cacheable entity); entities opt in with `@Cache(usage = NONSTRICT_READ_WRITE, region = CacheRegions.X)` — only small read-heavy reference entities, never `Transaction`/`Budget`/`ImportRun`. Adding a cacheable entity means adding its region name to `common/CacheRegions` AND the create-list in `CacheConfiguration` (else boot fails fast). See DESIGN.md "Performance & scaling".
 - **Dependency injection is constructor-based via Lombok.** Spring services and controllers declare their collaborators as `private final` fields and use `@RequiredArgsConstructor` — no field injection, no `@Autowired`.
 - **Bind related query params into a filter record, not a long parameter list.** An endpoint with several optional filters takes one command object (e.g. `TransactionFilter` — a `record` Spring binds from query params) that owns its own logic (e.g. `toSpecification()`), rather than a method with many `@RequestParam`s.
 - **Outbound HTTP uses the shared `RestTemplate` (Apache HttpClient 5).** One `RestTemplate` bean is configured in `config/RestClientConfig` (connect/response timeouts, content-compression disabled to avoid a brotli native-lib dep); inject it — don't `new` a JDK `HttpClient` per caller. Fire-and-forget callers (e.g. `DiscordNotifier`) wrap the call in `CompletableFuture.runAsync` so a slow endpoint never blocks a request/import thread.

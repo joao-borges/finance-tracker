@@ -53,6 +53,7 @@ public class IngestService {
     private final DiscordNotifier discordNotifier;
     private final BudgetAlertService budgetAlertService;
     private final ImportCutoff importCutoff;
+    private final ca.joaoborges.finance.match.MatchingService matchingService;
 
     /** Per category+month spend added by this import, for budget/threshold crossing checks. */
     private record AlertKey(Long categoryId, YearMonth month) {
@@ -114,6 +115,7 @@ public class IngestService {
 
             ruleEngine.categorize(transaction, enabledRules);
             transactionRepository.save(transaction);
+            matchingService.matchNewTransaction(transaction);
             byAccount.merge(account.getName(), 1, Integer::sum);
             newCount++;
             if (transaction.isNeedsReview()) {
