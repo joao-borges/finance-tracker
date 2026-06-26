@@ -15,12 +15,15 @@ public interface MatchSuggestionRepository extends JpaRepository<MatchSuggestion
     /** Open suggestions for the Matches page, newest first. */
     List<MatchSuggestion> findByDismissedFalseOrderByCreatedAtDesc();
 
-    /** True if a suggestion already involves either transaction (avoid duplicates). */
+    /**
+     * True if this exact pair is already suggested (order-independent). Pairs, not
+     * single legs, so a purchase can carry several refund suggestions (one-to-many).
+     */
     @Query("""
             SELECT COUNT(s) > 0 FROM MatchSuggestion s
-            WHERE s.legA = :a OR s.legB = :a OR s.legA = :b OR s.legB = :b
+            WHERE (s.legA = :a AND s.legB = :b) OR (s.legA = :b AND s.legB = :a)
             """)
-    boolean existsInvolving(@Param("a") Transaction a, @Param("b") Transaction b);
+    boolean existsPair(@Param("a") Transaction a, @Param("b") Transaction b);
 
     /** Drop any suggestions referencing a transaction once it's matched/unmatched. */
     @Modifying

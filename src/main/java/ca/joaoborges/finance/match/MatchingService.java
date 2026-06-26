@@ -130,12 +130,16 @@ public class MatchingService {
     public Transaction unmatch(final Long transactionId) {
         final Transaction tx = require(transactionId);
         final Transaction partner = tx.getMatchedWith();
-        if (partner == null) {
+        if (partner == null || tx.getMatchType() == null) {
             return tx;
         }
+        // Transfers are 1:1 — unlink both legs. Refunds are many:1 onto a purchase
+        // (which keeps matched_with null), so only the refund leg is unlinked.
+        if (tx.getMatchType() == MatchType.TRANSFER) {
+            revert(partner);
+            transactionRepository.save(partner);
+        }
         revert(tx);
-        revert(partner);
-        transactionRepository.save(partner);
         return transactionRepository.save(tx);
     }
 
@@ -179,8 +183,8 @@ public class MatchingService {
                     } else {
                         suggest(tx, p, MatchType.REFUND);
                     }
+                    // Consume only the refund — the purchase stays open for more refunds.
                     consumed.add(tx.getId());
-                    consumed.add(p.getId());
                 }
             }
         }
@@ -217,15 +221,20 @@ public class MatchingService {
     }
 
     private void applyRefund(final Transaction refund, final Transaction purchase) {
+        // One-to-many: the refund points at the purchase; the purchase stays open
+        // (matched_with null) so further refunds of the same purchase can match.
+        refund.setMatchedWith(purchase);
+        refund.setMatchType(MatchType.REFUND);
+        refund.setNeedsReview(false);
         if (purchase.isAwaitingRefund()) {
+            // Purchase is already out of budget via its flag; keep the refund out too.
             refund.setExcludedFromBudget(true);
-            purchase.setExcludedFromBudget(true);
-            purchase.setAwaitingRefund(false);
         } else if (purchase.getCategory() != null) {
             refund.setCategory(purchase.getCategory());
         }
-        refund.setNeedsReview(false);
-        link(refund, purchase, MatchType.REFUND);
+        // Only the refund is consumed — don't drop the purchase's other suggestions.
+        suggestionRepository.deleteInvolving(refund);
+        transactionRepository.save(refund);
     }
 
     private void link(final Transaction a, final Transaction b, final MatchType type) {
@@ -247,7 +256,7 @@ public class MatchingService {
     }
 
     private void suggest(final Transaction a, final Transaction b, final MatchType type) {
-        if (suggestionRepository.existsInvolving(a, b)) {
+        if (suggestionRepository.existsPair(a, b)) {
             return;
         }
         suggestionRepository.save(MatchSuggestion.builder()
@@ -272,14 +281,24 @@ public class MatchingService {
     }
 
     private boolean isRefundCandidate(final Transaction refund, final Transaction purchase) {
-        return purchase.getMatchedWith() == null
-                && purchase.getAmount().signum() < 0
-                && refund.getAmount().signum() > 0
-                && sameAccount(refund, purchase)
-                && sameMerchant(refund, purchase)
-                && refund.getAmount().compareTo(purchase.getAmount().negate()) <= 0
-                && !purchase.getPostedAt().isAfter(refund.getPostedAt())
-                && Duration.between(purchase.getPostedAt(), refund.getPostedAt()).compareTo(REFUND_WINDOW) <= 0;
+        if (refund.getMatchedWith() != null || refund.getAmount().signum() <= 0) {
+            return false;
+        }
+        // The purchase must be a plain outflow (not itself a refund/transfer leg).
+        if (purchase.getMatchType() != null || purchase.getAmount().signum() >= 0) {
+            return false;
+        }
+        if (!sameAccount(refund, purchase) || !sameMerchant(refund, purchase)) {
+            return false;
+        }
+        if (purchase.getPostedAt().isAfter(refund.getPostedAt())
+                || Duration.between(purchase.getPostedAt(), refund.getPostedAt()).compareTo(REFUND_WINDOW) > 0) {
+            return false;
+        }
+        // Allow one-to-many: only the still-unrefunded remainder of the purchase.
+        final BigDecimal remaining = purchase.getAmount().negate()
+                .subtract(transactionRepository.sumRefundedAgainst(purchase));
+        return remaining.signum() > 0 && refund.getAmount().compareTo(remaining) <= 0;
     }
 
     private boolean refundHighConfidence(final Transaction refund, final Transaction purchase) {

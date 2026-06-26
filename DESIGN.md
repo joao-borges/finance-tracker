@@ -307,8 +307,9 @@ Two transactions are *paired* into one logical event. Both kinds are detected by
 - **Category by where the +cash lands:** inflow account is `CREDIT_CARD` → **Credit Card Payment**, else **Transfer**.
 - **Effect:** both legs `excluded_from_budget = true`, `needs_review = false` (internal money movement, never spend).
 
-### Refunds (partials allowed)
-- **Detect:** an inflow on the **same account** + **same merchant** as an earlier purchase, `refund ≤ purchase`, within ≤90 days, purchase not already matched.
+### Refunds (partials allowed, one-to-many)
+- **One-to-many:** a purchase can be refunded by several separate refunds (a multi-item order refunded item-by-item). Each refund points at the purchase (`matched_with_id`); the purchase stays *open* (`matched_with` null) and a new refund matches only against its **remaining** un-refunded amount (`-purchase − Σ matched refunds`).
+- **Detect:** an inflow on the **same account** + **same merchant** as an earlier purchase, `refund ≤ remaining`, within ≤90 days.
 - **Auto** on exact amount + same canonical merchant; partial/looser → suggestion.
 - **Effect:** the refund inherits the purchase's `category_id` so the `+` nets the `−` in that category — *unless* the purchase is `awaiting_refund`, in which case **both legs are excluded** (a known refund that should never have counted), and the flag resolves.
 

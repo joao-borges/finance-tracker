@@ -65,4 +65,11 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
             """)
     List<Transaction> findMatchCandidates(@Param("start") Instant start, @Param("end") Instant end);
 
+    /** Total of refunds already matched to a purchase (positive). Supports one-to-many refunds. */
+    @Query("""
+            SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t
+            WHERE t.matchedWith = :purchase AND t.matchType = ca.joaoborges.finance.match.MatchType.REFUND
+            """)
+    BigDecimal sumRefundedAgainst(@Param("purchase") Transaction purchase);
+
 }
