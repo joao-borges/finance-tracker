@@ -124,10 +124,9 @@ async function http<T>(method: string, path: string, body?: unknown): Promise<T>
         const text = await res.text();
         throw new Error(text || `${res.status} ${res.statusText}`);
     }
-    if (res.status === 204) {
-        return undefined as T;
-    }
-    return (await res.json()) as T;
+    // Tolerate empty bodies (204, or void endpoints that return 200 with no JSON).
+    const payload = await res.text();
+    return (payload ? JSON.parse(payload) : undefined) as T;
 }
 
 export interface Crud<T> {
