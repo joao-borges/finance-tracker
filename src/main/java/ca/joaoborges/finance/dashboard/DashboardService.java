@@ -88,35 +88,27 @@ public class DashboardService {
             final BigDecimal spent = transactionRepository
                     .sumForCategoryInMonth(budget.getCategory().getId(), start, end)
                     .negate();
+            final BigDecimal threshold = budget.getCategory().getAlertThreshold();
+            // Red only when actually over budget; yellow only when a configured
+            // threshold is reached. At/under 100% with no threshold = no alert.
+            final boolean over = spent.compareTo(planned) > 0;
+            final boolean thresholdHit = threshold != null && threshold.signum() > 0 && spent.compareTo(threshold) >= 0;
+            if (!over && !thresholdHit) {
+                continue;
+            }
             final int percent = spent.multiply(BigDecimal.valueOf(100))
                     .divide(planned, 0, RoundingMode.HALF_UP)
                     .intValue();
-            final int level = level(percent);
-            if (level > 0) {
-                alerts.add(DashboardSummary.BudgetAlert.builder()
-                        .categoryId(budget.getCategory().getId())
-                        .categoryName(budget.getCategory().getName())
-                        .planned(planned)
-                        .spent(spent)
-                        .percent(percent)
-                        .level(level)
-                        .build());
-            }
+            alerts.add(DashboardSummary.BudgetAlert.builder()
+                    .categoryId(budget.getCategory().getId())
+                    .categoryName(budget.getCategory().getName())
+                    .planned(planned)
+                    .spent(spent)
+                    .percent(percent)
+                    .level(over ? 120 : 80)
+                    .build());
         }
         return alerts;
-    }
-
-    private int level(final int percent) {
-        if (percent >= 120) {
-            return 120;
-        }
-        if (percent >= 100) {
-            return 100;
-        }
-        if (percent >= 80) {
-            return 80;
-        }
-        return 0;
     }
 
 }
