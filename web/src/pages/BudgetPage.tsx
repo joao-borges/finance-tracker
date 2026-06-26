@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Box, Button, Chip, IconButton, Typography } from "@mui/material";
+import { Box, IconButton, Tooltip, Typography } from "@mui/material";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
 import { App as AntApp } from "antd";
 import dayjs from "dayjs";
 import BudgetSection from "../components/BudgetSection";
@@ -42,7 +45,6 @@ export default function BudgetPage() {
     const [month, setMonth] = useState(() => dayjs().format("YYYY-MM"));
     const [summary, setSummary] = useState<BudgetSummary | null>(null);
     const [planned, setPlanned] = useState<Record<number, number | null>>({});
-    const [saving, setSaving] = useState(false);
     const [categories, setCategories] = useState<Category[]>([]);
     const [merchants, setMerchants] = useState<Merchant[]>([]);
     const [drillLine, setDrillLine] = useState<BudgetLine | null>(null);
@@ -95,12 +97,10 @@ export default function BudgetPage() {
             plannedAmount,
         }));
         dirty.current.clear();
-        setSaving(true);
         budgetsApi
             .setPlanned(month, entries, true)
             .then(setSummary)
-            .catch((error: unknown) => message.error(errorText(error)))
-            .finally(() => setSaving(false));
+            .catch((error: unknown) => message.error(errorText(error)));
     }, [month, message]);
 
     const setOne = (categoryId: number, value: number | null) => {
@@ -117,15 +117,12 @@ export default function BudgetPage() {
 
     const runAction = async (action: () => Promise<BudgetSummary>) => {
         cancelPending();
-        setSaving(true);
         try {
             const result = await action();
             setSummary(result);
             setPlanned(collectPlanned(result));
         } catch (error: unknown) {
             message.error(errorText(error));
-        } finally {
-            setSaving(false);
         }
     };
 
@@ -147,39 +144,51 @@ export default function BudgetPage() {
 
     return (
         <Box>
-            <Box className={styles.toolbar}>
-                <IconButton onClick={() => shiftMonth(-1)} aria-label="previous month">
-                    <ChevronLeftIcon />
-                </IconButton>
-                <Typography variant="h5" className={styles.monthLabel}>
-                    {dayjs(`${month}-01`).format("MMMM YYYY")}
-                </Typography>
-                <IconButton onClick={() => shiftMonth(1)} aria-label="next month">
-                    <ChevronRightIcon />
-                </IconButton>
-                <Box className={styles.spacer} />
-                <Chip
-                    color={summary.leftToBudget < 0 ? "error" : "primary"}
-                    label={`Left to budget ${formatMoney(summary.leftToBudget)}`}
-                />
-                <Button size="small" component="a" href={`/api/budgets/${month}/export`}>
-                    Export PDF
-                </Button>
-                {!isPast && (
-                    <>
-                        <Button size="small" onClick={() => runAction(() => budgetsApi.copyPrevious(month, true))}>
-                            Copy from previous month
-                        </Button>
-                        <Button size="small" color="error" onClick={() => runAction(() => budgetsApi.clear(month, true))}>
-                            Clear all
-                        </Button>
-                    </>
-                )}
+            <Box className={styles.nav}>
+                <span />
+                <Box className={styles.navCenter}>
+                    <IconButton onClick={() => shiftMonth(-1)} aria-label="previous month">
+                        <ChevronLeftIcon />
+                    </IconButton>
+                    <Typography variant="h6" className={styles.monthLabel}>
+                        {dayjs(`${month}-01`).format("MMMM YYYY")}
+                    </Typography>
+                    <IconButton onClick={() => shiftMonth(1)} aria-label="next month">
+                        <ChevronRightIcon />
+                    </IconButton>
+                </Box>
+                <Box className={styles.navActions}>
+                    <Tooltip title="Export PDF">
+                        <IconButton component="a" href={`/api/budgets/${month}/export`} aria-label="export pdf">
+                            <PictureAsPdfIcon />
+                        </IconButton>
+                    </Tooltip>
+                    {!isPast && (
+                        <>
+                            <Tooltip title="Copy from previous month">
+                                <IconButton onClick={() => runAction(() => budgetsApi.copyPrevious(month, true))} aria-label="copy from previous month">
+                                    <ContentCopyIcon />
+                                </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Clear all">
+                                <IconButton color="error" onClick={() => runAction(() => budgetsApi.clear(month, true))} aria-label="clear all">
+                                    <DeleteSweepIcon />
+                                </IconButton>
+                            </Tooltip>
+                        </>
+                    )}
+                </Box>
             </Box>
 
-            <Typography variant="body2" color="text.secondary" className={styles.status}>
-                {isPast ? "Past month — read only" : saving ? "Saving…" : "Changes save automatically"}
-            </Typography>
+            <Box className={summary.leftToBudget < 0 ? `${styles.leftBanner} ${styles.leftBannerNeg}` : styles.leftBanner}>
+                Left to budget {formatMoney(summary.leftToBudget)}
+            </Box>
+
+            {isPast && (
+                <Typography variant="body2" className={styles.status}>
+                    Past month — read only
+                </Typography>
+            )}
 
             <BudgetSection
                 title="Income"

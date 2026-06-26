@@ -53,3 +53,22 @@
     color: var(--text-secondary);
     font-style: italic;
 }
+
+/* Mobile: drop the Actual column and tighten Planned/Remaining so Category fits. */
+@media (max-width: 600px) {
+    .colActual {
+        display: none;
+    }
+
+    .colPlanned {
+        width: 104px;
+    }
+
+    .colRemaining {
+        width: 92px;
+    }
+
+    .plannedInput {
+        width: 92px;
+    }
+}

@@ -12,7 +12,7 @@ public record SeedData(List<SeedGroup> groups, List<SeedRule> rules, List<SeedMe
     public record SeedGroup(String name, int sortOrder, boolean income, List<SeedCategory> categories) {
     }
 
-    public record SeedCategory(String name, String icon, int sortOrder) {
+    public record SeedCategory(String name, String icon, int sortOrder, boolean hidden) {
     }
 
     public record SeedRule(String name, String merchantMatch, String categoryName, int priority,

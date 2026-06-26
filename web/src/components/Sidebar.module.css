@@ -19,6 +19,11 @@
     width: 64px;
 }
 
+.mobileDrawer :global(.MuiDrawer-paper) {
+    width: 240px;
+    box-sizing: border-box;
+}
+
 .navButton {
     min-height: 48px;
     padding-left: 20px;

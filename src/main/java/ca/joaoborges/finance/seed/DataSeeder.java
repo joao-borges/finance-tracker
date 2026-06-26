@@ -80,6 +80,7 @@ public class DataSeeder implements ApplicationRunner {
                                 .icon(seedCategory.icon())
                                 .income(seedGroup.income())
                                 .sortOrder(seedCategory.sortOrder())
+                                .hidden(seedCategory.hidden())
                                 .build()));
                 byName.put(category.getName(), category);
             }

@@ -1,21 +1,47 @@
-.toolbar {
-    display: flex;
+.nav {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
     gap: 8px;
-    margin-bottom: 8px;
-    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.navCenter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.navActions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
 }
 
 .monthLabel {
-    min-width: 170px;
+    min-width: 150px;
     text-align: center;
 }
 
-.spacer {
-    flex: 1;
+.leftBanner {
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--color-primary);
+    color: var(--color-primary);
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+.leftBannerNeg {
+    border-color: var(--error);
+    color: var(--error);
 }
 
 .status {
-    margin-bottom: 16px;
-    height: 20px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
 }

@@ -8,22 +8,26 @@
         {
           "name": "Paychecks",
           "icon": "💵",
-          "sortOrder": 0
+          "sortOrder": 0,
+          "hidden": false
         },
         {
           "name": "Interest",
           "icon": "💸",
-          "sortOrder": 1
+          "sortOrder": 1,
+          "hidden": true
         },
         {
           "name": "Business Income",
           "icon": "💰",
-          "sortOrder": 2
+          "sortOrder": 2,
+          "hidden": true
         },
         {
           "name": "Other Income",
           "icon": "💰",
-          "sortOrder": 3
+          "sortOrder": 3,
+          "hidden": false
         }
       ]
     },
@@ -35,32 +39,38 @@
         {
           "name": "Gas",
           "icon": "⛽️",
-          "sortOrder": 0
+          "sortOrder": 0,
+          "hidden": true
         },
         {
           "name": "Auto Maintenance",
           "icon": "🔧",
-          "sortOrder": 1
+          "sortOrder": 1,
+          "hidden": true
         },
         {
           "name": "Parking & Tolls",
           "icon": "🏢",
-          "sortOrder": 2
+          "sortOrder": 2,
+          "hidden": true
         },
         {
           "name": "Motorhome",
           "icon": "🚎",
-          "sortOrder": 3
+          "sortOrder": 3,
+          "hidden": false
         },
         {
           "name": "Car Insurance",
           "icon": "🛑",
-          "sortOrder": 4
+          "sortOrder": 4,
+          "hidden": false
         },
         {
           "name": "Auto Payment",
           "icon": "🚗",
-          "sortOrder": 5
+          "sortOrder": 5,
+          "hidden": false
         }
       ]
     },
@@ -72,12 +82,14 @@
         {
           "name": "Rent",
           "icon": "🏠",
-          "sortOrder": 0
+          "sortOrder": 0,
+          "hidden": false
         },
         {
           "name": "Home Insurance",
           "icon": "✅",
-          "sortOrder": 1
+          "sortOrder": 1,
+          "hidden": false
         }
       ]
     },
@@ -89,17 +101,20 @@
         {
           "name": "Internet & Cable",
           "icon": "🌐",
-          "sortOrder": 0
+          "sortOrder": 0,
+          "hidden": false
         },
         {
           "name": "Phone",
           "icon": "📱",
-          "sortOrder": 1
+          "sortOrder": 1,
+          "hidden": false
         },
         {
           "name": "Electric",
           "icon": "⚡",
-          "sortOrder": 2
+          "sortOrder": 2,
+          "hidden": false
         }
       ]
     },
@@ -111,7 +126,8 @@
         {
           "name": "Groceries",
           "icon": "🍏",
-          "sortOrder": 0
+          "sortOrder": 0,
+          "hidden": false
         }
       ]
     },
@@ -123,32 +139,38 @@
         {
           "name": "Travel & Vacation",
           "icon": "🏝",
-          "sortOrder": 0
+          "sortOrder": 0,
+          "hidden": false
         },
         {
           "name": "Entertainment/Dining",
           "icon": "🎥",
-          "sortOrder": 1
+          "sortOrder": 1,
+          "hidden": false
         },
         {
           "name": "Joao",
           "icon": "🚹",
-          "sortOrder": 2
+          "sortOrder": 2,
+          "hidden": false
         },
         {
           "name": "Pets",
           "icon": "🐶",
-          "sortOrder": 3
+          "sortOrder": 3,
+          "hidden": false
         },
         {
           "name": "Amanda",
           "icon": "🚺",
-          "sortOrder": 4
+          "sortOrder": 4,
+          "hidden": false
         },
         {
           "name": "Subscriptions",
           "icon": "🔁",
-          "sortOrder": 5
+          "sortOrder": 5,
+          "hidden": false
         }
       ]
     },
@@ -160,17 +182,20 @@
         {
           "name": "Electronics",
           "icon": "🖥",
-          "sortOrder": 0
+          "sortOrder": 0,
+          "hidden": true
         },
         {
           "name": "Clothing",
           "icon": "👕",
-          "sortOrder": 1
+          "sortOrder": 1,
+          "hidden": true
         },
         {
           "name": "Furniture & Housewares",
           "icon": "🪑",
-          "sortOrder": 2
+          "sortOrder": 2,
+          "hidden": true
         }
       ]
     },
@@ -182,27 +207,32 @@
         {
           "name": "Gym",
           "icon": "🏅",
-          "sortOrder": 0
+          "sortOrder": 0,
+          "hidden": false
         },
         {
           "name": "Fun and Stuff",
           "icon": "⚽️",
-          "sortOrder": 1
+          "sortOrder": 1,
+          "hidden": false
         },
         {
           "name": "Daycare",
           "icon": "🏫",
-          "sortOrder": 2
+          "sortOrder": 2,
+          "hidden": false
         },
         {
           "name": "Swim",
           "icon": "🐟",
-          "sortOrder": 3
+          "sortOrder": 3,
+          "hidden": false
         },
         {
           "name": "Birthday",
           "icon": "🥳",
-          "sortOrder": 4
+          "sortOrder": 4,
+          "hidden": true
         }
       ]
     },
@@ -214,7 +244,8 @@
         {
           "name": "Student Loans",
           "icon": "🎓",
-          "sortOrder": 0
+          "sortOrder": 0,
+          "hidden": true
         }
       ]
     },
@@ -226,22 +257,26 @@
         {
           "name": "Medical",
           "icon": "💊",
-          "sortOrder": 0
+          "sortOrder": 0,
+          "hidden": false
         },
         {
           "name": "Dentist",
           "icon": "🦷",
-          "sortOrder": 1
+          "sortOrder": 1,
+          "hidden": true
         },
         {
           "name": "Fitness",
           "icon": "💪",
-          "sortOrder": 2
+          "sortOrder": 2,
+          "hidden": false
         },
         {
           "name": "Therapy",
           "icon": "🤯",
-          "sortOrder": 3
+          "sortOrder": 3,
+          "hidden": true
         }
       ]
     },
@@ -253,22 +288,26 @@
         {
           "name": "Financial Fees",
           "icon": "🏦",
-          "sortOrder": 0
+          "sortOrder": 0,
+          "hidden": false
         },
         {
           "name": "Insurance",
           "icon": "☂️",
-          "sortOrder": 1
+          "sortOrder": 1,
+          "hidden": true
         },
         {
           "name": "CC Debt",
           "icon": "💸",
-          "sortOrder": 2
+          "sortOrder": 2,
+          "hidden": false
         },
         {
           "name": "Financed Airline Ticket",
           "icon": "✈️",
-          "sortOrder": 3
+          "sortOrder": 3,
+          "hidden": false
         }
       ]
     },
@@ -280,7 +319,8 @@
         {
           "name": "Miscellaneous",
           "icon": "💲",
-          "sortOrder": 0
+          "sortOrder": 0,
+          "hidden": false
         }
       ]
     },
@@ -292,12 +332,14 @@
         {
           "name": "Transfer",
           "icon": "🔁",
-          "sortOrder": 0
+          "sortOrder": 0,
+          "hidden": true
         },
         {
           "name": "Credit Card Payment",
           "icon": "💳",
-          "sortOrder": 1
+          "sortOrder": 1,
+          "hidden": true
         }
       ]
     }

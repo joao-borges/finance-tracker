@@ -14,3 +14,9 @@
 .name {
     opacity: 0.95;
 }
+
+@media (max-width: 600px) {
+    .name {
+        display: none;
+    }
+}

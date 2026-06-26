@@ -48,42 +48,64 @@ const SETUP_NAV: NavItem[] = [
 ];
 
 interface Props {
+    mobile: boolean;
     collapsed: boolean;
+    mobileOpen: boolean;
+    onClose: () => void;
 }
 
-export default function Sidebar({ collapsed }: Props) {
+export default function Sidebar({ mobile, collapsed, mobileOpen, onClose }: Props) {
     const location = useLocation();
+    // Labels show on mobile (full drawer) and on the expanded desktop drawer.
+    const showLabels = mobile || !collapsed;
 
     const renderNav = (items: NavItem[]) => {
         return items.map((item) => {
             return (
-                <Tooltip key={item.to} title={collapsed ? item.label : ""} placement="right">
+                <Tooltip key={item.to} title={showLabels ? "" : item.label} placement="right">
                     <ListItemButton
                         component={Link}
                         to={item.to}
                         selected={location.pathname === item.to}
+                        onClick={mobile ? onClose : undefined}
                         className={styles.navButton}
                     >
                         <ListItemIcon className={styles.navIcon}>
                             {item.icon}
                         </ListItemIcon>
-                        {!collapsed && <ListItemText primary={item.label} />}
+                        {showLabels && <ListItemText primary={item.label} />}
                     </ListItemButton>
                 </Tooltip>
             );
         });
     };
 
-    return (
-        <Drawer
-            variant="permanent"
-            className={styles.drawer}
-            data-collapsed={collapsed}
-        >
+    const nav = (
+        <>
             <Toolbar />
             <List>{renderNav(MAIN_NAV)}</List>
             <Divider />
             <List>{renderNav(SETUP_NAV)}</List>
+        </>
+    );
+
+    if (mobile) {
+        return (
+            <Drawer
+                variant="temporary"
+                open={mobileOpen}
+                onClose={onClose}
+                className={styles.mobileDrawer}
+                ModalProps={{ keepMounted: true }}
+            >
+                {nav}
+            </Drawer>
+        );
+    }
+
+    return (
+        <Drawer variant="permanent" className={styles.drawer} data-collapsed={collapsed}>
+            {nav}
         </Drawer>
     );
 }

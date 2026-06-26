@@ -116,7 +116,7 @@ export default function BudgetSection({
                                             prefix="$"
                                         />
                                     </TableCell>
-                                    <TableCell align="right" className={shared.nowrap}>
+                                    <TableCell align="right" className={`${shared.nowrap} ${styles.colActual}`}>
                                         {formatMoney(line.actual)}
                                     </TableCell>
                                     <TableCell align="right" className={shared.nowrap}>

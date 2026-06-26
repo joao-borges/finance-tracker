@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Route, Routes } from "react-router-dom";
-import { AppBar, Box, IconButton, Toolbar, Typography } from "@mui/material";
+import { AppBar, Box, IconButton, Toolbar, useMediaQuery, useTheme } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import SavingsIcon from "@mui/icons-material/Savings";
 import Sidebar from "./components/Sidebar";
+import BottomNav from "./components/BottomNav";
 import UserMenu from "./components/UserMenu";
 import ThemeControls from "./theme/ThemeControls";
 import Dashboard from "./pages/Dashboard";
@@ -21,9 +22,18 @@ import styles from "./App.module.css";
 const COLLAPSE_KEY = "ft.sidebar.collapsed";
 
 export default function App() {
+    const theme = useTheme();
+    const mobile = useMediaQuery(theme.breakpoints.down("sm"));
     const [collapsed, setCollapsed] = useState<boolean>(() => localStorage.getItem(COLLAPSE_KEY) !== "false");
+    const [mobileOpen, setMobileOpen] = useState(false);
 
-    const toggle = () => {
+    // On mobile the menu icon opens the temporary drawer; on desktop it collapses
+    // the permanent one.
+    const onMenu = () => {
+        if (mobile) {
+            setMobileOpen((open) => !open);
+            return;
+        }
         setCollapsed((current) => {
             const next = !current;
             localStorage.setItem(COLLAPSE_KEY, String(next));
@@ -35,19 +45,17 @@ export default function App() {
         <Box className={styles.root}>
             <AppBar position="fixed" className={styles.appBar}>
                 <Toolbar>
-                    <IconButton color="inherit" edge="start" onClick={toggle} className={styles.menuButton} aria-label="toggle menu">
+                    <IconButton color="inherit" edge="start" onClick={onMenu} className={styles.menuButton} aria-label="menu">
                         <MenuIcon />
                     </IconButton>
                     <SavingsIcon className={styles.logo} />
-                    <Typography variant="h6" noWrap className={styles.title}>
-                        finance
-                    </Typography>
+                    <Box className={styles.spacer} />
                     <ThemeControls />
                     <UserMenu />
                 </Toolbar>
             </AppBar>
 
-            <Sidebar collapsed={collapsed} />
+            <Sidebar mobile={mobile} collapsed={collapsed} mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
 
             <Box component="main" className={styles.main}>
                 <Toolbar />
@@ -64,6 +72,8 @@ export default function App() {
                     <Route path="/import" element={<ImportPage />} />
                 </Routes>
             </Box>
+
+            {mobile && <BottomNav />}
         </Box>
     );
 }
