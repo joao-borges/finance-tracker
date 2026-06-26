@@ -162,9 +162,9 @@ Splits never double-count because the parent (`is_split=true`) is excluded and o
 
 SimpleFIN is a thin JSON API — claim a setup token once, exchange it for a long-lived access URL, then `GET <access_url>/accounts` returns accounts (with balances) and their transactions. No need for any intermediary; the Spring Boot app calls it directly.
 
-**Implemented** in `simplefin/`: `SimpleFinClient` (claim + `fetchAccounts`, over the shared Apache-HttpClient `RestTemplate`), `SimpleFinSyncService` (`setup`/`sync`, the pipeline below), `SimpleFinScheduler` (`@Scheduled(cron = "0 0 6,18 * * *")`, separate bean so the `@Transactional` proxy applies), and `SimpleFinController` (`POST /api/simplefin/setup`, `GET /api/simplefin/status`, `POST /api/simplefin/sync`). The access URL is stored only in `simplefin_connection` — never returned by any endpoint or logged. `fetchAccounts` sends `start-date` (120-day lookback) since the bridge omits transactions otherwise.
+**Implemented** in `simplefin/`: `SimpleFinClient` (claim + `fetchAccounts`, over the shared Apache-HttpClient `RestTemplate`), `SimpleFinSyncService` (`setup`/`sync`, the pipeline below), `SimpleFinScheduler` (daily at noon America/Vancouver by default — `@Scheduled` cron/zone overridable via `finance.simplefin.sync-cron`/`sync-zone`; separate bean so the `@Transactional` proxy applies), and `SimpleFinController` (`POST /api/simplefin/setup`, `GET /api/simplefin/status`, `POST /api/simplefin/sync`). The access URL is stored only in `simplefin_connection` — never returned by any endpoint or logged. `fetchAccounts` sends `start-date` (120-day lookback) since the bridge omits transactions otherwise.
 
-### Sync flow (cron, twice daily)
+### Sync flow (cron, daily at noon)
 1. `GET /accounts?start-date=<epoch>` with the stored access URL.
 2. For each account → upsert; update `balance`, `balance_date`, `last_synced_at`.
 3. For each transaction in the payload:
@@ -176,12 +176,12 @@ SimpleFIN is a thin JSON API — claim a setup token once, exchange it for a lon
 5. Fire notification events (needs-review count, large transactions, budget thresholds, import summary).
 6. Write the `ImportRun` row.
 
-SimpleFIN Bridge rate-limits to ~24 requests/day, so twice-daily is the right cadence; don't poll hot.
+SimpleFIN Bridge rate-limits to ~24 requests/day, so a daily sync is comfortably within budget; don't poll hot.
 
 ### Dedup (soft, restorable)
 The job isn't "are these similar" — it's "did this exact record come back on the next overlapping sync." Two tiers:
 
-- **Has `simplefin_id`:** key is `id + posted_ts`. If it already exists → it's a literal re-import from the overlapping window → **skip silently**. (Don't quarantine these; with twice-daily syncs that's every transaction, every day — pure noise.)
+- **Has `simplefin_id`:** key is `id + posted_ts`. If it already exists → it's a literal re-import from the overlapping window → **skip silently**. (Don't quarantine these; with a daily sync the overlapping window re-sends every transaction — pure noise.)
 - **No `simplefin_id` (rare):** fall back to a content hash of `merchant + amount + account + date`. If that collides with a recent transaction → **quarantine**: insert with `is_dedup = true` so it's hidden but restorable. This is the case your soft-dedup instinct is actually for — the genuinely ambiguous one.
 
 Why this split matters with your data: you have **two ABC Fitness $31.49 charges on the same day, same card**, plus Netflix/Nord subscriptions that re-bill at identical amounts monthly. A naive `merchant+amount+account` key (no date, no id) would eat the second ABC Fitness charge and flag every subscription's second month as a dup. The `id + timestamp` key distinguishes "same record returning" from "real second identical charge." The quarantine-don't-trash model then makes the rare fallback misfire harmless.
