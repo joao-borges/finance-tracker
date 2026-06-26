@@ -99,8 +99,9 @@ public class MatchingService {
     public void confirm(final Long suggestionId) {
         final MatchSuggestion suggestion = suggestionRepository.findById(suggestionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Suggestion not found"));
+        // applyMatch -> link() removes suggestions involving either leg (incl. this
+        // one), so no separate delete here — doing both double-deletes the row.
         applyMatch(suggestion.getLegA(), suggestion.getLegB(), suggestion.getType());
-        suggestionRepository.delete(suggestion);
     }
 
     @Transactional
