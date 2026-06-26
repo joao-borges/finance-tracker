@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Box, Button, Chip, Paper, TextField, Typography } from "@mui/material";
 import SyncIcon from "@mui/icons-material/Sync";
 import LinkIcon from "@mui/icons-material/Link";
-import { App as AntApp } from "antd";
+import { App as AntApp, DatePicker } from "antd";
 import { simplefinApi, type SimpleFinStatus } from "../lib/api";
 import { errorText } from "../lib/format";
 import styles from "./SimpleFinSection.module.css";
@@ -12,6 +12,7 @@ export default function SimpleFinSection({ onSynced }: { onSynced: () => void })
     const { message } = AntApp.useApp();
     const [status, setStatus] = useState<SimpleFinStatus | null>(null);
     const [token, setToken] = useState("");
+    const [range, setRange] = useState<[string, string] | null>(null);
     const [busy, setBusy] = useState(false);
 
     const reload = () => {
@@ -37,10 +38,10 @@ export default function SimpleFinSection({ onSynced }: { onSynced: () => void })
         }
     };
 
-    const sync = async () => {
+    const runSync = async (from?: string, to?: string) => {
         setBusy(true);
         try {
-            const run = await simplefinApi.sync();
+            const run = await simplefinApi.sync(from, to);
             message.success(`Synced ${run.newCount} new transaction(s) across ${run.accountCount} account(s)`);
             reload();
             onSynced();
@@ -68,7 +69,8 @@ export default function SimpleFinSection({ onSynced }: { onSynced: () => void })
             </Box>
 
             <Typography variant="body2" color="text.secondary" className={styles.hint}>
-                Paste a SimpleFIN setup token to connect, or sync now. Syncs also run automatically twice a day.
+                Paste a SimpleFIN setup token to connect. "Sync now" pulls the recent window; syncs also run
+                automatically once a day around noon. Use a date range to force-import a specific period.
             </Typography>
 
             <Box className={styles.controls}>
@@ -82,8 +84,21 @@ export default function SimpleFinSection({ onSynced }: { onSynced: () => void })
                 <Button variant="outlined" startIcon={<LinkIcon />} onClick={connect} disabled={busy || !token.trim()}>
                     Connect
                 </Button>
-                <Button variant="contained" startIcon={<SyncIcon />} onClick={sync} disabled={busy || !status?.connected}>
+                <Button variant="contained" startIcon={<SyncIcon />} onClick={() => runSync()} disabled={busy || !status?.connected}>
                     Sync now
+                </Button>
+            </Box>
+
+            <Box className={`${styles.controls} ${styles.rangeRow}`}>
+                <DatePicker.RangePicker
+                    format="YYYY-MM-DD"
+                    disabled={busy || !status?.connected}
+                    onChange={(_dates, strings) =>
+                        setRange(strings[0] && strings[1] ? [strings[0], strings[1]] : null)
+                    }
+                />
+                <Button onClick={() => range && runSync(range[0], range[1])} disabled={busy || !status?.connected || !range}>
+                    Import range
                 </Button>
             </Box>
         </Paper>

@@ -25,3 +25,7 @@
     flex: 1;
     min-width: 280px;
 }
+
+.rangeRow {
+    margin-top: 12px;
+}

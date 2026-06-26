@@ -32,6 +32,8 @@ BUDGET_MONTH="${BUDGET_MONTH:-2026-06}"
 # match what SimpleFIN returns for the other cards.
 PC_BALANCE="${PC_BALANCE:--3352.67}"
 SIMPLEFIN_TOKEN="${SIMPLEFIN_TOKEN:-}"
+# Initial-load SimpleFIN window (the daily sync only pulls the recent days).
+SIMPLEFIN_FROM="${SIMPLEFIN_FROM:-2026-06-01}"
 
 # --- June 2026 budget (category name | planned $), from the Monarch plan ---
 BUDGET=(
@@ -111,7 +113,7 @@ fi
 
 if curl -sf "${BASE_URL}/api/simplefin/status" 2>/dev/null | jq -e '.connected' >/dev/null 2>&1; then
     log "Syncing SimpleFIN ..."
-    sync_res="$(curl -sf -X POST "${BASE_URL}/api/simplefin/sync" || true)"
+    sync_res="$(curl -sf -X POST "${BASE_URL}/api/simplefin/sync?from=${SIMPLEFIN_FROM}" || true)"
     if [[ -n "${sync_res}" ]]; then
         echo "    new=$(jq -r '.newCount' <<<"$sync_res") dedup=$(jq -r '.dedupCount' <<<"$sync_res") accounts=$(jq -r '.accountCount' <<<"$sync_res")"
     fi

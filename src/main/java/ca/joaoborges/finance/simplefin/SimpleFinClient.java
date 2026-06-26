@@ -13,7 +13,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 
@@ -23,14 +22,11 @@ import java.util.Base64;
  * returns a long-lived access URL with embedded credentials. The accounts
  * endpoint is that access URL + "/accounts" with HTTP Basic auth; a
  * {@code start-date} is required for the bridge to return transactions (balances
- * come back regardless).
+ * come back regardless), and an optional {@code end-date} bounds the window.
  */
 @Component
 @RequiredArgsConstructor
 public class SimpleFinClient {
-
-    /** How far back to ask for transactions on each sync. */
-    private static final Duration LOOKBACK = Duration.ofDays(120);
 
     private final RestTemplate restTemplate;
 
@@ -49,15 +45,17 @@ public class SimpleFinClient {
         }
     }
 
-    /** Fetch the accounts/transactions payload as raw JSON. */
-    public String fetchAccounts(final String accessUrl, final Instant startDate) {
+    /** Fetch the accounts/transactions payload as raw JSON for [startDate, endDate). */
+    public String fetchAccounts(final String accessUrl, final Instant startDate, final Instant endDate) {
         final URI uri = URI.create(accessUrl.trim());
         final String userInfo = uri.getUserInfo();
-        final URI endpoint = UriComponentsBuilder.fromUri(withoutUserInfo(uri))
+        final UriComponentsBuilder builder = UriComponentsBuilder.fromUri(withoutUserInfo(uri))
                 .path("/accounts")
-                .queryParam("start-date", startDate.getEpochSecond())
-                .build(true)
-                .toUri();
+                .queryParam("start-date", startDate.getEpochSecond());
+        if (endDate != null) {
+            builder.queryParam("end-date", endDate.getEpochSecond());
+        }
+        final URI endpoint = builder.build(true).toUri();
 
         final HttpHeaders headers = new HttpHeaders();
         if (userInfo != null) {
@@ -74,11 +72,6 @@ public class SimpleFinClient {
         } catch (final RestClientException networkError) {
             throw new IllegalStateException("SimpleFIN fetch request failed", networkError);
         }
-    }
-
-    /** Default lookback window for a sync. */
-    public Instant defaultStartDate(final Instant now) {
-        return now.minus(LOOKBACK);
     }
 
     private URI withoutUserInfo(final URI uri) {

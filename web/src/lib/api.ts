@@ -339,7 +339,19 @@ export interface SimpleFinStatus {
 export const simplefinApi = {
     status: () => http<SimpleFinStatus>("GET", "/api/simplefin/status"),
     setup: (token: string) => http<SimpleFinStatus>("POST", "/api/simplefin/setup", { token }),
-    sync: () => http<ImportRun>("POST", "/api/simplefin/sync"),
+    // No range = recent window (same as the daily scheduled sync). Pass from/to
+    // (YYYY-MM-DD) to force a custom range.
+    sync: (from?: string, to?: string) => {
+        const params = new URLSearchParams();
+        if (from) {
+            params.set("from", from);
+        }
+        if (to) {
+            params.set("to", to);
+        }
+        const qs = params.toString();
+        return http<ImportRun>("POST", `/api/simplefin/sync${qs ? `?${qs}` : ""}`);
+    },
 };
 
 export interface Me {

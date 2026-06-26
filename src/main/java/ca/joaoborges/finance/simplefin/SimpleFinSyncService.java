@@ -6,7 +6,6 @@ import ca.joaoborges.finance.account.AccountType;
 import ca.joaoborges.finance.budget.BudgetAlertService;
 import ca.joaoborges.finance.category.Category;
 import ca.joaoborges.finance.common.ContentHashing;
-import ca.joaoborges.finance.common.ImportCutoff;
 import ca.joaoborges.finance.common.SourceType;
 import ca.joaoborges.finance.ingest.ImportRun;
 import ca.joaoborges.finance.ingest.ImportRunRepository;
@@ -29,6 +28,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneOffset;
 import java.util.HashMap;
@@ -57,9 +57,17 @@ public class SimpleFinSyncService {
     private final RuleEngine ruleEngine;
     private final DiscordNotifier discordNotifier;
     private final BudgetAlertService budgetAlertService;
-    private final ImportCutoff importCutoff;
 
     private record AlertKey(Long categoryId, YearMonth month) {
+    }
+
+    /**
+     * Incremental sync window for the scheduled run / "Sync now": from the start
+     * of yesterday (UTC). It overlaps the prior day so nothing slips through the
+     * daily boundary — the {@code simplefin_id} dedup makes the overlap free.
+     */
+    private Instant defaultStart() {
+        return LocalDate.now(ZoneOffset.UTC).minusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
     }
 
     @Transactional
@@ -83,16 +91,22 @@ public class SimpleFinSyncService {
         return connectionRepository.findFirstByOrderByIdAsc().isPresent();
     }
 
+    /** Incremental sync over the default recent window (scheduled / "Sync now"). */
     @Transactional
     public ImportRun sync() {
+        return sync(defaultStart(), null);
+    }
+
+    /**
+     * Sync transactions posted in [startDate, endDate). endDate null = up to now.
+     * Used for the forced custom-range import from the UI.
+     */
+    @Transactional
+    public ImportRun sync(final Instant startDate, final Instant endDate) {
         final SimpleFinConnection connection = connectionRepository.findFirstByOrderByIdAsc()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "SimpleFIN is not connected"));
-        Instant startDate = simpleFinClient.defaultStartDate(Instant.now());
-        if (importCutoff.minPostedAt().isPresent() && importCutoff.minPostedAt().get().isAfter(startDate)) {
-            startDate = importCutoff.minPostedAt().get();
-        }
         final JsonNode root = objectMapper.readTree(
-                simpleFinClient.fetchAccounts(connection.getAccessUrl(), startDate));
+                simpleFinClient.fetchAccounts(connection.getAccessUrl(), startDate, endDate));
 
         final ImportRun run = importRunRepository.save(ImportRun.builder()
                 .source(SourceType.SIMPLEFIN)
@@ -132,9 +146,6 @@ public class SimpleFinSyncService {
                     continue;
                 }
                 final Instant postedAt = Instant.ofEpochSecond(posted);
-                if (importCutoff.excludes(postedAt)) {
-                    continue;
-                }
                 if (transactionRepository.existsBySimplefinId(txId)) {
                     dedupCount++;
                     continue;
