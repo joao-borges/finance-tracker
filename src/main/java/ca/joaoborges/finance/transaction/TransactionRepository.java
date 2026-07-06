@@ -57,11 +57,16 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
                                      @Param("start") Instant start,
                                      @Param("end") Instant end);
 
-    /** Live (non-split, non-dedup), not-yet-matched transactions in a date window, for the matcher. */
+    /**
+     * Live (non-split, non-dedup), not-yet-matched transactions in a date window,
+     * for the matcher. Chronological so scans process (and reserve) purchases
+     * deterministically — earlier refunds claim first.
+     */
     @Query("""
             SELECT t FROM Transaction t
             WHERE t.split = false AND t.dedup = false AND t.matchedWith IS NULL
               AND t.postedAt >= :start AND t.postedAt < :end
+            ORDER BY t.postedAt ASC, t.id ASC
             """)
     List<Transaction> findMatchCandidates(@Param("start") Instant start, @Param("end") Instant end);
 

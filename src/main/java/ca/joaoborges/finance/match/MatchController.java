@@ -56,6 +56,7 @@ public class MatchController {
 
     /** Manually pair two transactions. */
     @PostMapping
+    @Transactional
     public TransactionDto match(@RequestBody final ManualMatchRequest request) {
         return transactionMapper.toDto(matchingService.manualMatch(request.aId(), request.bId(), request.type()));
     }

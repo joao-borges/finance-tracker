@@ -302,6 +302,8 @@ Optionally validate that child amounts sum to the parent amount, but don't enfor
 
 Two transactions are *paired* into one logical event. Both kinds are detected by `match/MatchingService` after the rules engine on every ingest (CSV + SimpleFIN), plus a manual **scan** for the backlog. High-confidence pairs are applied automatically; weaker ones become a `MatchSuggestion` for the Matches page. A pair is stored as `matched_with_id` + `match_type` on both legs; **unmatch** unlinks them and returns both to review.
 
+Ingest matching is **bidirectional**: a new inflow searches back for its purchase, and a new outflow lets already-ingested unmatched inflows claim it — so payload order (refund arriving before its purchase) never loses a match. Same-account refund evidence outranks a weak cross-account transfer coincidence; only a *high-confidence* transfer preempts the refund check. All candidate ordering is deterministic (chronological with id tiebreaks), so re-running a scan is idempotent.
+
 ### Transfers (incl. credit-card payments)
 - **Detect:** opposite signs, equal `|amount|`, two *different* accounts, posted within ±5 days, and neither already matched.
 - **Auto** when there's a payment signal — the inflow leg's account is a credit card, or a descriptor contains `payment`/`transfer`/`e-transfer`/etc. Otherwise → suggestion.
@@ -311,7 +313,10 @@ Two transactions are *paired* into one logical event. Both kinds are detected by
 ### Refunds (partials allowed, one-to-many)
 - **One-to-many:** a purchase can be refunded by several separate refunds (a multi-item order refunded item-by-item). Each refund points at the purchase (`matched_with_id`); the purchase stays *open* (`matched_with` null) and a new refund matches only against its **remaining** un-refunded amount (`-purchase − Σ matched refunds`).
 - **Detect:** an inflow on the **same account** + **same merchant** as an earlier purchase, `refund ≤ remaining`, within ≤90 days.
+- **Target choice** when several purchases fit: exact-remainder match first, then exact-original-amount, then nearest preceding date (id tiebreak). Open suggestions **soft-reserve** their amount against the purchase, so multiple refunds spread across plausible purchases instead of all piling onto the largest one.
+- **One open suggestion per refund:** a better target *replaces* the refund's existing suggestion (purchases can still carry several — one per refund). A dismissed pair is never re-suggested, and its candidate is skipped so the runner-up can surface.
 - **Auto** on exact amount + same canonical merchant; partial/looser → suggestion.
+- **Guarded apply:** confirming re-validates against the purchase's *hard* remainder (409 if stale), manual refund matches are validated the same way (400), and every apply prunes sibling suggestions that no longer fit the new remainder — a purchase can never be over-refunded.
 - **Effect:** the refund inherits the purchase's `category_id` so the `+` nets the `−` in that category — *unless* the purchase is `awaiting_refund`, in which case **both legs are excluded** (a known refund that should never have counted), and the flag resolves.
 
 ### Awaiting-refund flag
@@ -417,6 +422,7 @@ POST   /api/rules/:id/apply               # retroactive run over uncategorized
 
 # Transactions  (visible rows only; newest first; paginated)
 GET    /api/transactions?from=&to=&accountIds=&merchantIds=&categoryIds=&review=&page=&size=
+POST   /api/transactions                  # manual single entry (source MANUAL; rules run if no category; never auto-matched)
 PATCH  /api/transactions/:id              # categorize, link/create merchant, approve, exclude-from-budget
 POST   /api/transactions/:id/split        # split into (amount, category) children
 POST   /api/transactions/:id/unsplit      # undo a split

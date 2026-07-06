@@ -52,6 +52,10 @@ export default function MatchesPage() {
             message.success(label);
         } catch (error: unknown) {
             message.error(errorText(error));
+        } finally {
+            // Confirming a refund can prune sibling suggestions server-side, and a
+            // failed confirm means the list is stale — re-sync either way.
+            load();
         }
     };
 

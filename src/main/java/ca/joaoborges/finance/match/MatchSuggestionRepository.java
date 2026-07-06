@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RepositoryRestResource(exported = false)
@@ -24,6 +25,36 @@ public interface MatchSuggestionRepository extends JpaRepository<MatchSuggestion
             WHERE (s.legA = :a AND s.legB = :b) OR (s.legA = :b AND s.legB = :a)
             """)
     boolean existsPair(@Param("a") Transaction a, @Param("b") Transaction b);
+
+    /** True if the user already dismissed this pair — never re-suggest it. */
+    @Query("""
+            SELECT COUNT(s) > 0 FROM MatchSuggestion s
+            WHERE s.dismissed = true
+              AND ((s.legA = :a AND s.legB = :b) OR (s.legA = :b AND s.legB = :a))
+            """)
+    boolean pairDismissed(@Param("a") Transaction a, @Param("b") Transaction b);
+
+    /** Open suggestions of a type with the transaction as either leg. */
+    @Query("""
+            SELECT s FROM MatchSuggestion s
+            WHERE s.dismissed = false AND s.type = :type AND (s.legA = :tx OR s.legB = :tx)
+            """)
+    List<MatchSuggestion> findOpenByTypeInvolving(@Param("type") MatchType type, @Param("tx") Transaction tx);
+
+    /**
+     * Total inflow amount held against a purchase by OTHER refunds' open
+     * suggestions — a soft reservation so several refunds don't all target the
+     * same purchase past its amount. Excludes suggestions involving
+     * {@code refund} so re-evaluating a refund never blocks its own target.
+     */
+    @Query("""
+            SELECT COALESCE(SUM(CASE WHEN s.legA = :purchase THEN s.legB.amount ELSE s.legA.amount END), 0)
+            FROM MatchSuggestion s
+            WHERE s.dismissed = false AND s.type = ca.joaoborges.finance.match.MatchType.REFUND
+              AND (s.legA = :purchase OR s.legB = :purchase)
+              AND s.legA <> :refund AND s.legB <> :refund
+            """)
+    BigDecimal sumOpenSuggestionsAgainst(@Param("purchase") Transaction purchase, @Param("refund") Transaction refund);
 
     /** Drop any suggestions referencing a transaction once it's matched/unmatched. */
     @Modifying

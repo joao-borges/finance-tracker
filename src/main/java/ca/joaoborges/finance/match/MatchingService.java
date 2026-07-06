@@ -13,10 +13,13 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -50,7 +53,14 @@ public class MatchingService {
 
     // ---- ingest entry point -------------------------------------------------
 
-    /** Try to auto-match a freshly imported transaction, else propose a suggestion. */
+    /**
+     * Try to auto-match a freshly imported transaction, else propose a suggestion.
+     * Works in both directions: a new inflow searches for its purchase, and a new
+     * outflow lets earlier-ingested unmatched inflows claim it — so payload order
+     * (refund before purchase) doesn't lose matches. Same-account refund evidence
+     * outranks a weak cross-account transfer coincidence; only a high-confidence
+     * transfer preempts the refund check.
+     */
     public void matchNewTransaction(final Transaction tx) {
         if (tx.isDedup() || tx.isSplit() || tx.getMatchedWith() != null) {
             return;
@@ -63,29 +73,51 @@ public class MatchingService {
 
         final Optional<Transaction> transfer = candidates.stream()
                 .filter(other -> isTransferCandidate(tx, other))
-                .min(Comparator.comparing(other -> dateGap(tx, other)));
-        if (transfer.isPresent()) {
-            final Transaction other = transfer.get();
-            if (transferHighConfidence(tx, other)) {
-                applyTransfer(tx, other);
-            } else {
-                suggest(tx, other, MatchType.TRANSFER);
-            }
+                .filter(other -> !suggestionRepository.pairDismissed(tx, other))
+                .min(transferPreference(tx));
+        if (transfer.isPresent() && transferHighConfidence(tx, transfer.get())) {
+            applyTransfer(tx, transfer.get());
             return;
         }
 
         if (tx.getAmount().signum() > 0) {
-            final Optional<Transaction> purchase = candidates.stream()
-                    .filter(other -> isRefundCandidate(tx, other))
-                    .min(refundPreference(tx));
-            purchase.ifPresent(p -> {
-                if (refundHighConfidence(tx, p)) {
-                    applyRefund(tx, p);
-                } else {
-                    suggest(tx, p, MatchType.REFUND);
-                }
-            });
+            final Optional<Transaction> purchase = bestRefundTarget(tx, candidates);
+            if (purchase.isPresent()) {
+                applyOrSuggestRefund(tx, purchase.get());
+                return;
+            }
+        } else if (matchReverseRefunds(tx, candidates)) {
+            return;
         }
+
+        transfer.ifPresent(other -> suggestTransfer(tx, other));
+    }
+
+    /**
+     * Reverse refund direction: a new outflow may be the purchase for inflows that
+     * were ingested before it. Each such inflow re-picks its best target from the
+     * pool including this purchase; it only binds here if this purchase wins.
+     * Returns true when any inflow claimed this purchase.
+     */
+    private boolean matchReverseRefunds(final Transaction purchase, final List<Transaction> candidates) {
+        boolean claimed = false;
+        for (final Transaction inflow : candidates) {
+            if (inflow.getAmount().signum() <= 0 || inflow.getMatchedWith() != null) {
+                continue;
+            }
+            if (!isRefundShape(inflow, purchase)) {
+                continue;
+            }
+            final List<Transaction> pool = new ArrayList<>(candidates);
+            pool.removeIf(t -> t.getId().equals(inflow.getId()));
+            pool.add(purchase);
+            final Optional<Transaction> best = bestRefundTarget(inflow, pool);
+            if (best.isPresent() && best.get().getId().equals(purchase.getId())) {
+                applyOrSuggestRefund(inflow, purchase);
+                claimed = true;
+            }
+        }
+        return claimed;
     }
 
     // ---- review-surface actions --------------------------------------------
@@ -99,9 +131,35 @@ public class MatchingService {
     public void confirm(final Long suggestionId) {
         final MatchSuggestion suggestion = suggestionRepository.findById(suggestionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Suggestion not found"));
-        // applyMatch -> link() removes suggestions involving either leg (incl. this
-        // one), so no separate delete here — doing both double-deletes the row.
+        validateStillApplies(suggestion);
+        // applyMatch -> link()/applyRefund() removes suggestions involving the
+        // legs (incl. this one), so no separate delete here — doing both
+        // double-deletes the row.
         applyMatch(suggestion.getLegA(), suggestion.getLegB(), suggestion.getType());
+    }
+
+    /** Suggestions can go stale (a leg matched elsewhere, a purchase refunded past this amount). */
+    private void validateStillApplies(final MatchSuggestion suggestion) {
+        final Transaction a = suggestion.getLegA();
+        final Transaction b = suggestion.getLegB();
+        if (suggestion.getType() == MatchType.TRANSFER) {
+            if (a.getMatchedWith() != null || b.getMatchedWith() != null) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "A leg of this suggestion is already matched — refresh the list");
+            }
+            return;
+        }
+        final Transaction refund = a.getAmount().signum() > 0 ? a : b;
+        final Transaction purchase = refund == a ? b : a;
+        if (refund.getMatchedWith() != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "This refund is already matched — refresh the list");
+        }
+        final BigDecimal remaining = remainingAfterApplied(purchase);
+        if (remaining.signum() <= 0 || refund.getAmount().compareTo(remaining) > 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Refund exceeds the purchase's unrefunded remainder — refresh the list");
+        }
     }
 
     @Transactional
@@ -121,6 +179,18 @@ public class MatchingService {
         final Transaction b = require(bId);
         if (a.getMatchedWith() != null || b.getMatchedWith() != null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "One of the transactions is already matched");
+        }
+        if (type == MatchType.REFUND) {
+            final Transaction refund = a.getAmount().signum() > 0 ? a : b;
+            final Transaction purchase = refund == a ? b : a;
+            if (refund.getAmount().signum() <= 0 || purchase.getAmount().signum() >= 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "A refund match needs one inflow and one outflow");
+            }
+            if (refund.getAmount().compareTo(remainingAfterApplied(purchase)) > 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Refund exceeds the purchase's unrefunded remainder");
+            }
         }
         applyMatch(a, b, type);
         return a;
@@ -143,7 +213,12 @@ public class MatchingService {
         return transactionRepository.save(tx);
     }
 
-    /** Backfill: scan existing un-matched transactions and auto-match / suggest. */
+    /**
+     * Backfill: scan existing un-matched transactions and auto-match / suggest.
+     * Legs are consumed only by actual applies — a mere suggestion never blocks a
+     * transaction's other possibilities. Candidates arrive chronologically, so
+     * earlier refunds reserve their purchases first (deterministic re-runs).
+     */
     @Transactional
     public int scan() {
         final List<Transaction> all = transactionRepository
@@ -151,42 +226,36 @@ public class MatchingService {
         final Set<Long> consumed = new HashSet<>();
         int applied = 0;
         for (final Transaction tx : all) {
-            if (consumed.contains(tx.getId())) {
+            if (consumed.contains(tx.getId()) || tx.getMatchedWith() != null) {
                 continue;
             }
             final Optional<Transaction> transfer = all.stream()
                     .filter(other -> !other.getId().equals(tx.getId()) && !consumed.contains(other.getId()))
                     .filter(other -> isTransferCandidate(tx, other))
-                    .min(Comparator.comparing(other -> dateGap(tx, other)));
-            if (transfer.isPresent()) {
-                final Transaction other = transfer.get();
-                if (transferHighConfidence(tx, other)) {
-                    applyTransfer(tx, other);
-                    applied++;
-                } else {
-                    suggest(tx, other, MatchType.TRANSFER);
-                }
+                    .filter(other -> !suggestionRepository.pairDismissed(tx, other))
+                    .min(transferPreference(tx));
+            if (transfer.isPresent() && transferHighConfidence(tx, transfer.get())) {
+                applyTransfer(tx, transfer.get());
                 consumed.add(tx.getId());
-                consumed.add(other.getId());
+                consumed.add(transfer.get().getId());
+                applied++;
                 continue;
             }
             if (tx.getAmount().signum() > 0) {
-                final Optional<Transaction> purchase = all.stream()
+                final Optional<Transaction> purchase = bestRefundTarget(tx, all.stream()
                         .filter(other -> !other.getId().equals(tx.getId()) && !consumed.contains(other.getId()))
-                        .filter(other -> isRefundCandidate(tx, other))
-                        .min(refundPreference(tx));
+                        .toList());
                 if (purchase.isPresent()) {
-                    final Transaction p = purchase.get();
-                    if (refundHighConfidence(tx, p)) {
-                        applyRefund(tx, p);
+                    if (applyOrSuggestRefund(tx, purchase.get())) {
+                        // Consume only the refund — the purchase stays open for more refunds.
+                        consumed.add(tx.getId());
                         applied++;
-                    } else {
-                        suggest(tx, p, MatchType.REFUND);
                     }
-                    // Consume only the refund — the purchase stays open for more refunds.
-                    consumed.add(tx.getId());
+                    // Same-account refund evidence found — skip the weak-transfer fallback.
+                    continue;
                 }
             }
+            transfer.ifPresent(other -> suggestTransfer(tx, other));
         }
         return applied;
     }
@@ -220,6 +289,16 @@ public class MatchingService {
         link(a, b, MatchType.TRANSFER);
     }
 
+    /** Auto-apply when high-confidence, else suggest. Returns true when applied. */
+    private boolean applyOrSuggestRefund(final Transaction refund, final Transaction purchase) {
+        if (refundHighConfidence(refund, purchase)) {
+            applyRefund(refund, purchase);
+            return true;
+        }
+        suggestRefund(refund, purchase);
+        return false;
+    }
+
     private void applyRefund(final Transaction refund, final Transaction purchase) {
         // One-to-many: the refund points at the purchase; the purchase stays open
         // (matched_with null) so further refunds of the same purchase can match.
@@ -235,6 +314,19 @@ public class MatchingService {
         // Only the refund is consumed — don't drop the purchase's other suggestions.
         suggestionRepository.deleteInvolving(refund);
         transactionRepository.save(refund);
+        pruneOversubscribed(purchase);
+    }
+
+    /** After an apply, drop sibling suggestions that no longer fit the purchase's remainder. */
+    private void pruneOversubscribed(final Transaction purchase) {
+        final BigDecimal remaining = remainingAfterApplied(purchase);
+        for (final MatchSuggestion sibling : suggestionRepository.findOpenByTypeInvolving(MatchType.REFUND, purchase)) {
+            final Transaction siblingRefund = sibling.getLegA().getId().equals(purchase.getId())
+                    ? sibling.getLegB() : sibling.getLegA();
+            if (remaining.signum() <= 0 || siblingRefund.getAmount().compareTo(remaining) > 0) {
+                suggestionRepository.delete(sibling);
+            }
+        }
     }
 
     private void link(final Transaction a, final Transaction b, final MatchType type) {
@@ -255,12 +347,34 @@ public class MatchingService {
         tx.setNeedsReview(true);
     }
 
-    private void suggest(final Transaction a, final Transaction b, final MatchType type) {
+    private void suggestTransfer(final Transaction a, final Transaction b) {
         if (suggestionRepository.existsPair(a, b)) {
             return;
         }
         suggestionRepository.save(MatchSuggestion.builder()
-                .legA(a).legB(b).type(type).createdAt(Instant.now()).build());
+                .legA(a).legB(b).type(MatchType.TRANSFER).createdAt(Instant.now()).build());
+    }
+
+    /**
+     * A refund keeps exactly one open suggestion — its current best target. A
+     * better candidate replaces the old suggestion instead of piling up next to
+     * it (purchases can still carry several, one per refund: one-to-many).
+     */
+    private void suggestRefund(final Transaction refund, final Transaction purchase) {
+        boolean alreadySuggested = false;
+        for (final MatchSuggestion existing : suggestionRepository.findOpenByTypeInvolving(MatchType.REFUND, refund)) {
+            if (existing.getLegA().getId().equals(purchase.getId())
+                    || existing.getLegB().getId().equals(purchase.getId())) {
+                alreadySuggested = true;
+            } else {
+                suggestionRepository.delete(existing);
+            }
+        }
+        if (alreadySuggested || suggestionRepository.existsPair(refund, purchase)) {
+            return;
+        }
+        suggestionRepository.save(MatchSuggestion.builder()
+                .legA(refund).legB(purchase).type(MatchType.REFUND).createdAt(Instant.now()).build());
     }
 
     // ---- heuristics ---------------------------------------------------------
@@ -280,7 +394,8 @@ public class MatchingService {
         return toCreditCard || hasPaymentKeyword(a) || hasPaymentKeyword(b);
     }
 
-    private boolean isRefundCandidate(final Transaction refund, final Transaction purchase) {
+    /** Structural refund-pair check: signs, account, merchant, window. No amount math. */
+    private boolean isRefundShape(final Transaction refund, final Transaction purchase) {
         if (refund.getMatchedWith() != null || refund.getAmount().signum() <= 0) {
             return false;
         }
@@ -291,14 +406,49 @@ public class MatchingService {
         if (!sameAccount(refund, purchase) || !sameMerchant(refund, purchase)) {
             return false;
         }
-        if (purchase.getPostedAt().isAfter(refund.getPostedAt())
-                || Duration.between(purchase.getPostedAt(), refund.getPostedAt()).compareTo(REFUND_WINDOW) > 0) {
-            return false;
+        return !purchase.getPostedAt().isAfter(refund.getPostedAt())
+                && Duration.between(purchase.getPostedAt(), refund.getPostedAt()).compareTo(REFUND_WINDOW) <= 0;
+    }
+
+    /** Hard remainder: the purchase amount minus refunds already applied against it. */
+    private BigDecimal remainingAfterApplied(final Transaction purchase) {
+        return purchase.getAmount().negate().subtract(transactionRepository.sumRefundedAgainst(purchase));
+    }
+
+    /**
+     * Soft remainder for choosing a suggestion target: also subtracts amounts held
+     * by other refunds' open suggestions, so several refunds spread over plausible
+     * purchases instead of all piling onto the largest one.
+     */
+    private BigDecimal remainingForSuggesting(final Transaction purchase, final Transaction refund) {
+        return remainingAfterApplied(purchase)
+                .subtract(suggestionRepository.sumOpenSuggestionsAgainst(purchase, refund));
+    }
+
+    /**
+     * Pick the purchase this refund most plausibly belongs to: exact-remainder
+     * match first, then exact-original-amount, then nearest preceding date, with
+     * an id tiebreak so re-runs are deterministic. Candidates whose pairing the
+     * user already dismissed are skipped entirely (so the runner-up can surface).
+     */
+    private Optional<Transaction> bestRefundTarget(final Transaction refund, final List<Transaction> candidates) {
+        final Map<Long, BigDecimal> remainingById = new HashMap<>();
+        final List<Transaction> eligible = new ArrayList<>();
+        for (final Transaction purchase : candidates) {
+            if (!isRefundShape(refund, purchase) || suggestionRepository.pairDismissed(refund, purchase)) {
+                continue;
+            }
+            final BigDecimal remaining = remainingForSuggesting(purchase, refund);
+            if (remaining.signum() > 0 && refund.getAmount().compareTo(remaining) <= 0) {
+                remainingById.put(purchase.getId(), remaining);
+                eligible.add(purchase);
+            }
         }
-        // Allow one-to-many: only the still-unrefunded remainder of the purchase.
-        final BigDecimal remaining = purchase.getAmount().negate()
-                .subtract(transactionRepository.sumRefundedAgainst(purchase));
-        return remaining.signum() > 0 && refund.getAmount().compareTo(remaining) <= 0;
+        return eligible.stream().min(Comparator
+                .comparing((Transaction p) -> refund.getAmount().compareTo(remainingById.get(p.getId())) == 0 ? 0 : 1)
+                .thenComparing(p -> refund.getAmount().compareTo(p.getAmount().negate()) == 0 ? 0 : 1)
+                .thenComparing(p -> Duration.between(p.getPostedAt(), refund.getPostedAt()))
+                .thenComparing(Transaction::getId));
     }
 
     private boolean refundHighConfidence(final Transaction refund, final Transaction purchase) {
@@ -308,11 +458,10 @@ public class MatchingService {
         return exact && canonical;
     }
 
-    /** Prefer exact-amount, then nearest date, when several purchases could match a refund. */
-    private Comparator<Transaction> refundPreference(final Transaction refund) {
-        return Comparator
-                .comparing((Transaction p) -> refund.getAmount().compareTo(p.getAmount().negate()) == 0 ? 0 : 1)
-                .thenComparing(p -> Duration.between(p.getPostedAt(), refund.getPostedAt()));
+    /** Nearest date wins; id tiebreak keeps re-runs deterministic. */
+    private Comparator<Transaction> transferPreference(final Transaction tx) {
+        return Comparator.comparing((Transaction other) -> dateGap(tx, other))
+                .thenComparing(Transaction::getId);
     }
 
     private boolean sameAccount(final Transaction a, final Transaction b) {
