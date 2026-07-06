@@ -1,12 +1,20 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Button, Chip, Paper, Typography } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
-import { App as AntApp } from "antd";
+import { App as AntApp, Checkbox } from "antd";
 import EntityAvatar from "../components/EntityAvatar";
 import { matchesApi, type MatchSuggestion, type Transaction } from "../lib/api";
 import { errorText, formatDate, formatMoney } from "../lib/format";
 import shared from "../styles/shared.module.css";
 import styles from "./MatchesPage.module.css";
+
+/** Suggestions sharing a purchase render as one card (one-to-many refunds). */
+interface SuggestionCard {
+    key: string;
+    type: "TRANSFER" | "REFUND";
+    anchor: Transaction;
+    rows: { suggestion: MatchSuggestion; other: Transaction }[];
+}
 
 function Leg({ tx }: { tx: Transaction }) {
     return (
@@ -24,6 +32,7 @@ function Leg({ tx }: { tx: Transaction }) {
 export default function MatchesPage() {
     const { message } = AntApp.useApp();
     const [items, setItems] = useState<MatchSuggestion[]>([]);
+    const [checked, setChecked] = useState<Set<number>>(new Set());
     const [busy, setBusy] = useState(false);
 
     const load = useCallback(() => {
@@ -31,6 +40,56 @@ export default function MatchesPage() {
     }, [message]);
 
     useEffect(load, [load]);
+
+    // Group refund suggestions by their purchase leg; transfers stay one per card.
+    const cards = useMemo(() => {
+        const result: SuggestionCard[] = [];
+        const refundCardByPurchase = new Map<number, SuggestionCard>();
+        for (const item of items) {
+            if (item.type === "REFUND") {
+                const purchase = item.legA.amount < 0 ? item.legA : item.legB;
+                const refund = purchase.id === item.legA.id ? item.legB : item.legA;
+                const existing = refundCardByPurchase.get(purchase.id);
+                if (existing) {
+                    existing.rows.push({ suggestion: item, other: refund });
+                } else {
+                    const card: SuggestionCard = {
+                        key: `refund-${purchase.id}`,
+                        type: "REFUND",
+                        anchor: purchase,
+                        rows: [{ suggestion: item, other: refund }],
+                    };
+                    refundCardByPurchase.set(purchase.id, card);
+                    result.push(card);
+                }
+            } else {
+                result.push({
+                    key: `transfer-${item.id}`,
+                    type: "TRANSFER",
+                    anchor: item.legA,
+                    rows: [{ suggestion: item, other: item.legB }],
+                });
+            }
+        }
+        return result;
+    }, [items]);
+
+    // Everything starts selected whenever the list refreshes.
+    useEffect(() => {
+        setChecked(new Set(items.map((item) => item.id)));
+    }, [items]);
+
+    const toggle = (id: number) => {
+        setChecked((current) => {
+            const next = new Set(current);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
+    };
 
     const scan = async () => {
         setBusy(true);
@@ -45,18 +104,38 @@ export default function MatchesPage() {
         }
     };
 
-    const act = async (id: number, fn: (id: number) => Promise<unknown>, label: string) => {
+    /** Confirm or dismiss every selected suggestion of a card, then re-sync the list. */
+    const act = async (card: SuggestionCard, fn: (id: number) => Promise<unknown>, label: string) => {
+        const selected = card.rows.filter((row) => checked.has(row.suggestion.id));
+        if (selected.length === 0) {
+            return;
+        }
+        setBusy(true);
+        let done = 0;
         try {
-            await fn(id);
-            setItems((current) => current.filter((item) => item.id !== id));
-            message.success(label);
+            for (const row of selected) {
+                await fn(row.suggestion.id);
+                done++;
+            }
+            message.success(`${done > 1 ? `${done} ` : ""}${label}`);
         } catch (error: unknown) {
             message.error(errorText(error));
         } finally {
+            setBusy(false);
             // Confirming a refund can prune sibling suggestions server-side, and a
-            // failed confirm means the list is stale — re-sync either way.
+            // failed call means the list is stale — re-sync either way.
             load();
         }
+    };
+
+    const selectedCount = (card: SuggestionCard) => {
+        return card.rows.filter((row) => checked.has(row.suggestion.id)).length;
+    };
+
+    const selectedSum = (card: SuggestionCard) => {
+        return card.rows
+            .filter((row) => checked.has(row.suggestion.id))
+            .reduce((sum, row) => sum + row.other.amount, 0);
     };
 
     return (
@@ -74,30 +153,62 @@ export default function MatchesPage() {
                 the budget; refunds offset their category), or reject to dismiss.
             </Typography>
 
-            {items.map((item) => {
+            {cards.map((card) => {
+                const grouped = card.rows.length > 1;
+                const count = selectedCount(card);
                 return (
-                    <Paper key={item.id} className={styles.card}>
+                    <Paper key={card.key} className={styles.card}>
                         <div className={styles.cardHeader}>
                             <Chip
                                 size="small"
                                 color="info"
-                                label={item.type === "TRANSFER" ? "⇄ Transfer" : "↩ Refund"}
+                                label={card.type === "TRANSFER" ? "⇄ Transfer" : `↩ Refund${grouped ? ` × ${card.rows.length}` : ""}`}
                             />
+                            {grouped && (
+                                <Typography variant="body2" color="text.secondary" className={shared.nowrap}>
+                                    {formatMoney(selectedSum(card), card.anchor.currency)} of{" "}
+                                    {formatMoney(Math.abs(card.anchor.amount), card.anchor.currency)} selected
+                                </Typography>
+                            )}
                             <span className={styles.spacer} />
-                            <Button size="small" variant="contained" onClick={() => act(item.id, matchesApi.confirm, "Matched")}>
-                                Confirm
+                            <Button
+                                size="small"
+                                variant="contained"
+                                disabled={busy || count === 0}
+                                onClick={() => act(card, matchesApi.confirm, "matched")}
+                            >
+                                Confirm{grouped ? ` (${count})` : ""}
                             </Button>
-                            <Button size="small" color="error" onClick={() => act(item.id, matchesApi.dismiss, "Dismissed")}>
-                                Reject
+                            <Button
+                                size="small"
+                                color="error"
+                                disabled={busy || count === 0}
+                                onClick={() => act(card, matchesApi.dismiss, "dismissed")}
+                            >
+                                Reject{grouped ? ` (${count})` : ""}
                             </Button>
                         </div>
-                        <Leg tx={item.legA} />
-                        <Leg tx={item.legB} />
+                        <Leg tx={card.anchor} />
+                        {card.rows.map((row) => {
+                            return grouped ? (
+                                <div key={row.suggestion.id} className={styles.refundRow}>
+                                    <Checkbox
+                                        checked={checked.has(row.suggestion.id)}
+                                        onChange={() => toggle(row.suggestion.id)}
+                                    />
+                                    <div className={styles.refundRowLeg}>
+                                        <Leg tx={row.other} />
+                                    </div>
+                                </div>
+                            ) : (
+                                <Leg key={row.suggestion.id} tx={row.other} />
+                            );
+                        })}
                     </Paper>
                 );
             })}
 
-            {items.length === 0 && (
+            {cards.length === 0 && (
                 <Typography color="text.secondary">No suggested matches.</Typography>
             )}
         </Box>

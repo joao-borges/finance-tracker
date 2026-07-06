@@ -39,3 +39,16 @@
 .legMerchant {
     flex: 1;
 }
+
+.refundRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-left: 8px;
+    border-top: 1px solid var(--border);
+}
+
+.refundRowLeg {
+    flex: 1;
+    min-width: 0;
+}
