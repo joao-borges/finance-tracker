@@ -221,6 +221,17 @@ export interface TransactionUpdate {
     awaitingRefund?: boolean | null;
 }
 
+export interface ManualTransactionInput {
+    accountId: number;
+    date: string;
+    description: string;
+    amount: number;
+    categoryId?: number | null;
+    merchantId?: number | null;
+    excludedFromBudget?: boolean;
+    awaitingRefund?: boolean;
+}
+
 export interface Page<T> {
     content: T[];
     page: number;
@@ -240,6 +251,7 @@ export const transactionsApi = {
         const sep = qs ? "&" : "?";
         return http<Page<Transaction>>("GET", `/api/transactions${qs}${sep}page=${page}&size=${size}`);
     },
+    create: (body: ManualTransactionInput) => http<Transaction>("POST", "/api/transactions", body),
     update: (id: number, body: TransactionUpdate) => http<Transaction>("PATCH", `/api/transactions/${id}`, body),
     duplicates: () => http<Transaction[]>("GET", "/api/transactions/duplicates"),
     restore: (id: number) => http<Transaction>("POST", `/api/transactions/${id}/restore`),

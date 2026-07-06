@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Box, CircularProgress, Typography } from "@mui/material";
-import { App as AntApp } from "antd";
+import { App as AntApp, Button } from "antd";
+import AddIcon from "@mui/icons-material/Add";
 import SavedFilterControls from "../components/SavedFilterControls";
 import TransactionFilterBar from "../components/TransactionFilterBar";
 import TransactionsTable from "../components/TransactionsTable";
 import TransactionEditModal from "../components/TransactionEditModal";
+import AddTransactionModal from "../components/AddTransactionModal";
 import {
     accountsApi,
     categoriesApi,
@@ -35,6 +37,7 @@ export default function TransactionsPage() {
     const [loadedId, setLoadedId] = useState<number | undefined>(undefined);
     const [loadedName, setLoadedName] = useState("");
     const [editing, setEditing] = useState<Transaction | null>(null);
+    const [adding, setAdding] = useState(false);
     const sentinelRef = useRef<HTMLDivElement | null>(null);
 
     const loadMerchants = useCallback(() => {
@@ -128,6 +131,9 @@ export default function TransactionsPage() {
                     setLoaded={setLoaded}
                     onApply={setFilters}
                 />
+                <Button type="primary" icon={<AddIcon fontSize="small" />} onClick={() => setAdding(true)}>
+                    Add transaction
+                </Button>
             </Box>
 
             <TransactionFilterBar
@@ -160,6 +166,15 @@ export default function TransactionsPage() {
                 onClose={() => setEditing(null)}
                 onSaved={onEdited}
                 onStructuralChange={refresh}
+            />
+
+            <AddTransactionModal
+                open={adding}
+                accounts={accounts}
+                categories={categories}
+                merchants={merchants}
+                onClose={() => setAdding(false)}
+                onCreated={refresh}
             />
         </Box>
     );

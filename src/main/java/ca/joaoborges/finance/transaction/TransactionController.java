@@ -1,15 +1,20 @@
 package ca.joaoborges.finance.transaction;
 
+import ca.joaoborges.finance.account.Account;
+import ca.joaoborges.finance.account.AccountRepository;
 import ca.joaoborges.finance.budget.BudgetAlertService;
 import ca.joaoborges.finance.category.Category;
 import ca.joaoborges.finance.category.CategoryRepository;
+import ca.joaoborges.finance.common.ContentHashing;
 import ca.joaoborges.finance.common.PageResponse;
+import ca.joaoborges.finance.common.SourceType;
 import ca.joaoborges.finance.match.MatchingService;
 import ca.joaoborges.finance.merchant.Merchant;
 import ca.joaoborges.finance.merchant.MerchantService;
 import ca.joaoborges.finance.rule.RuleEngine;
 import ca.joaoborges.finance.rule.RuleRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.util.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +32,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -46,6 +53,7 @@ public class TransactionController {
 
     private final TransactionRepository transactionRepository;
     private final TransactionMapper transactionMapper;
+    private final AccountRepository accountRepository;
     private final CategoryRepository categoryRepository;
     private final BudgetAlertService budgetAlertService;
     private final MerchantService merchantService;
@@ -58,6 +66,64 @@ public class TransactionController {
     }
 
     public record SplitRequest(List<SplitLine> splits) {
+    }
+
+    /**
+     * Payload for adding a single transaction by hand. {@code amount} is signed
+     * (negative = outflow); {@code date} is the UTC posting day.
+     */
+    public record ManualTransactionRequest(Long accountId, LocalDate date, String description, BigDecimal amount,
+                                           Long categoryId, Long merchantId, Boolean excludedFromBudget,
+                                           Boolean awaitingRefund) {
+    }
+
+    /**
+     * Manually add one transaction (source {@code MANUAL}) — for cash or anything
+     * the automatic feeds miss. Runs the rule engine only when no category is
+     * picked; matching is deliberately skipped so a hand-entered row is never
+     * silently paired. A chosen category counts in the budget immediately.
+     */
+    @PostMapping
+    @Transactional
+    public TransactionDto create(@RequestBody final ManualTransactionRequest body) {
+        if (body.accountId() == null || body.date() == null || body.amount() == null
+                || !StringUtils.hasText(body.description())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Account, date, description and amount are required");
+        }
+        final Account account = accountRepository.findById(body.accountId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown account " + body.accountId()));
+        final Instant postedAt = body.date().atStartOfDay(ZoneOffset.UTC).toInstant();
+        final String merchantName = body.description().trim();
+        final String hash = ContentHashing.of(account.getName(), postedAt, body.amount(), merchantName);
+        final Category category = body.categoryId() == null ? null : resolveCategory(body.categoryId());
+        final Transaction transaction = Transaction.builder()
+                .account(account)
+                .source(SourceType.MANUAL)
+                .merchantName(merchantName)
+                .merchant(body.merchantId() == null ? null : merchantService.resolve(body.merchantId(), null))
+                .amount(body.amount())
+                .postedAt(postedAt)
+                .currency(account.getCurrency())
+                .category(category)
+                .contentHash(hash)
+                .dedupKey("manual:" + hash)
+                .needsReview(category == null)
+                .excludedFromBudget(Boolean.TRUE.equals(body.excludedFromBudget()))
+                .awaitingRefund(Boolean.TRUE.equals(body.awaitingRefund()))
+                .build();
+        if (category == null) {
+            ruleEngine.categorize(transaction, ruleRepository.findByEnabledTrueOrderByPriorityAscIdAsc());
+        }
+        final Transaction saved = transactionRepository.save(transaction);
+
+        final Category effective = saved.getCategory();
+        if (effective != null && !saved.isExcludedFromBudget() && !saved.isSplit()
+                && !saved.isDedup() && !saved.isAwaitingRefund()) {
+            budgetAlertService.checkAfterSpend(effective,
+                    YearMonth.from(saved.getPostedAt().atZone(ZoneOffset.UTC)), saved.getAmount().negate());
+        }
+        return transactionMapper.toDto(saved);
     }
 
     @GetMapping
