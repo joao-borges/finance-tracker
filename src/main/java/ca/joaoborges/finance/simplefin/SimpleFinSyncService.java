@@ -158,12 +158,15 @@ public class SimpleFinSyncService {
 
                 final BigDecimal amount = new BigDecimal(txNode.path("amount").asString("0"));
                 final String merchant = merchantOf(txNode, txId);
+                final String rawDescription = txNode.path("description").asString("");
                 final String hash = ContentHashing.of(canonical.getName(), postedAt, amount, merchant);
                 final Transaction transaction = Transaction.builder()
                         .account(canonical)
                         .source(SourceType.SIMPLEFIN)
                         .simplefinId(txId)
                         .merchantName(merchant)
+                        // Keep the raw statement text — the payee is derived and lossy.
+                        .description(StringUtils.hasText(rawDescription) ? rawDescription : null)
                         .amount(amount)
                         .postedAt(postedAt)
                         .currency(canonical.getCurrency())
@@ -236,10 +239,21 @@ public class SimpleFinSyncService {
 
     private String merchantOf(final JsonNode txNode, final String fallback) {
         final String payee = txNode.path("payee").asString("");
+        final String description = txNode.path("description").asString("");
         if (StringUtils.hasText(payee)) {
+            // The bridge's payee is usually the cleaner merchant name, but its
+            // extraction sometimes keeps only the trailing city (payee "Vancouver"
+            // for "FIGS&STICKS Vancouver"). When the payee is a strict suffix of
+            // the description, the description is the faithful descriptor.
+            if (StringUtils.hasText(description)) {
+                final String payeeLower = payee.trim().toLowerCase(Locale.ROOT);
+                final String descriptionLower = description.trim().toLowerCase(Locale.ROOT);
+                if (!descriptionLower.equals(payeeLower) && descriptionLower.endsWith(payeeLower)) {
+                    return description;
+                }
+            }
             return payee;
         }
-        final String description = txNode.path("description").asString("");
         return StringUtils.hasText(description) ? description : fallback;
     }
 
