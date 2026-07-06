@@ -58,6 +58,7 @@ public class SimpleFinSyncService {
     private final DiscordNotifier discordNotifier;
     private final BudgetAlertService budgetAlertService;
     private final ca.joaoborges.finance.match.MatchingService matchingService;
+    private final ca.joaoborges.finance.common.ImportCutoff importCutoff;
 
     private record AlertKey(Long categoryId, YearMonth month) {
     }
@@ -147,6 +148,9 @@ public class SimpleFinSyncService {
                     continue;
                 }
                 final Instant postedAt = Instant.ofEpochSecond(posted);
+                if (importCutoff.excludes(postedAt)) {
+                    continue;
+                }
                 if (transactionRepository.existsBySimplefinId(txId)) {
                     dedupCount++;
                     continue;
