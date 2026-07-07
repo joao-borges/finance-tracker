@@ -148,7 +148,13 @@ export default function TransactionsPage() {
                 }}
             />
 
-            <TransactionsTable rows={rows} onOpen={setEditing} />
+            <TransactionsTable
+                rows={rows}
+                onOpen={setEditing}
+                merchants={merchants}
+                categories={categories}
+                onUpdated={onEdited}
+            />
 
             <Box ref={sentinelRef} className={styles.sentinel}>
                 {loading && <CircularProgress size={24} />}

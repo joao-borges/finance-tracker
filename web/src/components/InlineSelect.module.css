@@ -1,0 +1,15 @@
+.display {
+    cursor: pointer;
+    border-radius: 4px;
+    margin: -2px -4px;
+    padding: 2px 4px;
+}
+
+.display:hover {
+    background: var(--border);
+}
+
+.select {
+    width: 100%;
+    min-width: 140px;
+}

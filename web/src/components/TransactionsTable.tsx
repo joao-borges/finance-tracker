@@ -13,21 +13,73 @@ import {
 } from "@mui/material";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
 import EditIcon from "@mui/icons-material/Edit";
+import { App as AntApp } from "antd";
 import EntityAvatar from "./EntityAvatar";
-import { formatDate, formatMoney } from "../lib/format";
-import type { Transaction } from "../lib/api";
+import InlineSelect from "./InlineSelect";
+import { transactionsApi, type Category, type Merchant, type Transaction, type TransactionUpdate } from "../lib/api";
+import { errorText, formatDate, formatMoney } from "../lib/format";
 import shared from "../styles/shared.module.css";
 import styles from "./TransactionsTable.module.css";
 
 interface Props {
     rows: Transaction[];
     onOpen: (row: Transaction) => void;
+    // Inline editing (merchant/category selects, clickable Review chip) is active
+    // only when the lookup lists and the update callback are provided.
+    merchants?: Merchant[];
+    categories?: Category[];
+    onUpdated?: (updated: Transaction) => void;
     // In tight layouts (the budget drill-down modal), show only the account logo
     // so the merchant column has room.
     accountIconOnly?: boolean;
 }
 
-export default function TransactionsTable({ rows, onOpen, accountIconOnly }: Props) {
+export default function TransactionsTable({ rows, onOpen, merchants, categories, onUpdated, accountIconOnly }: Props) {
+    const { message } = AntApp.useApp();
+
+    const save = async (id: number, body: TransactionUpdate, label: string) => {
+        try {
+            const updated = await transactionsApi.update(id, body);
+            onUpdated?.(updated);
+            message.success(label);
+        } catch (error: unknown) {
+            message.error(errorText(error));
+        }
+    };
+
+    const merchantDisplay = (row: Transaction) => {
+        return (
+            <Tooltip title={`Statement: ${row.merchantName}`}>
+                <div className={shared.iconRow}>
+                    {row.merchantLogoUrl ? (
+                        <EntityAvatar url={row.merchantLogoUrl} name={row.merchant ?? row.merchantName} />
+                    ) : row.merchantIcon ? (
+                        <span className={styles.merchantIcon}>{row.merchantIcon}</span>
+                    ) : (
+                        <EntityAvatar name={row.merchant ?? row.merchantName} />
+                    )}
+                    <span className={shared.ellipsis}>{row.merchant ?? row.merchantName}</span>
+                </div>
+            </Tooltip>
+        );
+    };
+
+    const categoryDisplay = (row: Transaction) => {
+        if (row.categoryName) {
+            return (
+                <span className={`${shared.ellipsis} ${styles.categoryName}`}>
+                    {row.categoryIcon ? `${row.categoryIcon} ` : ""}
+                    {row.categoryName}
+                </span>
+            );
+        }
+        return (
+            <Typography component="span" className={shared.secondary}>
+                Uncategorized
+            </Typography>
+        );
+    };
+
     return (
         <TableContainer component={Paper}>
             <Table size="small" className={styles.table}>
@@ -64,29 +116,33 @@ export default function TransactionsTable({ rows, onOpen, accountIconOnly }: Pro
                                     )}
                                 </TableCell>
                                 <TableCell>
-                                    <Tooltip title={`Statement: ${row.merchantName}`}>
-                                        <div className={shared.iconRow}>
-                                            {row.merchantLogoUrl ? (
-                                                <EntityAvatar url={row.merchantLogoUrl} name={row.merchant ?? row.merchantName} />
-                                            ) : row.merchantIcon ? (
-                                                <span className={styles.merchantIcon}>{row.merchantIcon}</span>
-                                            ) : (
-                                                <EntityAvatar name={row.merchant ?? row.merchantName} />
-                                            )}
-                                            <span className={shared.ellipsis}>{row.merchant ?? row.merchantName}</span>
-                                        </div>
-                                    </Tooltip>
+                                    {merchants && onUpdated ? (
+                                        <InlineSelect
+                                            display={merchantDisplay(row)}
+                                            value={row.merchantId ?? undefined}
+                                            options={merchants.map((merchant) => ({
+                                                label: `${merchant.icon ? merchant.icon + " " : ""}${merchant.name}`,
+                                                value: merchant.id,
+                                            }))}
+                                            onSave={(merchantId) => save(row.id, { merchantId }, "Merchant updated")}
+                                        />
+                                    ) : (
+                                        merchantDisplay(row)
+                                    )}
                                 </TableCell>
                                 <TableCell>
-                                    {row.categoryName ? (
-                                        <span className={`${shared.ellipsis} ${styles.categoryName}`}>
-                                            {row.categoryIcon ? `${row.categoryIcon} ` : ""}
-                                            {row.categoryName}
-                                        </span>
+                                    {categories && onUpdated ? (
+                                        <InlineSelect
+                                            display={categoryDisplay(row)}
+                                            value={row.categoryId ?? undefined}
+                                            options={categories.map((category) => ({
+                                                label: `${category.icon ? category.icon + " " : ""}${category.name}`,
+                                                value: category.id,
+                                            }))}
+                                            onSave={(categoryId) => save(row.id, { categoryId }, "Category updated")}
+                                        />
                                     ) : (
-                                        <Typography component="span" className={shared.secondary}>
-                                            Uncategorized
-                                        </Typography>
+                                        categoryDisplay(row)
                                     )}
                                 </TableCell>
                                 <TableCell align="right" className={shared.nowrap}>
@@ -105,7 +161,18 @@ export default function TransactionsTable({ rows, onOpen, accountIconOnly }: Pro
                                             <Chip size="small" color="warning" variant="outlined" label="Awaiting refund" />
                                         )}
                                         {row.needsReview ? (
-                                            <Chip size="small" color="warning" label="Review" />
+                                            onUpdated ? (
+                                                <Tooltip title="Mark reviewed">
+                                                    <Chip
+                                                        size="small"
+                                                        color="warning"
+                                                        label="Review"
+                                                        onClick={() => save(row.id, { needsReview: false }, "Marked reviewed")}
+                                                    />
+                                                </Tooltip>
+                                            ) : (
+                                                <Chip size="small" color="warning" label="Review" />
+                                            )
                                         ) : (
                                             <Chip size="small" color="success" label="Reviewed" />
                                         )}
