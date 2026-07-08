@@ -18,6 +18,7 @@ import ca.joaoborges.finance.transaction.Transaction;
 import ca.joaoborges.finance.transaction.TransactionRepository;
 import ca.joaoborges.finance.webhook.DiscordNotifier;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +32,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -45,6 +47,7 @@ import java.util.Map;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SimpleFinSyncService {
 
     private final SimpleFinConnectionRepository connectionRepository;
@@ -64,12 +67,14 @@ public class SimpleFinSyncService {
     }
 
     /**
-     * Incremental sync window for the scheduled run / "Sync now": from the start
-     * of yesterday (UTC). It overlaps the prior day so nothing slips through the
-     * daily boundary — the {@code simplefin_id} dedup makes the overlap free.
+     * Incremental sync window for the scheduled run / "Sync now": the past 7 days
+     * (UTC). Wide on purpose: a bank connection can go stale at the bridge for
+     * days and then catch up with transactions posted in the past — a 1-day
+     * lookback would miss those forever. The {@code simplefin_id} dedup makes the
+     * overlap free.
      */
     private Instant defaultStart() {
-        return LocalDate.now(ZoneOffset.UTC).minusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+        return LocalDate.now(ZoneOffset.UTC).minusDays(7).atStartOfDay(ZoneOffset.UTC).toInstant();
     }
 
     @Transactional
@@ -109,6 +114,21 @@ public class SimpleFinSyncService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "SimpleFIN is not connected"));
         final JsonNode root = objectMapper.readTree(
                 simpleFinClient.fetchAccounts(connection.getAccessUrl(), startDate, endDate));
+
+        // The bridge reports per-connection problems (e.g. "Auth required") in an
+        // errors array while still returning the healthy accounts — surface them,
+        // or a dead bank connection silently stops producing transactions.
+        final List<String> bridgeIssues = new ArrayList<>();
+        for (final JsonNode error : root.path("errors")) {
+            final String issue = error.asString("");
+            if (StringUtils.hasText(issue)) {
+                bridgeIssues.add(issue);
+            }
+        }
+        if (!bridgeIssues.isEmpty()) {
+            log.warn("SimpleFIN bridge reported issues: {}", bridgeIssues);
+            discordNotifier.sendSyncIssues(bridgeIssues);
+        }
 
         final ImportRun run = importRunRepository.save(ImportRun.builder()
                 .source(SourceType.SIMPLEFIN)
@@ -198,6 +218,7 @@ public class SimpleFinSyncService {
 
         run.setNewCount(newCount);
         run.setDedupCount(dedupCount);
+        run.setErrorCount(bridgeIssues.size());
         run.setAccountCount(byAccount.size());
         run.setStatus(ImportStatus.SUCCESS);
         run.setFinishedAt(Instant.now());

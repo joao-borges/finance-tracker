@@ -13,6 +13,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -53,6 +54,13 @@ public class DiscordNotifier {
         sendEmbed("🔴 Over budget: " + category, RED,
                 "Spent " + money(spent) + " of " + money(planned) + " budgeted for " + month
                         + " (over by " + money(spent.subtract(planned)) + ").");
+    }
+
+    /** Yellow alert: the SimpleFIN bridge reported connection problems during a sync. */
+    public void sendSyncIssues(final List<String> issues) {
+        sendEmbed("🔶 SimpleFIN needs attention", YELLOW,
+                String.join("\n", issues)
+                        + "\nRe-connect at the SimpleFIN bridge, then run a range import to catch up.");
     }
 
     /** Yellow alert: a category's monthly spend crossed its configured threshold. */
