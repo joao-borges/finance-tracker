@@ -2,6 +2,7 @@ import CrudPage, { type FieldDef } from "../components/CrudPage";
 import EntityAvatar from "../components/EntityAvatar";
 import MergeAccountButton from "../components/MergeAccountButton";
 import { accountsApi, type Account } from "../lib/api";
+import { formatMoney } from "../lib/format";
 
 const ACCOUNT_TYPES = [
     { label: "Checking", value: "CHECKING" },
@@ -17,7 +18,7 @@ const fields: FieldDef<Account>[] = [
     { name: "importRef", label: "Import ref", type: "text", tableOnly: true },
     { name: "type", label: "Type", type: "select", required: true, options: ACCOUNT_TYPES },
     { name: "currency", label: "Currency", type: "text", required: true, initial: "CAD" },
-    { name: "balance", label: "Balance", type: "number" },
+    { name: "balance", label: "Balance", type: "number", renderCell: (row) => formatMoney(row.balance, row.currency) },
     { name: "website", label: "Website", type: "text" },
     { name: "hidden", label: "Hidden", type: "boolean", initial: false },
     { name: "archived", label: "Archived", type: "boolean", initial: false },

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { App as AntApp, Button, Checkbox, Divider, Input, Modal, Radio, Select, Space, Switch, Typography } from "antd";
 import {
     merchantsApi,
@@ -7,6 +7,7 @@ import {
     transactionsApi,
     type Category,
     type Merchant,
+    type Rule,
     type Transaction,
     type TransactionUpdate,
 } from "../lib/api";
@@ -22,12 +23,15 @@ interface Props {
     transaction: Transaction | null;
     categories: Category[];
     merchants: Merchant[];
+    // When provided, the create-rule section hides itself if an enabled rule
+    // already matches this transaction's statement (avoids duplicate rules).
+    rules?: Rule[];
     onClose: () => void;
     onSaved: (updated: Transaction) => void;
     onStructuralChange?: () => void;
 }
 
-export default function TransactionEditModal({ transaction, categories, merchants, onClose, onSaved, onStructuralChange }: Props) {
+export default function TransactionEditModal({ transaction, categories, merchants, rules, onClose, onSaved, onStructuralChange }: Props) {
     const { message } = AntApp.useApp();
     const [splitOpen, setSplitOpen] = useState(false);
     const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
@@ -44,6 +48,17 @@ export default function TransactionEditModal({ transaction, categories, merchant
     const [ruleAuto, setRuleAuto] = useState(true);
     const [applyRule, setApplyRule] = useState(true);
     const [saving, setSaving] = useState(false);
+
+    // Mirrors RuleEngine: case-insensitive `contains` on the raw statement.
+    const coveringRule = useMemo(() => {
+        if (!transaction || !rules) {
+            return undefined;
+        }
+        const statement = transaction.merchantName.toLowerCase();
+        return rules.find(
+            (rule) => rule.enabled !== false && rule.merchantMatch && statement.includes(rule.merchantMatch.toLowerCase()),
+        );
+    }, [transaction, rules]);
 
     useEffect(() => {
         if (!transaction) {
@@ -96,6 +111,7 @@ export default function TransactionEditModal({ transaction, categories, merchant
             };
             const updated = await transactionsApi.update(transaction.id, body);
 
+            let ruleTouchedOtherRows = false;
             if (makeRule && ruleMatch.trim() !== "" && categoryId !== undefined) {
                 const rule = await rulesApi.create({
                     name: ruleMatch.trim(),
@@ -108,6 +124,7 @@ export default function TransactionEditModal({ transaction, categories, merchant
                 });
                 if (applyRule && rule.id) {
                     const result = await rulesExtraApi.apply(rule.id);
+                    ruleTouchedOtherRows = result.applied > 0;
                     message.success(`Saved · rule applied to ${result.applied} transaction(s)`);
                 } else {
                     message.success("Saved · rule created");
@@ -116,6 +133,10 @@ export default function TransactionEditModal({ transaction, categories, merchant
                 message.success("Saved");
             }
             onSaved(updated);
+            if (ruleTouchedOtherRows) {
+                // The rule recategorized rows beyond the edited one — refresh the list.
+                onStructuralChange?.();
+            }
             onClose();
         } catch (error: unknown) {
             message.error(errorText(error));
@@ -235,10 +256,16 @@ export default function TransactionEditModal({ transaction, categories, merchant
             </Space>
 
             <Divider />
-            <Checkbox checked={makeRule} onChange={(event) => setMakeRule(event.target.checked)}>
-                Create a rule from this transaction
-            </Checkbox>
-            {makeRule && (
+            {coveringRule ? (
+                <Typography.Text type="secondary">
+                    Rule “{coveringRule.name}” already covers this statement — manage it on the Rules page.
+                </Typography.Text>
+            ) : (
+                <Checkbox checked={makeRule} onChange={(event) => setMakeRule(event.target.checked)}>
+                    Create a rule from this transaction
+                </Checkbox>
+            )}
+            {!coveringRule && makeRule && (
                 <Space direction="vertical" className={styles.ruleSpace}>
                     <div>
                         <Typography.Text type="secondary">Match when statement contains</Typography.Text>

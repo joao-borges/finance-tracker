@@ -11,10 +11,12 @@ import {
     accountsApi,
     categoriesApi,
     merchantsApi,
+    rulesApi,
     transactionsApi,
     type Account,
     type Category,
     type Merchant,
+    type Rule,
     type Transaction,
     type TransactionFilters,
 } from "../lib/api";
@@ -34,6 +36,7 @@ export default function TransactionsPage() {
     const [accounts, setAccounts] = useState<Account[]>([]);
     const [merchants, setMerchants] = useState<Merchant[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
+    const [rules, setRules] = useState<Rule[]>([]);
     const [loadedId, setLoadedId] = useState<number | undefined>(undefined);
     const [loadedName, setLoadedName] = useState("");
     const [editing, setEditing] = useState<Transaction | null>(null);
@@ -44,13 +47,18 @@ export default function TransactionsPage() {
         merchantsApi.list().then(setMerchants).catch(() => setMerchants([]));
     }, []);
 
+    const loadRules = useCallback(() => {
+        rulesApi.list().then(setRules).catch(() => setRules([]));
+    }, []);
+
     const filtersKey = JSON.stringify(filters);
 
     useEffect(() => {
         accountsApi.list().then(setAccounts).catch(() => setAccounts([]));
         categoriesApi.list().then(setCategories).catch(() => setCategories([]));
         loadMerchants();
-    }, [loadMerchants]);
+        loadRules();
+    }, [loadMerchants, loadRules]);
 
     // Reset to the first page whenever the filters change.
     useEffect(() => {
@@ -109,6 +117,7 @@ export default function TransactionsPage() {
     const onEdited = (updated: Transaction) => {
         setRows((current) => current.map((row) => (row.id === updated.id ? updated : row)));
         loadMerchants();
+        loadRules();
     };
 
     // Splits/unsplits change which rows exist, so reload the list from the top.
@@ -116,6 +125,7 @@ export default function TransactionsPage() {
         setPage(0);
         setReloadKey((key) => key + 1);
         loadMerchants();
+        loadRules();
     };
 
     return (
@@ -169,6 +179,7 @@ export default function TransactionsPage() {
                 transaction={editing}
                 categories={categories}
                 merchants={merchants}
+                rules={rules}
                 onClose={() => setEditing(null)}
                 onSaved={onEdited}
                 onStructuralChange={refresh}

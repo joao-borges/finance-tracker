@@ -110,6 +110,7 @@ export default function BudgetSection({
                                             className={styles.plannedInput}
                                             min={0}
                                             step={10}
+                                            precision={2}
                                             disabled={readOnly}
                                             value={planned[line.categoryId] ?? null}
                                             onChange={(value) => onPlanned(line.categoryId, value)}

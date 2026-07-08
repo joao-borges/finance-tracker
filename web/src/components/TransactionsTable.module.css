@@ -9,7 +9,7 @@
 }
 
 .colAccount {
-    width: 270px;
+    width: 200px;
 }
 
 .colAccountIcon {
@@ -26,7 +26,8 @@
 }
 
 .colStatus {
-    width: 168px;
+    /* Two chips side by side (e.g. "↩ Refund" + "Reviewed") without wrapping. */
+    width: 238px;
 }
 
 .statusCell {
