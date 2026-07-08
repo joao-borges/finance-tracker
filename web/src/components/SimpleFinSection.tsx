@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Box, Button, Chip, Paper, TextField, Typography } from "@mui/material";
+import { Box, Button, Chip, Paper, TextField, Tooltip, Typography } from "@mui/material";
 import SyncIcon from "@mui/icons-material/Sync";
 import LinkIcon from "@mui/icons-material/Link";
 import { App as AntApp, DatePicker } from "antd";
@@ -11,12 +11,24 @@ import styles from "./SimpleFinSection.module.css";
 export default function SimpleFinSection({ onSynced }: { onSynced: () => void }) {
     const { message } = AntApp.useApp();
     const [status, setStatus] = useState<SimpleFinStatus | null>(null);
+    const [statusError, setStatusError] = useState<string | null>(null);
     const [token, setToken] = useState("");
     const [range, setRange] = useState<[string, string] | null>(null);
     const [busy, setBusy] = useState(false);
 
     const reload = () => {
-        simplefinApi.status().then(setStatus).catch(() => setStatus(null));
+        simplefinApi
+            .status()
+            .then((next) => {
+                setStatus(next);
+                setStatusError(null);
+            })
+            .catch((error: unknown) => {
+                // Don't render a failed fetch as "Not connected" — that reads as
+                // unconfigured when the real problem is auth/session/network.
+                setStatus(null);
+                setStatusError(errorText(error));
+            });
     };
 
     useEffect(reload, []);
@@ -58,6 +70,10 @@ export default function SimpleFinSection({ onSynced }: { onSynced: () => void })
                 <Typography variant="h6">SimpleFIN</Typography>
                 {status?.connected ? (
                     <Chip size="small" color="success" label="Connected" />
+                ) : statusError ? (
+                    <Tooltip title={statusError}>
+                        <Chip size="small" color="error" label="Status unavailable — reload" onClick={reload} />
+                    </Tooltip>
                 ) : (
                     <Chip size="small" label="Not connected" />
                 )}
