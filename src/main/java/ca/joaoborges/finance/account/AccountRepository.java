@@ -13,6 +13,9 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
 
     Optional<Account> findBySimplefinId(String simplefinId);
 
+    /** Relink candidates after a bridge reconnect: same bank-reported name, different id. */
+    List<Account> findBySimplefinNameAndSimplefinIdNot(String simplefinName, String simplefinId);
+
     /** Accounts shown on the accounts page: canonical/standalone (not merged away). */
     List<Account> findByMergedIntoIsNullOrderByNameAsc();
 

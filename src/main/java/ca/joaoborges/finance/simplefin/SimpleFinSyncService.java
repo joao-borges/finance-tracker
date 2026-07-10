@@ -34,10 +34,13 @@ import java.time.YearMonth;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * SimpleFIN sync: pull accounts/balances/posted transactions and run them
@@ -147,13 +150,22 @@ public class SimpleFinSyncService {
         int needsReview = 0;
 
         final JsonNode accounts = root.path("accounts");
+        // All account ids in this payload — an existing account whose id is absent
+        // here is orphaned (a bridge reconnect rotated it) and eligible for relink.
+        final Set<String> payloadAccountIds = new HashSet<>();
+        for (int i = 0; i < accounts.size(); i++) {
+            payloadAccountIds.add(accounts.get(i).path("id").asString(""));
+        }
+        // Live content hashes from prior runs, snapshotted before the loop so
+        // same-day identical legitimate charges within this payload all survive.
+        final Set<String> existingHashes = new HashSet<>(transactionRepository.findLiveContentHashes());
         for (int i = 0; i < accounts.size(); i++) {
             final JsonNode accountNode = accounts.get(i);
             final String simplefinId = accountNode.path("id").asString("");
             if (!StringUtils.hasText(simplefinId)) {
                 continue;
             }
-            final Account account = upsertAccount(accountNode, simplefinId);
+            final Account account = upsertAccount(accountNode, simplefinId, payloadAccountIds);
             final Account canonical = account.getMergedInto() != null ? account.getMergedInto() : account;
 
             final JsonNode txns = accountNode.path("transactions");
@@ -180,6 +192,10 @@ public class SimpleFinSyncService {
                 final String merchant = merchantOf(txNode, txId);
                 final String rawDescription = txNode.path("description").asString("");
                 final String hash = ContentHashing.of(canonical.getName(), postedAt, amount, merchant);
+                // Tier 2: an unknown simplefin id whose content matches a live row
+                // is a re-import under a rotated id (bridge reconnect) → quarantine
+                // (restorable), keeping the new id so the next sync skips at tier 1.
+                final boolean duplicate = existingHashes.contains(hash);
                 final Transaction transaction = Transaction.builder()
                         .account(canonical)
                         .source(SourceType.SIMPLEFIN)
@@ -192,9 +208,16 @@ public class SimpleFinSyncService {
                         .currency(canonical.getCurrency())
                         .contentHash(hash)
                         .dedupKey(txId + ":" + posted)
-                        .needsReview(true)
+                        .dedup(duplicate)
+                        .needsReview(!duplicate)
                         .importRun(run)
                         .build();
+
+                if (duplicate) {
+                    transactionRepository.save(transaction);
+                    dedupCount++;
+                    continue;
+                }
 
                 ruleEngine.categorize(transaction, enabledRules);
                 transactionRepository.save(transaction);
@@ -233,18 +256,22 @@ public class SimpleFinSyncService {
         return saved;
     }
 
-    private Account upsertAccount(final JsonNode accountNode, final String simplefinId) {
+    private Account upsertAccount(final JsonNode accountNode, final String simplefinId,
+                                  final Set<String> payloadAccountIds) {
         final String name = accountNode.path("name").asString(simplefinId);
         final String rawCurrency = accountNode.path("currency").asString("CAD");
         final String currency = rawCurrency.length() == 3 ? rawCurrency : "CAD";
 
         final Account account = accountRepository.findBySimplefinId(simplefinId)
+                .or(() -> relinkCandidate(name, simplefinId, payloadAccountIds))
                 .orElseGet(() -> Account.builder()
                         .simplefinId(simplefinId)
                         .name(name)
                         .type(guessType(name))
                         .currency(currency)
                         .build());
+        account.setSimplefinId(simplefinId);
+        account.setSimplefinName(name);
         account.setCurrency(currency);
         final String balance = accountNode.path("balance").asString("");
         if (StringUtils.hasText(balance)) {
@@ -256,6 +283,28 @@ public class SimpleFinSyncService {
         }
         account.setLastSyncedAt(Instant.now());
         return accountRepository.save(account);
+    }
+
+    /**
+     * A bridge reconnect rotates simplefin ids but keeps the bank-reported
+     * account names. When an unknown id arrives, adopt it onto the single
+     * existing account with the same bridge name whose own id no longer appears
+     * in this payload (i.e. it was orphaned by the reconnect). Ambiguous name
+     * matches fall through to account creation — resolve those by manual merge.
+     */
+    private Optional<Account> relinkCandidate(final String name, final String simplefinId,
+                                              final Set<String> payloadAccountIds) {
+        final List<Account> orphaned = accountRepository
+                .findBySimplefinNameAndSimplefinIdNot(name, simplefinId).stream()
+                .filter(candidate -> !payloadAccountIds.contains(candidate.getSimplefinId()))
+                .toList();
+        if (orphaned.size() != 1) {
+            return Optional.empty();
+        }
+        final Account adopted = orphaned.getFirst();
+        log.warn("SimpleFIN id rotated for account '{}' ({}): relinking {} -> {}",
+                adopted.getName(), name, adopted.getSimplefinId(), simplefinId);
+        return Optional.of(adopted);
     }
 
     private String merchantOf(final JsonNode txNode, final String fallback) {

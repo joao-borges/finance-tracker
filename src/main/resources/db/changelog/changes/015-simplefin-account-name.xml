@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- The bridge-reported account name, kept alongside the operator's display
+         name. Bank names are stable across bridge reconnects while simplefin ids
+         are not, so this is the key used to auto-relink an account after a
+         reconnect rotates its id. -->
+    <changeSet id="015-simplefin-account-name" author="joao">
+        <addColumn tableName="accounts">
+            <column name="simplefin_name" type="varchar(255)"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

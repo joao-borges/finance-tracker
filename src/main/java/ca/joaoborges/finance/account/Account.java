@@ -45,6 +45,14 @@ public class Account {
     @Column(name = "simplefin_id", unique = true)
     private String simplefinId;
 
+    /**
+     * The bridge-reported account name, refreshed every sync. Stable across
+     * bridge reconnects (it comes from the bank) while {@code simplefinId} is
+     * not — used to auto-relink this account when a reconnect rotates its id.
+     */
+    @Column(name = "simplefin_name")
+    private String simplefinName;
+
     /** Stable key CSV imports match on; {@code name} can be renamed for display. */
     @Column(name = "import_ref", unique = true)
     private String importRef;
