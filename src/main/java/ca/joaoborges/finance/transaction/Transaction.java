@@ -77,6 +77,14 @@ public class Transaction {
     @Column(name = "content_hash", nullable = false)
     private String contentHash;
 
+    /**
+     * Second dedup key over the RAW statement text (see
+     * {@code ContentHashing.ofStatement}) — matches a bank CSV export against
+     * the bridge's description where the payee-based hash cannot.
+     */
+    @Column(name = "statement_hash")
+    private String statementHash;
+
     @Column(name = "posted_at", nullable = false)
     private Instant postedAt;
 

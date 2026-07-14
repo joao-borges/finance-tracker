@@ -25,6 +25,13 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
     @Query("SELECT t.contentHash FROM Transaction t WHERE t.dedup = false")
     List<String> findLiveContentHashes();
 
+    /** Statement hashes of all live transactions, the second cross-source dedup key. */
+    @Query("SELECT t.statementHash FROM Transaction t WHERE t.dedup = false AND t.statementHash IS NOT NULL")
+    List<String> findLiveStatementHashes();
+
+    /** Rows still missing the backfilled statement hash (see StatementHashBackfill). */
+    List<Transaction> findByStatementHashIsNull();
+
     /** Uncategorized transactions eligible for a retroactive rule run. */
     List<Transaction> findByCategoryIsNullAndSplitFalseAndDedupFalse();
 

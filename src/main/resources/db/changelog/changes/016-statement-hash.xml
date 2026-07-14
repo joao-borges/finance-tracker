@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Second cross-source dedup key: a hash over the RAW statement text
+         (aggressively normalized), which matches between a bank CSV export and
+         the bridge's description where the payee-based content hash cannot.
+         Backfilled at boot by StatementHashBackfill. -->
+    <changeSet id="016-statement-hash" author="joao">
+        <addColumn tableName="transactions">
+            <column name="statement_hash" type="varchar(128)"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

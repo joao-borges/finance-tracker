@@ -75,6 +75,7 @@ public class IngestService {
         // We deliberately do NOT add this run's own hashes, so same-day identical
         // legitimate charges in one file all survive.
         final Set<String> existingHashes = new HashSet<>(transactionRepository.findLiveContentHashes());
+        final Set<String> existingStatementHashes = new HashSet<>(transactionRepository.findLiveStatementHashes());
         final Map<String, Integer> byAccount = new LinkedHashMap<>();
         final Map<AlertKey, BigDecimal> spendByCategoryMonth = new HashMap<>();
         final Map<Long, Category> categoriesById = new HashMap<>();
@@ -92,7 +93,12 @@ public class IngestService {
             }
             final Account account = resolveAccount(row.accountName());
             final String hash = ContentHashing.of(account.getName(), postedAt, row.amount(), row.merchantName());
-            final boolean duplicate = existingHashes.contains(hash);
+            // A CSV row's merchant IS the raw statement text, so the statement
+            // hash lines up with SimpleFIN rows hashed on their description.
+            final String statementHash = ContentHashing.ofStatement(
+                    account.getName(), postedAt, row.amount(), row.merchantName());
+            final boolean duplicate = existingHashes.contains(hash)
+                    || existingStatementHashes.contains(statementHash);
             final Transaction transaction = Transaction.builder()
                     .account(account)
                     .source(source)
@@ -101,6 +107,7 @@ public class IngestService {
                     .postedAt(postedAt)
                     .currency(account.getCurrency())
                     .contentHash(hash)
+                    .statementHash(statementHash)
                     .dedupKey(hash)
                     .dedup(duplicate)
                     .needsReview(!duplicate)

@@ -20,5 +20,6 @@
     <include file="changes/013-category-hidden.xml" relativeToChangelogFile="true"/>
     <include file="changes/014-matching.xml" relativeToChangelogFile="true"/>
     <include file="changes/015-simplefin-account-name.xml" relativeToChangelogFile="true"/>
+    <include file="changes/016-statement-hash.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

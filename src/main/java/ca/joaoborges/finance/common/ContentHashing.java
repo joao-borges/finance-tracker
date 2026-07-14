@@ -29,6 +29,31 @@ public final class ContentHashing {
         return sha256Hex(canonical);
     }
 
+    /**
+     * Statement hash: like {@link #of} but keyed on the RAW statement text with
+     * aggressive normalization (lowercase, alphanumerics only), so the same
+     * charge hashes identically whether the text comes from a bank CSV export or
+     * the SimpleFIN bridge's {@code description} — the two differ in spacing and
+     * punctuation but not in substance. The merchant-based content hash can't
+     * bridge that gap because SimpleFIN's payee is a derived, prettified name.
+     */
+    public static String ofStatement(final String accountName, final Instant postedAt,
+                                     final BigDecimal amount, final String statementText) {
+        final LocalDate day = postedAt == null ? LocalDate.EPOCH : postedAt.atZone(ZoneOffset.UTC).toLocalDate();
+        final String canonical = normalize(accountName)
+                + '|' + day
+                + '|' + amount.setScale(4, java.math.RoundingMode.HALF_UP).toPlainString()
+                + '|' + normalizeStatement(statementText);
+        return sha256Hex(canonical);
+    }
+
+    private static String normalizeStatement(final String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
+    }
+
     private static String normalize(final String value) {
         if (value == null) {
             return "";

@@ -159,6 +159,7 @@ public class SimpleFinSyncService {
         // Live content hashes from prior runs, snapshotted before the loop so
         // same-day identical legitimate charges within this payload all survive.
         final Set<String> existingHashes = new HashSet<>(transactionRepository.findLiveContentHashes());
+        final Set<String> existingStatementHashes = new HashSet<>(transactionRepository.findLiveStatementHashes());
         for (int i = 0; i < accounts.size(); i++) {
             final JsonNode accountNode = accounts.get(i);
             final String simplefinId = accountNode.path("id").asString("");
@@ -192,10 +193,16 @@ public class SimpleFinSyncService {
                 final String merchant = merchantOf(txNode, txId);
                 final String rawDescription = txNode.path("description").asString("");
                 final String hash = ContentHashing.of(canonical.getName(), postedAt, amount, merchant);
+                // The statement hash keys on the raw description so the same
+                // charge collides with a CSV import of the same statement text.
+                final String statementHash = ContentHashing.ofStatement(canonical.getName(), postedAt, amount,
+                        StringUtils.hasText(rawDescription) ? rawDescription : merchant);
                 // Tier 2: an unknown simplefin id whose content matches a live row
-                // is a re-import under a rotated id (bridge reconnect) → quarantine
-                // (restorable), keeping the new id so the next sync skips at tier 1.
-                final boolean duplicate = existingHashes.contains(hash);
+                // is a re-import under a rotated id (bridge reconnect) or a charge
+                // already ingested from a CSV → quarantine (restorable), keeping
+                // the new id so the next sync skips at tier 1.
+                final boolean duplicate = existingHashes.contains(hash)
+                        || existingStatementHashes.contains(statementHash);
                 final Transaction transaction = Transaction.builder()
                         .account(canonical)
                         .source(SourceType.SIMPLEFIN)
@@ -207,6 +214,7 @@ public class SimpleFinSyncService {
                         .postedAt(postedAt)
                         .currency(canonical.getCurrency())
                         .contentHash(hash)
+                        .statementHash(statementHash)
                         .dedupKey(txId + ":" + posted)
                         .dedup(duplicate)
                         .needsReview(!duplicate)
