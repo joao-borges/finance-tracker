@@ -21,5 +21,6 @@
     <include file="changes/014-matching.xml" relativeToChangelogFile="true"/>
     <include file="changes/015-simplefin-account-name.xml" relativeToChangelogFile="true"/>
     <include file="changes/016-statement-hash.xml" relativeToChangelogFile="true"/>
+    <include file="changes/017-rule-optional-category.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

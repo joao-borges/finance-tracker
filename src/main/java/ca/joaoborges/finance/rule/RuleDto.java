@@ -5,9 +5,10 @@ import lombok.Builder;
 import java.time.Instant;
 
 /**
- * Request/response DTO for rules. Writes resolve {@code categoryId} (required)
- * and, optionally, a merchant to associate — either an existing
- * {@code merchantId} or a {@code newMerchantName} created on the fly.
+ * Request/response DTO for rules. A rule's actions are any combination of a
+ * category, a merchant (an existing {@code merchantId} or a
+ * {@code newMerchantName} created on the fly), and auto-approve — at least one
+ * is required on create.
  */
 @Builder
 public record RuleDto(

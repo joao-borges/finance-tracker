@@ -47,7 +47,9 @@ public class RuleEngine {
      * one, and sets {@code needsReview} from the rule's auto-approve toggle.
      */
     public void apply(final Transaction transaction, final Rule rule) {
-        transaction.setCategory(rule.getCategory());
+        if (rule.getCategory() != null) {
+            transaction.setCategory(rule.getCategory());
+        }
         if (rule.getMerchant() != null) {
             transaction.setMerchant(rule.getMerchant());
         }

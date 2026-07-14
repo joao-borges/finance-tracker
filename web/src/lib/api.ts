@@ -150,7 +150,10 @@ export const accountsApi = {
 export const merchantsApi = crud<Merchant>("/api/merchants");
 export const categoryGroupsApi = crud<CategoryGroup>("/api/category-groups");
 export const categoriesApi = crud<Category>("/api/categories");
-export const rulesApi = crud<Rule>("/api/rules");
+export const rulesApi = {
+    ...crud<Rule>("/api/rules"),
+    remove: (id: number) => http<void>("DELETE", `/api/rules/${id}`),
+};
 
 export interface Transaction {
     id: number;

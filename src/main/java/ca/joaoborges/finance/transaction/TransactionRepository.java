@@ -35,6 +35,12 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
     /** Uncategorized transactions eligible for a retroactive rule run. */
     List<Transaction> findByCategoryIsNullAndSplitFalseAndDedupFalse();
 
+    /** Merchant-less transactions, for retroactively applying a merchant rule. */
+    List<Transaction> findByMerchantIsNullAndSplitFalseAndDedupFalse();
+
+    /** Unreviewed transactions, for retroactively applying an approve-only rule. */
+    List<Transaction> findByNeedsReviewTrueAndSplitFalseAndDedupFalse();
+
     /** Default transaction list: visible rows (no split parents, no quarantined dups), newest first. */
     List<Transaction> findBySplitFalseAndDedupFalseOrderByPostedAtDesc();
 

@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,7 +20,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/rules")
@@ -46,11 +49,16 @@ public class RuleController {
     @PostMapping
     @Transactional
     public RuleDto create(@RequestBody final RuleDto dto) {
-        if (!StringUtils.hasText(dto.name()) || !StringUtils.hasText(dto.merchantMatch()) || dto.categoryId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name, merchantMatch and categoryId are required");
+        if (!StringUtils.hasText(dto.name()) || !StringUtils.hasText(dto.merchantMatch())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name and merchantMatch are required");
+        }
+        final boolean hasMerchant = dto.merchantId() != null || StringUtils.hasText(dto.newMerchantName());
+        if (dto.categoryId() == null && !hasMerchant && !Boolean.TRUE.equals(dto.autoApprove())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "A rule needs at least one action: a category, a merchant, or auto-approve");
         }
         final Rule rule = ruleMapper.toEntity(dto);
-        rule.setCategory(resolveCategory(dto.categoryId()));
+        rule.setCategory(dto.categoryId() == null ? null : resolveCategory(dto.categoryId()));
         rule.setMerchant(resolveMerchant(dto));
         return ruleMapper.toDto(ruleRepository.save(rule));
     }
@@ -71,17 +79,45 @@ public class RuleController {
         return ruleMapper.toDto(ruleRepository.save(rule));
     }
 
-    /** Retroactively run a single rule over all uncategorized transactions. */
+    @DeleteMapping("/{id}")
+    @Transactional
+    public void delete(@PathVariable final Long id) {
+        if (!ruleRepository.existsById(id)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Rule not found");
+        }
+        ruleRepository.deleteById(id);
+    }
+
+    /**
+     * Retroactively run a single rule over the transactions its actions can still
+     * improve: uncategorized rows for a category rule, merchant-less rows for a
+     * merchant rule, unreviewed rows for an approve-only rule. Never flips an
+     * already-reviewed row back into the review queue.
+     */
     @PostMapping("/{id}/apply")
     @Transactional
     public ApplyResult apply(@PathVariable final Long id) {
         final Rule rule = ruleRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Rule not found"));
         final List<Rule> single = List.of(rule);
+        final Set<Transaction> candidates = new LinkedHashSet<>();
+        if (rule.getCategory() != null) {
+            candidates.addAll(transactionRepository.findByCategoryIsNullAndSplitFalseAndDedupFalse());
+        }
+        if (rule.getMerchant() != null) {
+            candidates.addAll(transactionRepository.findByMerchantIsNullAndSplitFalseAndDedupFalse());
+        }
+        if (rule.getCategory() == null && rule.getMerchant() == null) {
+            candidates.addAll(transactionRepository.findByNeedsReviewTrueAndSplitFalseAndDedupFalse());
+        }
         int applied = 0;
-        for (final Transaction transaction : transactionRepository.findByCategoryIsNullAndSplitFalseAndDedupFalse()) {
+        for (final Transaction transaction : candidates) {
             if (ruleEngine.firstMatch(transaction.getMerchantName(), single).isPresent()) {
+                final boolean alreadyReviewed = !transaction.isNeedsReview();
                 ruleEngine.apply(transaction, rule);
+                if (alreadyReviewed) {
+                    transaction.setNeedsReview(false);
+                }
                 transactionRepository.save(transaction);
                 applied++;
             }

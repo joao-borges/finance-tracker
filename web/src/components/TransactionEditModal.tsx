@@ -84,8 +84,11 @@ export default function TransactionEditModal({ transaction, categories, merchant
     }
 
     const save = async () => {
-        if (makeRule && categoryId === undefined) {
-            message.error("Pick a category to create a rule");
+        const ruleHasMerchant = merchantMode === "existing"
+            ? existingMerchantId !== undefined
+            : merchantMode === "new" && newName.trim() !== "";
+        if (makeRule && categoryId === undefined && !ruleHasMerchant && !ruleAuto) {
+            message.error("A rule needs at least a category, a merchant, or auto-approve");
             return;
         }
         setSaving(true);
@@ -112,11 +115,11 @@ export default function TransactionEditModal({ transaction, categories, merchant
             const updated = await transactionsApi.update(transaction.id, body);
 
             let ruleTouchedOtherRows = false;
-            if (makeRule && ruleMatch.trim() !== "" && categoryId !== undefined) {
+            if (makeRule && ruleMatch.trim() !== "") {
                 const rule = await rulesApi.create({
                     name: ruleMatch.trim(),
                     merchantMatch: ruleMatch.trim(),
-                    categoryId,
+                    categoryId: categoryId ?? null,
                     merchantId: merchantId ?? null,
                     autoApprove: ruleAuto,
                     enabled: true,
@@ -275,10 +278,10 @@ export default function TransactionEditModal({ transaction, categories, merchant
                         Auto-approve matches
                     </Checkbox>
                     <Checkbox checked={applyRule} onChange={(event) => setApplyRule(event.target.checked)}>
-                        Apply to existing uncategorized transactions now
+                        Apply to existing matching transactions now
                     </Checkbox>
                     <Typography.Text type="secondary">
-                        The rule sets the category{merchantMode !== "keep" ? " and merchant" : ""} chosen above.
+                        The rule applies what's chosen above — category, merchant, or both.
                     </Typography.Text>
                 </Space>
             )}

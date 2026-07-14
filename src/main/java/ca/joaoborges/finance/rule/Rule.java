@@ -48,7 +48,7 @@ public class Rule {
     private String merchantMatch;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "category_id", nullable = false)
+    @JoinColumn(name = "category_id")
     private Category category;
 
     /** Optional: also link matched transactions to this canonical merchant. */
