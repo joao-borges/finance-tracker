@@ -197,6 +197,8 @@ The job isn't "are these similar" — it's "did this exact record come back on t
 - **No `simplefin_id` (rare) / CSV:** fall back to a content hash of `merchant + amount + account + date`. If that collides with a recent transaction → **quarantine**: insert with `is_dedup = true` so it's hidden but restorable. This is the case your soft-dedup instinct is actually for — the genuinely ambiguous one.
 - **Statement hash (both paths):** a second key over the RAW statement text (`ContentHashing.ofStatement` — lowercase, alphanumerics only) computed from the bridge `description` on SimpleFIN rows and from the CSV description on CSV rows. It bridges the gap the merchant hash cannot: SimpleFIN's payee is a derived pretty name ("Starbucks") while a CSV carries the raw descriptor ("STARBUCKS 8007827282 800-782-7282"). Either key colliding with a live row → quarantine. This is what lets one account ingest from **CSV and SimpleFIN simultaneously** without duplication (e.g. filling a stalled bridge feed from a bank export). Backfilled at boot by `StatementHashBackfill`.
 
+**Deletion tombstones.** Deleting a transaction records its `dedup_key` in `deleted_transaction_keys`; both ingest paths silently skip tombstoned keys. Without this, deleting a SimpleFIN row still inside the sync lookback window would just resurrect on the next sync. Deleting a split parent deletes its children; a matched leg is detached first (transfer partner reverted, dependent refunds returned to review).
+
 **Account-id rotation** is handled the same way at the account level: the bridge-reported name (`simplefin_name`, refreshed every sync) is stable across reconnects while the id is not. An unknown account id whose bridge name matches exactly one existing account whose old id vanished from the payload → the existing account **adopts the new id** (display name, type, logo, merges, transactions all preserved). Ambiguous matches fall back to creating a new account — resolve by manual merge.
 
 Why this split matters with your data: you have **two ABC Fitness $31.49 charges on the same day, same card**, plus Netflix/Nord subscriptions that re-bill at identical amounts monthly. A naive `merchant+amount+account` key (no date, no id) would eat the second ABC Fitness charge and flag every subscription's second month as a dup. The `id + timestamp` key distinguishes "same record returning" from "real second identical charge." The quarantine-don't-trash model then makes the rare fallback misfire harmless.
@@ -433,6 +435,7 @@ POST   /api/transactions/:id/unsplit      # undo a split
 GET    /api/transactions/duplicates       # quarantined dups
 POST   /api/transactions/:id/restore      # un-quarantine + re-run rules
 POST   /api/transactions/:id/unmatch      # unlink a transfer/refund pair
+DELETE /api/transactions/:id              # delete outright (tombstoned — syncs/CSV re-imports never resurrect it)
 GET/POST/PATCH/DELETE  /api/saved-filters # named shared filters
 
 # Matching (transfers & refunds)

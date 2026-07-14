@@ -261,6 +261,7 @@ export const transactionsApi = {
     split: (id: number, splits: SplitLine[]) => http<Transaction>("POST", `/api/transactions/${id}/split`, { splits }),
     unsplit: (id: number) => http<Transaction>("POST", `/api/transactions/${id}/unsplit`),
     unmatch: (id: number) => http<Transaction>("POST", `/api/transactions/${id}/unmatch`),
+    remove: (id: number) => http<void>("DELETE", `/api/transactions/${id}`),
 };
 
 export interface MatchSuggestion {

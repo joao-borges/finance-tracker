@@ -54,6 +54,7 @@ public class IngestService {
     private final BudgetAlertService budgetAlertService;
     private final ImportCutoff importCutoff;
     private final ca.joaoborges.finance.match.MatchingService matchingService;
+    private final ca.joaoborges.finance.transaction.DeletedTransactionKeyRepository deletedTransactionKeyRepository;
 
     /** Per category+month spend added by this import, for budget/threshold crossing checks. */
     private record AlertKey(Long categoryId, YearMonth month) {
@@ -76,6 +77,7 @@ public class IngestService {
         // legitimate charges in one file all survive.
         final Set<String> existingHashes = new HashSet<>(transactionRepository.findLiveContentHashes());
         final Set<String> existingStatementHashes = new HashSet<>(transactionRepository.findLiveStatementHashes());
+        final Set<String> deletedKeys = new HashSet<>(deletedTransactionKeyRepository.findAllKeys());
         final Map<String, Integer> byAccount = new LinkedHashMap<>();
         final Map<AlertKey, BigDecimal> spendByCategoryMonth = new HashMap<>();
         final Map<Long, Category> categoriesById = new HashMap<>();
@@ -97,6 +99,11 @@ public class IngestService {
             // hash lines up with SimpleFIN rows hashed on their description.
             final String statementHash = ContentHashing.ofStatement(
                     account.getName(), postedAt, row.amount(), row.merchantName());
+            if (deletedKeys.contains(hash)) {
+                // Deliberately deleted by the operator — skip silently, don't quarantine.
+                dedupCount++;
+                continue;
+            }
             final boolean duplicate = existingHashes.contains(hash)
                     || existingStatementHashes.contains(statementHash);
             final Transaction transaction = Transaction.builder()

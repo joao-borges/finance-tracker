@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { App as AntApp, Button, Checkbox, Divider, Input, Modal, Radio, Select, Space, Switch, Typography } from "antd";
+import { App as AntApp, Button, Checkbox, Divider, Input, Modal, Popconfirm, Radio, Select, Space, Switch, Typography } from "antd";
 import {
     merchantsApi,
     rulesApi,
@@ -162,6 +162,17 @@ export default function TransactionEditModal({ transaction, categories, merchant
         }
     };
 
+    const removeTransaction = async () => {
+        try {
+            await transactionsApi.remove(transaction.id);
+            message.success("Transaction deleted");
+            onStructuralChange?.();
+            onClose();
+        } catch (error: unknown) {
+            message.error(errorText(error));
+        }
+    };
+
     const unmatch = async () => {
         try {
             await transactionsApi.unmatch(transaction.id);
@@ -300,6 +311,19 @@ export default function TransactionEditModal({ transaction, categories, merchant
                 <Button block danger onClick={unsplit}>
                     Un-split (restore original)
                 </Button>
+            )}
+            {transaction.splitParentId == null && (
+                <Popconfirm
+                    title="Delete this transaction?"
+                    description="It won't be re-imported by future syncs or CSV imports."
+                    okText="Delete"
+                    okButtonProps={{ danger: true }}
+                    onConfirm={removeTransaction}
+                >
+                    <Button block danger className={styles.deleteButton}>
+                        Delete transaction…
+                    </Button>
+                </Popconfirm>
             )}
         </Modal>
 

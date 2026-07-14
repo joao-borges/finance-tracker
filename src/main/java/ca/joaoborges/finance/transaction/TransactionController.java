@@ -21,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -52,6 +53,7 @@ public class TransactionController {
     private static final int MAX_PAGE_SIZE = 200;
 
     private final TransactionRepository transactionRepository;
+    private final DeletedTransactionKeyRepository deletedTransactionKeyRepository;
     private final TransactionMapper transactionMapper;
     private final AccountRepository accountRepository;
     private final CategoryRepository categoryRepository;
@@ -170,6 +172,34 @@ public class TransactionController {
                     YearMonth.from(transaction.getPostedAt().atZone(ZoneOffset.UTC)), transaction.getAmount().negate());
         }
         return dto;
+    }
+
+    /**
+     * Delete a transaction outright. Split children go with their parent (a
+     * child alone can't be deleted — un-split first); matches are detached so a
+     * transfer partner or pending refunds revert cleanly; the dedup key is
+     * tombstoned so the next SimpleFIN sync or a CSV re-import doesn't
+     * resurrect the row.
+     */
+    @DeleteMapping("/{id}")
+    @Transactional
+    public void delete(@PathVariable final Long id) {
+        final Transaction transaction = transactionRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found"));
+        if (transaction.getSplitParent() != null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "This row is part of a split — un-split the parent first");
+        }
+        final List<Transaction> children = transactionRepository.findBySplitParent(transaction);
+        for (final Transaction child : children) {
+            matchingService.detachForDeletion(child);
+        }
+        matchingService.detachForDeletion(transaction);
+        transactionRepository.deleteAll(children);
+        deletedTransactionKeyRepository.save(DeletedTransactionKey.builder()
+                .dedupKey(transaction.getDedupKey())
+                .build());
+        transactionRepository.delete(transaction);
     }
 
     /** Quarantined duplicates, for the restore UI. */

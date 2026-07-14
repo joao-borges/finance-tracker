@@ -65,6 +65,7 @@ public class SimpleFinSyncService {
     private final BudgetAlertService budgetAlertService;
     private final ca.joaoborges.finance.match.MatchingService matchingService;
     private final ca.joaoborges.finance.common.ImportCutoff importCutoff;
+    private final ca.joaoborges.finance.transaction.DeletedTransactionKeyRepository deletedTransactionKeyRepository;
 
     private record AlertKey(Long categoryId, YearMonth month) {
     }
@@ -160,6 +161,7 @@ public class SimpleFinSyncService {
         // same-day identical legitimate charges within this payload all survive.
         final Set<String> existingHashes = new HashSet<>(transactionRepository.findLiveContentHashes());
         final Set<String> existingStatementHashes = new HashSet<>(transactionRepository.findLiveStatementHashes());
+        final Set<String> deletedKeys = new HashSet<>(deletedTransactionKeyRepository.findAllKeys());
         for (int i = 0; i < accounts.size(); i++) {
             final JsonNode accountNode = accounts.get(i);
             final String simplefinId = accountNode.path("id").asString("");
@@ -182,6 +184,11 @@ public class SimpleFinSyncService {
                 }
                 final Instant postedAt = Instant.ofEpochSecond(posted);
                 if (importCutoff.excludes(postedAt)) {
+                    continue;
+                }
+                if (deletedKeys.contains(txId + ":" + posted)) {
+                    // Deliberately deleted by the operator — never resurrect.
+                    dedupCount++;
                     continue;
                 }
                 if (transactionRepository.existsBySimplefinId(txId)) {

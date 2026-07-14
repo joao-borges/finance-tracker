@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Tombstones for deleted transactions. Without them, deleting a SimpleFIN
+         row inside the sync lookback window would just resurrect it on the next
+         sync (its id and hashes vanish from every dedup set with the row). Both
+         ingest paths silently skip keys recorded here. -->
+    <changeSet id="018-deleted-transaction-keys" author="joao">
+        <createTable tableName="deleted_transaction_keys">
+            <column name="dedup_key" type="varchar(512)">
+                <constraints primaryKey="true" primaryKeyName="pk_deleted_transaction_keys"/>
+            </column>
+            <column name="deleted_at" type="timestamptz">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

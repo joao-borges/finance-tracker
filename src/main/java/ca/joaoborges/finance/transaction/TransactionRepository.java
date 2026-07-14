@@ -50,6 +50,9 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
     /** Children of a split parent (for re-split / unsplit). */
     List<Transaction> findBySplitParent(Transaction parent);
 
+    /** Refund legs pointing at a purchase (for detaching before deletion). */
+    List<Transaction> findByMatchedWith(Transaction purchase);
+
     /** Reassign all of a merged source account's transactions to the canonical account. */
     @Modifying
     @Query("UPDATE Transaction t SET t.account = :target WHERE t.account = :source")

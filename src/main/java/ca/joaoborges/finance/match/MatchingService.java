@@ -214,6 +214,23 @@ public class MatchingService {
     }
 
     /**
+     * Fully detach a transaction from matching ahead of deletion: unlink its own
+     * match (reverting a transfer partner), revert any refunds pointing at it,
+     * and drop suggestions involving it.
+     */
+    @Transactional
+    public void detachForDeletion(final Transaction tx) {
+        if (tx.getMatchedWith() != null && tx.getMatchType() != null) {
+            unmatch(tx.getId());
+        }
+        for (final Transaction refund : transactionRepository.findByMatchedWith(tx)) {
+            revert(refund);
+            transactionRepository.save(refund);
+        }
+        suggestionRepository.deleteInvolving(tx);
+    }
+
+    /**
      * Backfill: scan existing un-matched transactions and auto-match / suggest.
      * Legs are consumed only by actual applies — a mere suggestion never blocks a
      * transaction's other possibilities. Candidates arrive chronologically, so
