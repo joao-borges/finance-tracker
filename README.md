@@ -1,5 +1,8 @@
 # finance-tracker
 
+[![CI](https://github.com/joao-borges/finance-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/joao-borges/finance-tracker/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 A self-hosted personal finance tracker. Auto-syncs transactions from
 [SimpleFIN](https://beta-bridge.simplefin.org/), categorizes them with a
 merchant-match rules engine, matches transfers/refunds, and tracks monthly
