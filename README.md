@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/joao-borges/finance-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/joao-borges/finance-tracker/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-%E2%98%95-ffdd00)](https://buymeacoffee.com/joaoborges)
 
 A self-hosted personal finance tracker. Auto-syncs transactions from
 [SimpleFIN](https://beta-bridge.simplefin.org/), categorizes them with a
@@ -178,3 +179,6 @@ those before touching `ingest/`, `match/`, or the budget math.
 Fork-and-PR. `main` is protected: PRs require the owner's review and passing
 CI. Never include real bank exports, SimpleFIN payloads, or personal data in
 fixtures or tests — anonymize everything.
+
+If this project is useful to you, you can
+[buy me a coffee](https://buymeacoffee.com/joaoborges) ☕
