@@ -36,6 +36,8 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       # Hard floor on imported transactions (ISO date, UTC). Blank = no floor.
       IMPORT_MIN_POSTED_DATE: ${IMPORT_MIN_POSTED_DATE:-}
+      # Optional personal seed file (mount it into the container). Blank = no seeding.
+      FINANCE_SEED_FILE: ${FINANCE_SEED_FILE:-}
       DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
       # Google sign-in (required in prod).
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-oauth}

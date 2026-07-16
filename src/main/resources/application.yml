@@ -54,6 +54,10 @@ finance:
   discord:
     # Discord channel webhook URL; notifications are skipped when blank.
     webhook-url: ${DISCORD_WEBHOOK_URL:}
+  seed:
+    # Optional path to a personal seed-data.json (categories/merchants/rules).
+    # Unset and without a classpath seed/seed-data.json, seeding is skipped.
+    file: ${FINANCE_SEED_FILE:}
   import:
     # Hard floor (ISO date, UTC): transactions posted before this are dropped by
     # every ingest path (CSV + SimpleFIN). Blank = no floor.

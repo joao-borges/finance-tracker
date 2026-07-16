@@ -9,30 +9,35 @@ import ca.joaoborges.finance.merchant.Merchant;
 import ca.joaoborges.finance.merchant.MerchantRepository;
 import ca.joaoborges.finance.rule.Rule;
 import ca.joaoborges.finance.rule.RuleRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Seeds the curated Monarch category groups, categories, and rules from
- * {@code seed/seed-data.json} at startup. Idempotent: each group/category is
- * matched by natural key (group name, then category name within the group) and
- * each rule by name, so an existing row is never duplicated and user edits are
- * left untouched. Runs after Liquibase has built the schema.
+ * Optionally seeds category groups, categories, merchants, and rules at
+ * startup. The seed file is personal, so it does NOT ship with the repo: point
+ * {@code finance.seed.file} (env {@code FINANCE_SEED_FILE}) at a JSON file, or
+ * bake one into the classpath at {@code seed/seed-data.json}. With neither,
+ * seeding is skipped. Idempotent: each group/category is matched by natural
+ * key (group name, then category name within the group) and each rule by
+ * name, so an existing row is never duplicated and user edits are left
+ * untouched. Runs after Liquibase has built the schema.
  */
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class DataSeeder implements ApplicationRunner {
 
@@ -44,11 +49,31 @@ public class DataSeeder implements ApplicationRunner {
     private final MerchantRepository merchantRepository;
     private final FaviconService faviconService;
     private final ObjectMapper objectMapper;
+    private final String seedFile;
+
+    public DataSeeder(final CategoryGroupRepository groupRepository,
+                      final CategoryRepository categoryRepository,
+                      final RuleRepository ruleRepository,
+                      final MerchantRepository merchantRepository,
+                      final FaviconService faviconService,
+                      final ObjectMapper objectMapper,
+                      @Value("${finance.seed.file:}") final String seedFile) {
+        this.groupRepository = groupRepository;
+        this.categoryRepository = categoryRepository;
+        this.ruleRepository = ruleRepository;
+        this.merchantRepository = merchantRepository;
+        this.faviconService = faviconService;
+        this.objectMapper = objectMapper;
+        this.seedFile = seedFile;
+    }
 
     @Override
     @Transactional
     public void run(final ApplicationArguments args) {
         final SeedData seed = load();
+        if (seed == null) {
+            return;
+        }
         final Map<String, Category> categoriesByName = seedCategories(seed);
         final Map<String, Merchant> merchantsByName = seedMerchants(seed);
         final int linkedRules = seedRules(seed, categoriesByName, merchantsByName);
@@ -57,10 +82,27 @@ public class DataSeeder implements ApplicationRunner {
     }
 
     private SeedData load() {
-        try (InputStream in = new ClassPathResource(SEED_RESOURCE).getInputStream()) {
-            return objectMapper.readValue(in, SeedData.class);
+        try {
+            if (StringUtils.hasText(seedFile)) {
+                final Path path = Path.of(seedFile);
+                if (!Files.isReadable(path)) {
+                    log.warn("Seed file {} is not readable — skipping seeding", seedFile);
+                    return null;
+                }
+                try (InputStream in = Files.newInputStream(path)) {
+                    return objectMapper.readValue(in, SeedData.class);
+                }
+            }
+            final ClassPathResource resource = new ClassPathResource(SEED_RESOURCE);
+            if (!resource.exists()) {
+                log.info("No seed data (finance.seed.file unset, no classpath {}) — skipping seeding", SEED_RESOURCE);
+                return null;
+            }
+            try (InputStream in = resource.getInputStream()) {
+                return objectMapper.readValue(in, SeedData.class);
+            }
         } catch (final IOException unreadable) {
-            throw new UncheckedIOException("Could not read seed data " + SEED_RESOURCE, unreadable);
+            throw new UncheckedIOException("Could not read seed data", unreadable);
         }
     }
 

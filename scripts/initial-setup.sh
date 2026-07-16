@@ -4,15 +4,14 @@
 # deployment. Talks to a RUNNING instance over its REST API and:
 #
 #   1. (optional) connects + syncs SimpleFIN
-#   2. imports the PC Financial Mastercard CSV (it's CSV-only for now)
-#   3. shapes the accounts to match the Monarch layout (rename / type / logo /
-#      merge supplementary cards / hide investment + cash accounts)
-#   4. creates the June 2026 budget from the Monarch plan
-#   5. prints the resulting budget + account summary
+#   2. imports a PC Financial Mastercard CSV (a CSV-only institution)
+#   3. shapes the accounts (rename / type / logo / merge supplementary cards /
+#      hide investment + cash accounts) — adjust the specs below to yours
+#   4. prints the resulting account summary
 #
-# Every step is idempotent, so re-running it on the server is safe. The hard
-# "June 1 2026" import floor is enforced by the APP (set IMPORT_MIN_POSTED_DATE
-# in the app's environment — see docker-compose.yml), not here.
+# Budgets are set in the UI (Budget page), not here. Every step is idempotent,
+# so re-running it on the server is safe. The optional import floor is enforced
+# by the APP (IMPORT_MIN_POSTED_DATE), not here.
 #
 # Requirements: bash, curl, jq.
 #
@@ -27,40 +26,12 @@ set -euo pipefail
 BASE_URL="${BASE_URL:-http://localhost:8080}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CSV_FILE="${CSV_FILE:-${SCRIPT_DIR}/report.csv}"
-BUDGET_MONTH="${BUDGET_MONTH:-2026-06}"
-# Credit-card balances are negative in our signed convention (debt owed), to
-# match what SimpleFIN returns for the other cards.
-PC_BALANCE="${PC_BALANCE:--3352.67}"
+# Optional starting balance for the CSV-only card (negative = debt owed, to
+# match what SimpleFIN returns for the other cards). Unset = leave untouched.
+PC_BALANCE="${PC_BALANCE:-}"
 SIMPLEFIN_TOKEN="${SIMPLEFIN_TOKEN:-}"
 # Initial-load SimpleFIN window (the daily sync only pulls the recent days).
 SIMPLEFIN_FROM="${SIMPLEFIN_FROM:-2026-06-01}"
-
-# --- June 2026 budget (category name | planned $), from the Monarch plan ---
-BUDGET=(
-    "Paychecks|11519"
-    "Motorhome|400"
-    "Car Insurance|351"
-    "Auto Payment|758"
-    "Rent|3155"
-    "Home Insurance|72"
-    "Internet & Cable|73"
-    "Phone|127"
-    "Groceries|1200"
-    "Travel & Vacation|191"
-    "Entertainment/Dining|600"
-    "Pets|120"
-    "Subscriptions|219"
-    "Gym|97"
-    "Fun and Stuff|200"
-    "Daycare|673"
-    "Swim|91"
-    "Medical|464"
-    "Fitness|126"
-    "Financial Fees|33"
-    "CC Debt|1599"
-    "Financed Airline Ticket|467"
-    "Miscellaneous|400"
-)
 
 # --- Desired account shape (Monarch). match=case-insensitive substring of the
 #     current account name; the row is applied with a single PATCH. ---
@@ -153,9 +124,14 @@ log "Shaping accounts to the Monarch layout ..."
 # Matched by importRef (stable) since the display name changes after the first run.
 pc_id="$(accounts | jq -r '[.[] | select(.importRef=="PC Financial")][0].id // empty')"
 if [[ -n "${pc_id}" ]]; then
-    patch_account "${pc_id}" "$(jq -nc --arg n "Mastercard •••• 7834" --argjson b "${PC_BALANCE}" \
-        '{name:$n, type:"CREDIT_CARD", website:"pcfinancial.ca", balance:$b}')"
-    echo "    PC Financial -> Mastercard •••• 7834 (\$${PC_BALANCE})"
+    if [[ -n "${PC_BALANCE}" ]]; then
+        patch_account "${pc_id}" "$(jq -nc --arg n "Mastercard •••• 7834" --argjson b "${PC_BALANCE}" \
+            '{name:$n, type:"CREDIT_CARD", website:"pcfinancial.ca", balance:$b}')"
+    else
+        patch_account "${pc_id}" "$(jq -nc --arg n "Mastercard •••• 7834" \
+            '{name:$n, type:"CREDIT_CARD", website:"pcfinancial.ca"}')"
+    fi
+    echo "    PC Financial -> Mastercard •••• 7834"
 fi
 
 # SimpleFIN-sourced accounts
@@ -196,35 +172,7 @@ for pat in "${HIDE_PATTERNS[@]}"; do
 done
 
 # ----------------------------------------------------------------------------
-# 4. June budget
-log "Creating ${BUDGET_MONTH} budget ..."
-cats="$(curl -sf "${BASE_URL}/api/categories")" || die "could not load categories"
-entries='[]'
-missing=0
-for row in "${BUDGET[@]}"; do
-    IFS='|' read -r name amount <<<"$row"
-    id="$(jq -r --arg n "$name" 'map(select(.name==$n))[0].id // empty' <<<"$cats")"
-    if [[ -n "${id}" ]]; then
-        entries="$(jq -c --argjson id "$id" --argjson amt "${amount}" \
-            '. + [{categoryId:$id, plannedAmount:$amt}]' <<<"$entries")"
-    else
-        warn "budget category not found, skipping: ${name}"
-        missing=$((missing + 1))
-    fi
-done
-sent="$(jq 'length' <<<"$entries")"
-curl -sf -X PUT "${BASE_URL}/api/budgets/${BUDGET_MONTH}" \
-    -H 'Content-Type: application/json' -d "$entries" >/dev/null || die "budget PUT failed"
-echo "    set ${sent} budget line(s) (${missing} category name(s) unmatched)"
-
-# ----------------------------------------------------------------------------
-# 5. Summary
-log "Done. ${BUDGET_MONTH} budget summary:"
-curl -sf "${BASE_URL}/api/budgets/${BUDGET_MONTH}/summary" | jq -r '
-    "    planned income : \(.plannedIncome // 0)",
-    "    planned expense: \(.plannedExpense // 0)",
-    "    actual income  : \(.actualIncome // 0)",
-    "    actual expense : \(.actualExpense // 0)"'
-
+# 4. Summary
+log "Done."
 log "Visible accounts (hidden excluded, as on the dashboard):"
 curl -sf "${BASE_URL}/api/accounts" | jq -r '.[] | select(.hidden|not) | "    \(.name)  [\(.type)]  bal=\(.balance // "n/a")"'
