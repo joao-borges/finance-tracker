@@ -1,7 +1,7 @@
-# Production deployment (server: joaoborges-server).
+# Production deployment.
 #
 # Postgres stays internal (no host port); the app publishes only on 127.0.0.1:8080
-# so the host's caddy reverse-proxies finance.joaoborges.ca -> 127.0.0.1:8080.
+# so your reverse proxy (Caddy, nginx, a tunnel, ...) can front it with TLS.
 # Secrets come from a .env file alongside this (never committed) — see .env.example.
 #
 #   docker compose -f docker-compose.prod.yml up -d --build

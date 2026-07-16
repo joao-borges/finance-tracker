@@ -1,20 +1,28 @@
 #!/usr/bin/env bash
-# Redeploy finance-tracker to the server: sync source + rebuild/restart the
-# containers via docker-compose.prod.yml. Secrets live only in the server's
-# ~/workspace/finance-tracker/.env (never synced). caddy already reverse-proxies
-# finance.joaoborges.ca -> 127.0.0.1:8080.
+# Redeploy finance-tracker to a remote docker host: sync source + rebuild/restart
+# the containers via docker-compose.prod.yml. Secrets live only in the server's
+# <DEST>/.env (never synced). Put your reverse proxy in front of 127.0.0.1:8080.
 #
-#   ./scripts/deploy.sh
+#   SERVER=user@host ./scripts/deploy.sh
+#
+# Persist your target in scripts/deploy.env (untracked):
+#   SERVER=user@host
+#   DEST=workspace/finance-tracker
 set -euo pipefail
 
-SERVER="${SERVER:-joaoborges@192.168.68.92}"
-DEST="${DEST:-workspace/finance-tracker}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [[ -f "${HERE}/scripts/deploy.env" ]]; then
+    # shellcheck source=/dev/null
+    . "${HERE}/scripts/deploy.env"
+fi
+SERVER="${SERVER:?set SERVER=user@host (or put it in scripts/deploy.env)}"
+DEST="${DEST:-workspace/finance-tracker}"
 
 echo "==> Syncing source to ${SERVER}:${DEST}"
 rsync -az \
     --exclude '.git' --exclude 'node_modules' --exclude 'web/node_modules' \
     --exclude 'target' --exclude 'web/dist' --exclude '.claude' --exclude '.env' \
+    --exclude 'scripts/deploy.env' \
     --exclude '*.log' --exclude '.DS_Store' \
     "${HERE}/" "${SERVER}:${DEST}/"
 

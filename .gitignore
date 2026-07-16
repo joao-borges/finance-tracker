@@ -1,5 +1,6 @@
 # Secrets / local env
 .env
+scripts/deploy.env
 
 # Java / Maven
 /target/

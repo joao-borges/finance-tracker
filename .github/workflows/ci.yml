@@ -1,0 +1,38 @@
+# PR / merge checks: UI typecheck, backend tests, and the full deployable
+# artifact (jar with the UI baked in). No deploy step — deployments are
+# operator-driven (scripts/deploy.sh).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: UI typecheck
+        working-directory: web
+        run: |
+          npm ci
+          npx tsc --noEmit
+
+      - name: Backend tests + full package (UI baked in)
+        run: ./mvnw -B clean verify
