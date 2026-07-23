@@ -97,7 +97,7 @@ public class TransactionController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown account " + body.accountId()));
         final Instant postedAt = body.date().atStartOfDay(ZoneOffset.UTC).toInstant();
         final String merchantName = body.description().trim();
-        final String hash = ContentHashing.of(account.getName(), postedAt, body.amount(), merchantName);
+        final String hash = ContentHashing.of(String.valueOf(account.getId()), postedAt, body.amount(), merchantName);
         final Category category = body.categoryId() == null ? null : resolveCategory(body.categoryId());
         final Transaction transaction = Transaction.builder()
                 .account(account)

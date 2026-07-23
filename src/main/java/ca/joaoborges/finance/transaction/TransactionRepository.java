@@ -1,6 +1,7 @@
 package ca.joaoborges.finance.transaction;
 
 import ca.joaoborges.finance.account.Account;
+import ca.joaoborges.finance.common.SourceType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -25,9 +26,19 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
     @Query("SELECT t.contentHash FROM Transaction t WHERE t.dedup = false")
     List<String> findLiveContentHashes();
 
-    /** Statement hashes of all live transactions, the second cross-source dedup key. */
-    @Query("SELECT t.statementHash FROM Transaction t WHERE t.dedup = false AND t.statementHash IS NOT NULL")
-    List<String> findLiveStatementHashes();
+    /** Statement hashes of live rows from one source (exact-day dedup within a source). */
+    @Query("""
+            SELECT t.statementHash FROM Transaction t
+            WHERE t.dedup = false AND t.statementHash IS NOT NULL AND t.source = :source
+            """)
+    List<String> findLiveStatementHashesBySource(@Param("source") SourceType source);
+
+    /** Statement hashes of live rows from OTHER sources (probed ±days for date skew). */
+    @Query("""
+            SELECT t.statementHash FROM Transaction t
+            WHERE t.dedup = false AND t.statementHash IS NOT NULL AND t.source <> :source
+            """)
+    List<String> findLiveStatementHashesExcludingSource(@Param("source") SourceType source);
 
     /** Rows still missing the backfilled statement hash (see StatementHashBackfill). */
     List<Transaction> findByStatementHashIsNull();
@@ -52,6 +63,9 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
 
     /** Refund legs pointing at a purchase (for detaching before deletion). */
     List<Transaction> findByMatchedWith(Transaction purchase);
+
+    /** All transactions of an account (hash recompute after a merge). */
+    List<Transaction> findByAccount(Account account);
 
     /** Reassign all of a merged source account's transactions to the canonical account. */
     @Modifying

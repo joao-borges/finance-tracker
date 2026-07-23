@@ -76,7 +76,12 @@ public class IngestService {
         // We deliberately do NOT add this run's own hashes, so same-day identical
         // legitimate charges in one file all survive.
         final Set<String> existingHashes = new HashSet<>(transactionRepository.findLiveContentHashes());
-        final Set<String> existingStatementHashes = new HashSet<>(transactionRepository.findLiveStatementHashes());
+        // Same-source rows compare on the exact day; other sources are probed
+        // ±2 days because banks skew transaction vs posted dates across sources.
+        final Set<String> sameSourceStatementHashes =
+                new HashSet<>(transactionRepository.findLiveStatementHashesBySource(source));
+        final Set<String> crossSourceStatementHashes =
+                new HashSet<>(transactionRepository.findLiveStatementHashesExcludingSource(source));
         final Set<String> deletedKeys = new HashSet<>(deletedTransactionKeyRepository.findAllKeys());
         final Map<String, Integer> byAccount = new LinkedHashMap<>();
         final Map<AlertKey, BigDecimal> spendByCategoryMonth = new HashMap<>();
@@ -94,18 +99,21 @@ public class IngestService {
                 continue;
             }
             final Account account = resolveAccount(row.accountName());
-            final String hash = ContentHashing.of(account.getName(), postedAt, row.amount(), row.merchantName());
+            final String accountKey = String.valueOf(account.getId());
+            final String hash = ContentHashing.of(accountKey, postedAt, row.amount(), row.merchantName());
             // A CSV row's merchant IS the raw statement text, so the statement
             // hash lines up with SimpleFIN rows hashed on their description.
             final String statementHash = ContentHashing.ofStatement(
-                    account.getName(), postedAt, row.amount(), row.merchantName());
+                    accountKey, postedAt, row.amount(), row.merchantName());
             if (deletedKeys.contains(hash)) {
                 // Deliberately deleted by the operator — skip silently, don't quarantine.
                 dedupCount++;
                 continue;
             }
             final boolean duplicate = existingHashes.contains(hash)
-                    || existingStatementHashes.contains(statementHash);
+                    || sameSourceStatementHashes.contains(statementHash)
+                    || ContentHashing.statementProbes(accountKey, postedAt, row.amount(), row.merchantName(), 2)
+                            .stream().anyMatch(crossSourceStatementHashes::contains);
             final Transaction transaction = Transaction.builder()
                     .account(account)
                     .source(source)

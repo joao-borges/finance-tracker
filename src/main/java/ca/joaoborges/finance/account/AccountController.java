@@ -1,6 +1,7 @@
 package ca.joaoborges.finance.account;
 
 import ca.joaoborges.finance.common.FaviconService;
+import ca.joaoborges.finance.transaction.TransactionHashMaintenance;
 import ca.joaoborges.finance.transaction.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -27,6 +28,7 @@ public class AccountController {
     private final TransactionRepository transactionRepository;
     private final AccountMapper accountMapper;
     private final FaviconService faviconService;
+    private final TransactionHashMaintenance hashMaintenance;
 
     /** Target for a merge: the canonical account a source is folded into. */
     public record MergeRequest(Long targetId) {
@@ -85,6 +87,9 @@ public class AccountController {
         source.setHidden(true);
         accountRepository.save(source);
         transactionRepository.reassignAccount(source, target);
+        // Dedup hashes are keyed on the account id — re-key the moved rows under
+        // the canonical account or cross-source dedup stops matching them.
+        hashMaintenance.rebuild(transactionRepository.findByAccount(target));
         return accountMapper.toDto(target);
     }
 

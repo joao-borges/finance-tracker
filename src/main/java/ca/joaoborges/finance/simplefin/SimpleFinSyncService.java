@@ -160,7 +160,12 @@ public class SimpleFinSyncService {
         // Live content hashes from prior runs, snapshotted before the loop so
         // same-day identical legitimate charges within this payload all survive.
         final Set<String> existingHashes = new HashSet<>(transactionRepository.findLiveContentHashes());
-        final Set<String> existingStatementHashes = new HashSet<>(transactionRepository.findLiveStatementHashes());
+        // Same-source rows compare on the exact day; other sources are probed
+        // ±2 days because banks skew transaction vs posted dates across sources.
+        final Set<String> sameSourceStatementHashes =
+                new HashSet<>(transactionRepository.findLiveStatementHashesBySource(SourceType.SIMPLEFIN));
+        final Set<String> crossSourceStatementHashes =
+                new HashSet<>(transactionRepository.findLiveStatementHashesExcludingSource(SourceType.SIMPLEFIN));
         final Set<String> deletedKeys = new HashSet<>(deletedTransactionKeyRepository.findAllKeys());
         for (int i = 0; i < accounts.size(); i++) {
             final JsonNode accountNode = accounts.get(i);
@@ -199,17 +204,20 @@ public class SimpleFinSyncService {
                 final BigDecimal amount = new BigDecimal(txNode.path("amount").asString("0"));
                 final String merchant = merchantOf(txNode, txId);
                 final String rawDescription = txNode.path("description").asString("");
-                final String hash = ContentHashing.of(canonical.getName(), postedAt, amount, merchant);
+                final String accountKey = String.valueOf(canonical.getId());
+                final String hash = ContentHashing.of(accountKey, postedAt, amount, merchant);
                 // The statement hash keys on the raw description so the same
                 // charge collides with a CSV import of the same statement text.
-                final String statementHash = ContentHashing.ofStatement(canonical.getName(), postedAt, amount,
-                        StringUtils.hasText(rawDescription) ? rawDescription : merchant);
+                final String statementText = StringUtils.hasText(rawDescription) ? rawDescription : merchant;
+                final String statementHash = ContentHashing.ofStatement(accountKey, postedAt, amount, statementText);
                 // Tier 2: an unknown simplefin id whose content matches a live row
                 // is a re-import under a rotated id (bridge reconnect) or a charge
                 // already ingested from a CSV → quarantine (restorable), keeping
                 // the new id so the next sync skips at tier 1.
                 final boolean duplicate = existingHashes.contains(hash)
-                        || existingStatementHashes.contains(statementHash);
+                        || sameSourceStatementHashes.contains(statementHash)
+                        || ContentHashing.statementProbes(accountKey, postedAt, amount, statementText, 2)
+                                .stream().anyMatch(crossSourceStatementHashes::contains);
                 final Transaction transaction = Transaction.builder()
                         .account(canonical)
                         .source(SourceType.SIMPLEFIN)
