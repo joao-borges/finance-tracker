@@ -106,15 +106,17 @@ public class TransactionController {
                 .merchant(body.merchantId() == null ? null : merchantService.resolve(body.merchantId(), null))
                 .amount(body.amount())
                 .postedAt(postedAt)
+                .sourcePostedAt(postedAt)
                 .currency(account.getCurrency())
                 .category(category)
                 .contentHash(hash)
                 .dedupKey("manual:" + hash)
-                .needsReview(category == null)
-                .excludedFromBudget(Boolean.TRUE.equals(body.excludedFromBudget()))
+                .needsReview(category == null && !account.isOffBudget())
+                .excludedFromBudget(body.excludedFromBudget() != null
+                        ? body.excludedFromBudget() : account.isOffBudget())
                 .awaitingRefund(Boolean.TRUE.equals(body.awaitingRefund()))
                 .build();
-        if (category == null) {
+        if (category == null && !account.isOffBudget()) {
             ruleEngine.categorize(transaction, ruleRepository.findByEnabledTrueOrderByPriorityAscIdAsc());
         }
         final Transaction saved = transactionRepository.save(transaction);
@@ -162,6 +164,11 @@ public class TransactionController {
         }
         if (body.awaitingRefund() != null) {
             transaction.setAwaitingRefund(body.awaitingRefund());
+        }
+        if (body.postedAt() != null) {
+            // Move the operator-visible date (and thus the budget month). Dedup
+            // stays keyed on sourcePostedAt, so re-imports don't duplicate this row.
+            transaction.setPostedAt(body.postedAt().atStartOfDay(ZoneOffset.UTC).toInstant());
         }
         final TransactionDto dto = transactionMapper.toDto(transactionRepository.save(transaction));
 

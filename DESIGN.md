@@ -327,6 +327,12 @@ Ingest matching is **bidirectional**: a new inflow searches back for its purchas
 - **Guarded apply:** confirming re-validates against the purchase's *hard* remainder (409 if stale), manual refund matches are validated the same way (400), and every apply prunes sibling suggestions that no longer fit the new remainder — a purchase can never be over-refunded.
 - **Effect:** the refund inherits the purchase's `category_id` so the `+` nets the `−` in that category — *unless* the purchase is `awaiting_refund`, in which case **both legs are excluded** (a known refund that should never have counted), and the flag resolves.
 
+### Off-budget accounts
+An account can be flagged **off-budget** (`accounts.off_budget`, toggled on the Accounts page) for money that should never touch the household budget (personal throwaway accounts). Its transactions land `excluded_from_budget = true`, `needs_review = false`, and **uncategorized** — rules are skipped, and the UI shows the category cell blank rather than "Uncategorized". Any of it can be overridden per transaction. **Enabling applies backwards**: existing rows leave the budget, are marked reviewed, and lose their category (matched transfer legs keep their pairing and category). Disabling is not retroactive — new transactions simply flow through rules/review again.
+
+### Adjustable posting dates
+`posted_at` is operator-adjustable (edit-modal date picker, or a rule action): it drives display order and the **budget month**. The source-reported date is pinned in `source_posted_at` at ingest and never edited — dedup hashes key on it, so moving a transaction between months can never cause a re-import to duplicate it. A rule can set **shift to next month** (`rules.shift_to_next_month`): matched transactions move to the 1st of the following month (month-end charges that belong to the next budget, e.g. daycare). The shift applies once per transaction — a row whose `posted_at` already differs from `source_posted_at` is never shifted again.
+
 ### Awaiting-refund flag
 Manual, set on the Categories/transaction UI ahead of the refund: a purchase you *know* will be refunded weeks/months out. It sets `awaiting_refund = true`, which the budget predicate excludes — so it drops out of the current month immediately, without waiting. When the matching refund finally lands, the refund step (above) excludes both legs and clears the flag.
 

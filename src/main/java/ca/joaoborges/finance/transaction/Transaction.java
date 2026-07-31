@@ -88,6 +88,15 @@ public class Transaction {
     @Column(name = "posted_at", nullable = false)
     private Instant postedAt;
 
+    /**
+     * The posting date as the SOURCE reported it, pinned at ingest and never
+     * edited. Dedup hashes key on this, so the operator can move
+     * {@code postedAt} between budget months (manually or via a shift rule)
+     * without re-imports duplicating the row.
+     */
+    @Column(name = "source_posted_at")
+    private Instant sourcePostedAt;
+
     @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal amount;
 

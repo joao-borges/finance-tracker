@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Locale;
@@ -53,9 +55,22 @@ public class RuleEngine {
         if (rule.getMerchant() != null) {
             transaction.setMerchant(rule.getMerchant());
         }
+        if (rule.isShiftToNextMonth() && !alreadyShifted(transaction)) {
+            // Month-end charges that belong to the next month's budget (e.g.
+            // daycare): move to the 1st of the following month. The
+            // source-reported date stays pinned for dedup, and the guard makes
+            // re-applying the rule a no-op instead of drifting further.
+            final LocalDate day = transaction.getPostedAt().atZone(ZoneOffset.UTC).toLocalDate();
+            transaction.setPostedAt(day.plusMonths(1).withDayOfMonth(1).atStartOfDay(ZoneOffset.UTC).toInstant());
+        }
         transaction.setNeedsReview(!rule.isAutoApprove());
         rule.setMatchCount(rule.getMatchCount() + 1);
         rule.setLastMatchedAt(Instant.now());
+    }
+
+    private boolean alreadyShifted(final Transaction transaction) {
+        return transaction.getSourcePostedAt() != null
+                && !transaction.getSourcePostedAt().equals(transaction.getPostedAt());
     }
 
     /**

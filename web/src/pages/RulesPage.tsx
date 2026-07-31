@@ -43,6 +43,7 @@ export default function RulesPage() {
         },
         { name: "newMerchantName", label: "…or new merchant", type: "text", formOnly: true },
         { name: "autoApprove", label: "Auto-approve", type: "boolean", initial: false },
+        { name: "shiftToNextMonth", label: "Shift to next month", type: "boolean", initial: false },
         { name: "priority", label: "Priority", type: "number", initial: 0 },
         { name: "enabled", label: "Enabled", type: "boolean", initial: true },
         { name: "matchCount", label: "Matches", type: "number", tableOnly: true },

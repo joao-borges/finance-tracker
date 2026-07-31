@@ -120,6 +120,7 @@ public class IngestService {
                     .merchantName(row.merchantName())
                     .amount(row.amount())
                     .postedAt(postedAt)
+                    .sourcePostedAt(postedAt)
                     .currency(account.getCurrency())
                     .contentHash(hash)
                     .statementHash(statementHash)
@@ -135,7 +136,14 @@ public class IngestService {
                 continue;
             }
 
-            ruleEngine.categorize(transaction, enabledRules);
+            if (account.isOffBudget()) {
+                // Off-budget account: outside the budget, pre-reviewed, no
+                // category — the operator can still override per transaction.
+                transaction.setExcludedFromBudget(true);
+                transaction.setNeedsReview(false);
+            } else {
+                ruleEngine.categorize(transaction, enabledRules);
+            }
             transactionRepository.save(transaction);
             matchingService.matchNewTransaction(transaction);
             byAccount.merge(account.getName(), 1, Integer::sum);
@@ -148,7 +156,8 @@ public class IngestService {
 
             final Category category = transaction.getCategory();
             if (category != null && !category.isIncome()) {
-                final AlertKey key = new AlertKey(category.getId(), YearMonth.from(postedAt.atZone(ZoneOffset.UTC)));
+                final AlertKey key = new AlertKey(category.getId(),
+                        YearMonth.from(transaction.getPostedAt().atZone(ZoneOffset.UTC)));
                 spendByCategoryMonth.merge(key, transaction.getAmount().negate(), BigDecimal::add);
                 categoriesById.putIfAbsent(category.getId(), category);
             }

@@ -51,6 +51,15 @@ public class Rule {
     @JoinColumn(name = "category_id")
     private Category category;
 
+    /**
+     * Shift matched transactions to the 1st of the following month — for
+     * charges billed at month-end that belong to the next month's budget
+     * (e.g. daycare). Applied once per transaction (idempotent).
+     */
+    @Builder.Default
+    @Column(name = "shift_to_next_month", nullable = false)
+    private boolean shiftToNextMonth = false;
+
     /** Optional: also link matched transactions to this canonical merchant. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "merchant_id")

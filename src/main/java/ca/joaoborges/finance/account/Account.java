@@ -87,6 +87,15 @@ public class Account {
     @Column(name = "logo_url")
     private String logoUrl;
 
+    /**
+     * Off-budget: money in this account is outside the household budget
+     * (throwaway/personal-spending accounts). Its transactions land excluded
+     * from budget, pre-reviewed, and uncategorized — see DESIGN.md.
+     */
+    @Builder.Default
+    @Column(name = "off_budget", nullable = false)
+    private boolean offBudget = false;
+
     @Builder.Default
     @Column(nullable = false)
     private boolean hidden = false;

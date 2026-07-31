@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { App as AntApp, Button, Checkbox, Divider, Input, Modal, Popconfirm, Radio, Select, Space, Switch, Typography } from "antd";
+import { App as AntApp, Button, Checkbox, DatePicker, Divider, Input, Modal, Popconfirm, Radio, Select, Space, Switch, Typography } from "antd";
+import dayjs from "dayjs";
 import {
     merchantsApi,
     rulesApi,
@@ -40,6 +41,7 @@ export default function TransactionEditModal({ transaction, categories, merchant
     const [newName, setNewName] = useState("");
     const [newIcon, setNewIcon] = useState("");
     const [newWebsite, setNewWebsite] = useState("");
+    const [editedDate, setEditedDate] = useState<dayjs.Dayjs | null>(null);
     const [reviewed, setReviewed] = useState(true);
     const [excluded, setExcluded] = useState(false);
     const [awaiting, setAwaiting] = useState(false);
@@ -65,6 +67,7 @@ export default function TransactionEditModal({ transaction, categories, merchant
             return;
         }
         setCategoryId(transaction.categoryId ?? undefined);
+        setEditedDate(dayjs(transaction.postedAt));
         setMerchantMode("existing");
         setExistingMerchantId(transaction.merchantId ?? undefined);
         setNewName(transaction.merchant ?? transaction.merchantName);
@@ -105,12 +108,15 @@ export default function TransactionEditModal({ transaction, categories, merchant
                 merchantId = created.id;
             }
 
+            const dateChanged = editedDate !== null
+                && !editedDate.isSame(dayjs(transaction.postedAt), "day");
             const body: TransactionUpdate = {
                 categoryId: categoryId ?? undefined,
                 merchantId,
                 needsReview: !reviewed,
                 excludedFromBudget: excluded,
                 awaitingRefund: awaiting,
+                postedAt: dateChanged ? editedDate.format("YYYY-MM-DD") : undefined,
             };
             const updated = await transactionsApi.update(transaction.id, body);
 
@@ -196,8 +202,13 @@ export default function TransactionEditModal({ transaction, categories, merchant
             width={520}
         >
             <Typography.Paragraph type="secondary" className={styles.firstParagraph}>
-                {new Date(transaction.postedAt).toLocaleDateString()} · {transaction.accountName} ·{" "}
-                {formatMoney(transaction.amount, transaction.currency)}
+                <DatePicker
+                    size="small"
+                    value={editedDate}
+                    allowClear={false}
+                    onChange={(value) => setEditedDate(value)}
+                />{" "}
+                · {transaction.accountName} · {formatMoney(transaction.amount, transaction.currency)}
             </Typography.Paragraph>
             <Typography.Paragraph className={styles.statementParagraph}>
                 <strong>Statement:</strong> {transaction.merchantName}

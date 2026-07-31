@@ -21,6 +21,7 @@ public record RuleDto(
         String merchantName,
         String newMerchantName,
         Boolean autoApprove,
+        Boolean shiftToNextMonth,
         Integer priority,
         Boolean enabled,
         Long matchCount,

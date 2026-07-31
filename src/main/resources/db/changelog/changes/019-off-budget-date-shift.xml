@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Off-budget accounts, operator-adjustable posting dates (with the bank's
+         original date preserved for dedup identity), and the rule action that
+         shifts a transaction into the next month's budget. -->
+    <changeSet id="019-off-budget-date-shift" author="joao">
+        <addColumn tableName="accounts">
+            <column name="off_budget" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <addColumn tableName="transactions">
+            <column name="source_posted_at" type="timestamptz"/>
+        </addColumn>
+        <addColumn tableName="rules">
+            <column name="shift_to_next_month" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <sql>UPDATE transactions SET source_posted_at = posted_at WHERE source_posted_at IS NULL</sql>
+    </changeSet>
+
+</databaseChangeLog>

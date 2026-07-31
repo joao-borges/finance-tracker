@@ -10,6 +10,7 @@ public interface TransactionMapper {
     @Mapping(target = "accountId", source = "account.id")
     @Mapping(target = "accountName", source = "account.name")
     @Mapping(target = "accountLogoUrl", source = "account.logoUrl")
+    @Mapping(target = "accountOffBudget", source = "account.offBudget")
     @Mapping(target = "merchantId", source = "merchant.id")
     @Mapping(target = "merchant", source = "merchant.name")
     @Mapping(target = "merchantLogoUrl", source = "merchant.logoUrl")

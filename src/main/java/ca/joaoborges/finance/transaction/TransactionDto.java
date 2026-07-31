@@ -18,6 +18,7 @@ public record TransactionDto(
         Long accountId,
         String accountName,
         String accountLogoUrl,
+        boolean accountOffBudget,
         String merchantName,
         Long merchantId,
         String merchant,

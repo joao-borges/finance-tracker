@@ -23,5 +23,6 @@
     <include file="changes/016-statement-hash.xml" relativeToChangelogFile="true"/>
     <include file="changes/017-rule-optional-category.xml" relativeToChangelogFile="true"/>
     <include file="changes/018-deleted-transaction-keys.xml" relativeToChangelogFile="true"/>
+    <include file="changes/019-off-budget-date-shift.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

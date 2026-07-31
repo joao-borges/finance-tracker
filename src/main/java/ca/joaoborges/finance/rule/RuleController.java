@@ -53,9 +53,10 @@ public class RuleController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name and merchantMatch are required");
         }
         final boolean hasMerchant = dto.merchantId() != null || StringUtils.hasText(dto.newMerchantName());
-        if (dto.categoryId() == null && !hasMerchant && !Boolean.TRUE.equals(dto.autoApprove())) {
+        if (dto.categoryId() == null && !hasMerchant && !Boolean.TRUE.equals(dto.autoApprove())
+                && !Boolean.TRUE.equals(dto.shiftToNextMonth())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "A rule needs at least one action: a category, a merchant, or auto-approve");
+                    "A rule needs at least one action: a category, a merchant, auto-approve, or a month shift");
         }
         final Rule rule = ruleMapper.toEntity(dto);
         rule.setCategory(dto.categoryId() == null ? null : resolveCategory(dto.categoryId()));

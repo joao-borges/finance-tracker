@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -46,14 +47,25 @@ public class TransactionHashMaintenance implements ApplicationRunner {
             final String statementText = StringUtils.hasText(transaction.getDescription())
                     ? transaction.getDescription()
                     : transaction.getMerchantName();
+            boolean dirty = false;
+            if (transaction.getSourcePostedAt() == null) {
+                transaction.setSourcePostedAt(transaction.getPostedAt());
+                dirty = true;
+            }
+            // Hashes key on the SOURCE-reported date: the operator may move
+            // postedAt between budget months, and re-imports must still match.
+            final Instant hashDate = transaction.getSourcePostedAt();
             final String contentHash = ContentHashing.of(
-                    accountKey, transaction.getPostedAt(), transaction.getAmount(), transaction.getMerchantName());
+                    accountKey, hashDate, transaction.getAmount(), transaction.getMerchantName());
             final String statementHash = ContentHashing.ofStatement(
-                    accountKey, transaction.getPostedAt(), transaction.getAmount(), statementText);
+                    accountKey, hashDate, transaction.getAmount(), statementText);
             if (!contentHash.equals(transaction.getContentHash())
                     || !statementHash.equals(transaction.getStatementHash())) {
                 transaction.setContentHash(contentHash);
                 transaction.setStatementHash(statementHash);
+                dirty = true;
+            }
+            if (dirty) {
                 changed.add(transaction);
             }
         }

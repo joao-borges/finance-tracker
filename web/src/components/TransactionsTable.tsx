@@ -73,6 +73,11 @@ export default function TransactionsTable({ rows, onOpen, merchants, categories,
                 </span>
             );
         }
+        if (row.accountOffBudget) {
+            // Off-budget accounts deliberately have no category — show blank,
+            // not "Uncategorized" (the cell stays clickable to override).
+            return <span className={styles.blankCategory} />;
+        }
         return (
             <Typography component="span" className={shared.secondary}>
                 Uncategorized

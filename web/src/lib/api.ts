@@ -13,6 +13,7 @@ export interface Account {
     balance?: number | null;
     website?: string | null;
     logoUrl?: string | null;
+    offBudget?: boolean;
     hidden?: boolean;
     archived?: boolean;
     mergedIntoId?: number | null;
@@ -59,6 +60,7 @@ export interface Rule {
     merchantName?: string | null;
     newMerchantName?: string | null;
     autoApprove?: boolean;
+    shiftToNextMonth?: boolean;
     priority?: number;
     enabled?: boolean;
     matchCount?: number;
@@ -161,6 +163,7 @@ export interface Transaction {
     accountId: number;
     accountName: string;
     accountLogoUrl?: string | null;
+    accountOffBudget?: boolean;
     merchantName: string;
     merchantId?: number | null;
     merchant?: string | null;
@@ -222,6 +225,7 @@ export interface TransactionUpdate {
     needsReview?: boolean | null;
     excludedFromBudget?: boolean | null;
     awaitingRefund?: boolean | null;
+    postedAt?: string | null;
 }
 
 export interface ManualTransactionInput {

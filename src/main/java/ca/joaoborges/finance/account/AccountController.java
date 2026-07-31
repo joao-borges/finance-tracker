@@ -1,6 +1,7 @@
 package ca.joaoborges.finance.account;
 
 import ca.joaoborges.finance.common.FaviconService;
+import ca.joaoborges.finance.transaction.Transaction;
 import ca.joaoborges.finance.transaction.TransactionHashMaintenance;
 import ca.joaoborges.finance.transaction.TransactionRepository;
 import lombok.RequiredArgsConstructor;
@@ -59,11 +60,27 @@ public class AccountController {
     public AccountDto update(@PathVariable final Long id, @RequestBody final AccountDto dto) {
         final Account account = accountRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account not found"));
+        final boolean wasOffBudget = account.isOffBudget();
         accountMapper.update(account, dto);
         if (dto.website() != null) {
             account.setLogoUrl(faviconService.resolveLogoUrl(dto.website()));
         }
-        return accountMapper.toDto(accountRepository.save(account));
+        final AccountDto saved = accountMapper.toDto(accountRepository.save(account));
+        if (!wasOffBudget && account.isOffBudget()) {
+            // Enabling applies backwards: every existing transaction of this
+            // account leaves the budget, is marked reviewed, and loses its
+            // category — matched transfer legs keep their pairing (they are
+            // already excluded and their category documents the transfer).
+            for (final Transaction transaction : transactionRepository.findByAccount(account)) {
+                transaction.setExcludedFromBudget(true);
+                transaction.setNeedsReview(false);
+                if (transaction.getMatchType() == null) {
+                    transaction.setCategory(null);
+                }
+                transactionRepository.save(transaction);
+            }
+        }
+        return saved;
     }
 
     /**

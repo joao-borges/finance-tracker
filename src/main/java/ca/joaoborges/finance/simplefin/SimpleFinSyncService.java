@@ -227,6 +227,7 @@ public class SimpleFinSyncService {
                         .description(StringUtils.hasText(rawDescription) ? rawDescription : null)
                         .amount(amount)
                         .postedAt(postedAt)
+                        .sourcePostedAt(postedAt)
                         .currency(canonical.getCurrency())
                         .contentHash(hash)
                         .statementHash(statementHash)
@@ -242,7 +243,14 @@ public class SimpleFinSyncService {
                     continue;
                 }
 
-                ruleEngine.categorize(transaction, enabledRules);
+                if (canonical.isOffBudget()) {
+                    // Off-budget account: outside the budget, pre-reviewed, no
+                    // category — the operator can still override per transaction.
+                    transaction.setExcludedFromBudget(true);
+                    transaction.setNeedsReview(false);
+                } else {
+                    ruleEngine.categorize(transaction, enabledRules);
+                }
                 transactionRepository.save(transaction);
                 matchingService.matchNewTransaction(transaction);
                 newCount++;
@@ -255,7 +263,8 @@ public class SimpleFinSyncService {
 
                 final Category category = transaction.getCategory();
                 if (category != null && !category.isIncome()) {
-                    final AlertKey key = new AlertKey(category.getId(), YearMonth.from(postedAt.atZone(ZoneOffset.UTC)));
+                    final AlertKey key = new AlertKey(category.getId(),
+                            YearMonth.from(transaction.getPostedAt().atZone(ZoneOffset.UTC)));
                     spendByCategoryMonth.merge(key, amount.negate(), BigDecimal::add);
                     categoriesById.putIfAbsent(category.getId(), category);
                 }

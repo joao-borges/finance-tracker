@@ -52,3 +52,9 @@
 .excludedChip {
     margin-left: 4px;
 }
+
+.blankCategory {
+    display: inline-block;
+    min-width: 80px;
+    min-height: 1em;
+}
