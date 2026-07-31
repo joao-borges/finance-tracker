@@ -41,11 +41,15 @@ public class SimpleFinStatusDigest {
     private final ImportRunRepository importRunRepository;
     private final DiscordNotifier discordNotifier;
 
+    /** Outcome of one health check — also what the on-demand endpoint returns. */
+    public record Result(boolean healthy, String report) {
+    }
+
     @Transactional(readOnly = true)
-    public void send() {
+    public Result send() {
         final SimpleFinConnection connection = connectionRepository.findFirstByOrderByIdAsc().orElse(null);
         if (connection == null) {
-            return;
+            return new Result(false, "SimpleFIN is not connected.");
         }
         final ZoneId zone = ZoneId.of("America/Vancouver");
         final StringBuilder body = new StringBuilder();
@@ -55,8 +59,9 @@ public class SimpleFinStatusDigest {
             root = objectMapper.readTree(simpleFinClient.fetchBalances(connection.getAccessUrl()));
         } catch (final RuntimeException unreachable) {
             log.warn("SimpleFIN daily digest: bridge unreachable: {}", unreachable.getMessage());
-            discordNotifier.sendDailyStatus("Bridge unreachable: " + unreachable.getMessage(), false);
-            return;
+            final Result down = new Result(false, "Bridge unreachable: " + unreachable.getMessage());
+            discordNotifier.sendDailyStatus(down.report(), false);
+            return down;
         }
 
         final List<String> issues = new ArrayList<>();
@@ -107,6 +112,7 @@ public class SimpleFinStatusDigest {
         final boolean healthy = issues.isEmpty() && stale.isEmpty();
         log.info("SimpleFIN daily digest (healthy={}): {}", healthy, body.toString().replace('\n', ' '));
         discordNotifier.sendDailyStatus(body.toString(), healthy);
+        return new Result(healthy, body.toString());
     }
 
 }

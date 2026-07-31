@@ -29,3 +29,11 @@
 .rangeRow {
     margin-top: 12px;
 }
+
+.healthAlert {
+    margin: 8px 0;
+}
+
+.healthReport {
+    white-space: pre-line;
+}

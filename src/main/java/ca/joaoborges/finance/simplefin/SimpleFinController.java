@@ -28,6 +28,7 @@ import java.time.ZoneOffset;
 public class SimpleFinController {
 
     private final SimpleFinSyncService syncService;
+    private final SimpleFinStatusDigest statusDigest;
     private final ImportRunMapper importRunMapper;
 
     public record SetupRequest(String token) {
@@ -49,6 +50,12 @@ public class SimpleFinController {
     public SimpleFinStatus status() {
         final SimpleFinConnection connection = syncService.connection();
         return new SimpleFinStatus(connection != null, connection == null ? null : connection.getLastSyncedAt());
+    }
+
+    /** On-demand bridge health check — same live probe as the daily digest (also posts to Discord). */
+    @PostMapping("/health-check")
+    public SimpleFinStatusDigest.Result healthCheck() {
+        return statusDigest.send();
     }
 
     /**

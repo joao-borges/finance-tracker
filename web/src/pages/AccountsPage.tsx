@@ -37,7 +37,7 @@ export default function AccountsPage() {
         { name: "type", label: "Type", type: "select", required: true, options: ACCOUNT_TYPES },
         { name: "currency", label: "Currency", type: "text", required: true, initial: "CAD" },
         { name: "balance", label: "Balance", type: "number", renderCell: (row) => formatMoney(row.balance, row.currency) },
-        { name: "website", label: "Website", type: "text" },
+        { name: "website", label: "Website", type: "text", formOnly: true },
         { name: "offBudget", label: "Off budget", type: "boolean", initial: false },
         { name: "hidden", label: "Hidden", type: "boolean", initial: false },
         { name: "archived", label: "Archived", type: "boolean", initial: false },

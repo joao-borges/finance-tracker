@@ -388,8 +388,14 @@ export interface SimpleFinStatus {
     lastSyncedAt: string | null;
 }
 
+export interface SimpleFinHealth {
+    healthy: boolean;
+    report: string;
+}
+
 export const simplefinApi = {
     status: () => http<SimpleFinStatus>("GET", "/api/simplefin/status"),
+    healthCheck: () => http<SimpleFinHealth>("POST", "/api/simplefin/health-check"),
     setup: (token: string) => http<SimpleFinStatus>("POST", "/api/simplefin/setup", { token }),
     // No range = recent window (same as the daily scheduled sync). Pass from/to
     // (YYYY-MM-DD) to force a custom range.

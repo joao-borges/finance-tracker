@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Box, Button, Chip, Paper, TextField, Tooltip, Typography } from "@mui/material";
+import MonitorHeartIcon from "@mui/icons-material/MonitorHeart";
 import SyncIcon from "@mui/icons-material/Sync";
 import LinkIcon from "@mui/icons-material/Link";
-import { App as AntApp, DatePicker } from "antd";
-import { simplefinApi, type SimpleFinStatus } from "../lib/api";
+import { Alert, App as AntApp, DatePicker } from "antd";
+import { simplefinApi, type SimpleFinHealth, type SimpleFinStatus } from "../lib/api";
 import { errorText } from "../lib/format";
 import styles from "./SimpleFinSection.module.css";
 
@@ -14,6 +15,7 @@ export default function SimpleFinSection({ onSynced }: { onSynced: () => void })
     const [statusError, setStatusError] = useState<string | null>(null);
     const [token, setToken] = useState("");
     const [range, setRange] = useState<[string, string] | null>(null);
+    const [health, setHealth] = useState<SimpleFinHealth | null>(null);
     const [busy, setBusy] = useState(false);
 
     const reload = () => {
@@ -43,6 +45,17 @@ export default function SimpleFinSection({ onSynced }: { onSynced: () => void })
             setStatus(next);
             setToken("");
             message.success("SimpleFIN connected");
+        } catch (error: unknown) {
+            message.error(errorText(error));
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const runHealthCheck = async () => {
+        setBusy(true);
+        try {
+            setHealth(await simplefinApi.healthCheck());
         } catch (error: unknown) {
             message.error(errorText(error));
         } finally {
@@ -103,7 +116,27 @@ export default function SimpleFinSection({ onSynced }: { onSynced: () => void })
                 <Button variant="contained" startIcon={<SyncIcon />} onClick={() => runSync()} disabled={busy || !status?.connected}>
                     Sync now
                 </Button>
+                <Button
+                    variant="outlined"
+                    startIcon={<MonitorHeartIcon />}
+                    onClick={runHealthCheck}
+                    disabled={busy || !status?.connected}
+                >
+                    Health check
+                </Button>
             </Box>
+
+            {health && (
+                <Alert
+                    type={health.healthy ? "success" : "warning"}
+                    showIcon
+                    closable
+                    onClose={() => setHealth(null)}
+                    message={health.healthy ? "Bridge healthy" : "Bridge needs attention"}
+                    description={<span className={styles.healthReport}>{health.report}</span>}
+                    className={styles.healthAlert}
+                />
+            )}
 
             <Box className={`${styles.controls} ${styles.rangeRow}`}>
                 <DatePicker.RangePicker
