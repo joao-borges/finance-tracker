@@ -45,6 +45,18 @@ public class SimpleFinClient {
         }
     }
 
+    /**
+     * Fetch just the accounts + balances (no transactions) — the lightweight
+     * live health probe for the daily status digest.
+     */
+    public String fetchBalances(final String accessUrl) {
+        final URI uri = URI.create(accessUrl.trim());
+        final UriComponentsBuilder builder = UriComponentsBuilder.fromUri(withoutUserInfo(uri))
+                .path("/accounts")
+                .queryParam("balances-only", 1);
+        return get(builder.build(true).toUri(), uri.getUserInfo());
+    }
+
     /** Fetch the accounts/transactions payload as raw JSON for [startDate, endDate). */
     public String fetchAccounts(final String accessUrl, final Instant startDate, final Instant endDate) {
         final URI uri = URI.create(accessUrl.trim());
@@ -55,7 +67,10 @@ public class SimpleFinClient {
         if (endDate != null) {
             builder.queryParam("end-date", endDate.getEpochSecond());
         }
-        final URI endpoint = builder.build(true).toUri();
+        return get(builder.build(true).toUri(), userInfo);
+    }
+
+    private String get(final URI endpoint, final String userInfo) {
 
         final HttpHeaders headers = new HttpHeaders();
         if (userInfo != null) {

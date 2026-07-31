@@ -1,7 +1,5 @@
 package ca.joaoborges.finance.simplefin;
 
-import ca.joaoborges.finance.account.Account;
-import ca.joaoborges.finance.account.AccountRepository;
 import ca.joaoborges.finance.common.SourceType;
 import ca.joaoborges.finance.ingest.ImportRun;
 import ca.joaoborges.finance.ingest.ImportRunRepository;
@@ -10,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -19,12 +19,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Daily SimpleFIN health digest for Discord: the last sync's outcome plus any
- * linked account whose balance feed has gone stale at the bridge. A healthy
- * bridge refreshes every account's balance daily even when there are no new
- * transactions, so a stale {@code balance_date} is the reliable signal for the
- * silent failure mode where a bank connection stops delivering without ever
- * reporting an error.
+ * Daily SimpleFIN health digest for Discord, built from a LIVE bridge probe
+ * ({@code balances-only=1} — accounts and balances, no transactions), not from
+ * whatever the last sync left in the database. A healthy bridge refreshes
+ * every account's balance daily even with no new transactions, so a stale
+ * balance date straight from the bridge is the reliable signal for the silent
+ * failure mode where a bank connection stops delivering without ever
+ * reporting an error. The last sync's outcome is included as context.
  */
 @Service
 @RequiredArgsConstructor
@@ -35,7 +36,8 @@ public class SimpleFinStatusDigest {
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("MMM d, HH:mm");
 
     private final SimpleFinConnectionRepository connectionRepository;
-    private final AccountRepository accountRepository;
+    private final SimpleFinClient simpleFinClient;
+    private final ObjectMapper objectMapper;
     private final ImportRunRepository importRunRepository;
     private final DiscordNotifier discordNotifier;
 
@@ -48,39 +50,61 @@ public class SimpleFinStatusDigest {
         final ZoneId zone = ZoneId.of("America/Vancouver");
         final StringBuilder body = new StringBuilder();
 
-        final ImportRun lastSync = importRunRepository
-                .findFirstBySourceOrderByStartedAtDesc(SourceType.SIMPLEFIN).orElse(null);
-        if (lastSync == null) {
-            body.append("No SimpleFIN sync has run yet.");
-        } else {
-            body.append("Last sync ").append(DAY.format(lastSync.getStartedAt().atZone(zone)))
-                    .append(" — ").append(lastSync.getNewCount()).append(" new, ")
-                    .append(lastSync.getDedupCount()).append(" dedup, ")
-                    .append(lastSync.getErrorCount()).append(" bridge issue(s).");
+        final JsonNode root;
+        try {
+            root = objectMapper.readTree(simpleFinClient.fetchBalances(connection.getAccessUrl()));
+        } catch (final RuntimeException unreachable) {
+            log.warn("SimpleFIN daily digest: bridge unreachable: {}", unreachable.getMessage());
+            discordNotifier.sendDailyStatus("Bridge unreachable: " + unreachable.getMessage(), false);
+            return;
+        }
+
+        final List<String> issues = new ArrayList<>();
+        for (final JsonNode error : root.path("errors")) {
+            issues.add(error.asString(""));
         }
 
         final List<String> stale = new ArrayList<>();
-        for (final Account account : accountRepository.findByMergedIntoIsNullOrderByNameAsc()) {
-            if (account.getSimplefinId() == null || account.isArchived()) {
-                continue;
-            }
-            final Instant balanceDate = account.getBalanceDate();
-            if (balanceDate == null || balanceDate.isBefore(Instant.now().minus(STALE_AFTER))) {
-                stale.add(account.getName()
-                        + (balanceDate == null ? " (never)" : " (stale since " + DAY.format(balanceDate.atZone(zone)) + ")"));
+        int freshCount = 0;
+        for (final JsonNode account : root.path("accounts")) {
+            final String name = account.path("name").asString("?");
+            final long balanceDate = account.path("balance-date").asLong(0);
+            if (balanceDate > 0 && !Instant.ofEpochSecond(balanceDate).isBefore(Instant.now().minus(STALE_AFTER))) {
+                freshCount++;
+            } else {
+                stale.add(name + (balanceDate <= 0
+                        ? " (no balance date)"
+                        : " (stale since " + DAY.format(Instant.ofEpochSecond(balanceDate).atZone(zone)) + ")"));
             }
         }
-        final boolean syncErrored = lastSync != null && lastSync.getErrorCount() > 0;
-        final boolean healthy = stale.isEmpty() && !syncErrored;
+
+        if (!issues.isEmpty()) {
+            body.append("Bridge issues:");
+            for (final String issue : issues) {
+                body.append("\n• ").append(issue);
+            }
+            body.append('\n');
+        }
         if (stale.isEmpty()) {
-            body.append("\nAll linked accounts fresh.");
+            body.append("All ").append(freshCount).append(" bridge account(s) fresh.");
         } else {
-            body.append("\nStale balance feeds — check the bridge:");
+            body.append(freshCount).append(" fresh, ").append(stale.size())
+                    .append(" stale — check the bridge:");
             for (final String name : stale) {
                 body.append("\n• ").append(name);
             }
         }
 
+        final ImportRun lastSync = importRunRepository
+                .findFirstBySourceOrderByStartedAtDesc(SourceType.SIMPLEFIN).orElse(null);
+        if (lastSync != null) {
+            body.append("\nLast sync ").append(DAY.format(lastSync.getStartedAt().atZone(zone)))
+                    .append(" — ").append(lastSync.getNewCount()).append(" new, ")
+                    .append(lastSync.getDedupCount()).append(" dedup, ")
+                    .append(lastSync.getErrorCount()).append(" issue(s).");
+        }
+
+        final boolean healthy = issues.isEmpty() && stale.isEmpty();
         log.info("SimpleFIN daily digest (healthy={}): {}", healthy, body.toString().replace('\n', ' '));
         discordNotifier.sendDailyStatus(body.toString(), healthy);
     }
