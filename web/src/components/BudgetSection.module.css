@@ -72,3 +72,13 @@
         width: 92px;
     }
 }
+
+.zeroHeader {
+    cursor: pointer;
+}
+
+.zeroTitle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}

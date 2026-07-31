@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
     Box,
     IconButton,
@@ -15,6 +15,7 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { InputNumber } from "antd";
 import { Link } from "@mui/material";
@@ -54,6 +55,58 @@ export default function BudgetSection({
 }: Props) {
     const hasHidden = lines.some((line) => line.hidden);
     const visibleLines = showHidden ? lines : lines.filter((line) => !line.hidden);
+    // Zero-planned categories fold into their own collapsed sub-section so the
+    // month's real plan stays uncluttered; membership follows the SAVED plan so
+    // a row doesn't jump sections mid-edit.
+    const activeLines = visibleLines.filter((line) => (line.planned ?? 0) !== 0);
+    const zeroLines = visibleLines.filter((line) => (line.planned ?? 0) === 0);
+    const zeroAlert = zeroLines.some((line) => line.actual !== 0);
+    const [zeroOpen, setZeroOpen] = useState(false);
+
+    const renderLine = (line: BudgetLine) => {
+        return (
+            <TableRow key={line.categoryId} hover>
+                <TableCell>
+                    <Link
+                        component="button"
+                        type="button"
+                        underline="hover"
+                        color="inherit"
+                        onClick={() => onOpenCategory?.(line)}
+                        className={line.hidden ? `${styles.categoryLink} ${styles.hiddenName}` : styles.categoryLink}
+                    >
+                        {line.icon ? `${line.icon} ` : ""}
+                        {line.name}
+                        {line.hidden ? " (hidden)" : ""}
+                    </Link>
+                </TableCell>
+                <TableCell>
+                    <InputNumber
+                        className={styles.plannedInput}
+                        min={0}
+                        step={10}
+                        precision={2}
+                        disabled={readOnly}
+                        value={planned[line.categoryId] ?? null}
+                        onChange={(value) => onPlanned(line.categoryId, value)}
+                        prefix="$"
+                    />
+                </TableCell>
+                <TableCell align="right" className={`${shared.nowrap} ${styles.colActual}`}>
+                    {formatMoney(line.actual)}
+                </TableCell>
+                <TableCell align="right" className={shared.nowrap}>
+                    <Typography
+                        component="span"
+                        className={line.remaining < 0 ? shared.negative : undefined}
+                    >
+                        {formatMoney(line.remaining)}
+                    </Typography>
+                </TableCell>
+            </TableRow>
+        );
+    };
+
     return (
         <Box className={styles.section}>
             <Box className={styles.header}>
@@ -88,49 +141,25 @@ export default function BudgetSection({
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {visibleLines.map((line) => {
-                            return (
-                                <TableRow key={line.categoryId} hover>
-                                    <TableCell>
-                                        <Link
-                                            component="button"
-                                            type="button"
-                                            underline="hover"
-                                            color="inherit"
-                                            onClick={() => onOpenCategory?.(line)}
-                                            className={line.hidden ? `${styles.categoryLink} ${styles.hiddenName}` : styles.categoryLink}
-                                        >
-                                            {line.icon ? `${line.icon} ` : ""}
-                                            {line.name}
-                                            {line.hidden ? " (hidden)" : ""}
-                                        </Link>
-                                    </TableCell>
-                                    <TableCell>
-                                        <InputNumber
-                                            className={styles.plannedInput}
-                                            min={0}
-                                            step={10}
-                                            precision={2}
-                                            disabled={readOnly}
-                                            value={planned[line.categoryId] ?? null}
-                                            onChange={(value) => onPlanned(line.categoryId, value)}
-                                            prefix="$"
-                                        />
-                                    </TableCell>
-                                    <TableCell align="right" className={`${shared.nowrap} ${styles.colActual}`}>
-                                        {formatMoney(line.actual)}
-                                    </TableCell>
-                                    <TableCell align="right" className={shared.nowrap}>
-                                        <Typography
-                                            component="span"
-                                            className={line.remaining < 0 ? shared.negative : undefined}
-                                        >
-                                            {formatMoney(line.remaining)}
+                        {activeLines.map(renderLine)}
+                        {zeroLines.length > 0 && (
+                            <TableRow hover className={styles.zeroHeader} onClick={() => setZeroOpen((open) => !open)}>
+                                <TableCell colSpan={4}>
+                                    <span className={styles.zeroTitle}>
+                                        {zeroOpen ? <ExpandMoreIcon fontSize="small" /> : <ChevronRightIcon fontSize="small" />}
+                                        <Typography component="span" className={shared.secondary}>
+                                            Zero-planned ({zeroLines.length})
                                         </Typography>
-                                    </TableCell>
-                                </TableRow>
-                            );
-                        })}
+                                        {zeroAlert && (
+                                            <Tooltip title="Transactions landed in zero-planned categories this month">
+                                                <WarningAmberIcon fontSize="small" color="warning" />
+                                            </Tooltip>
+                                        )}
+                                    </span>
+                                </TableCell>
+                            </TableRow>
+                        )}
+                        {zeroOpen && zeroLines.map(renderLine)}
                     </TableBody>
                 </Table>
             </TableContainer>
