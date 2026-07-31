@@ -31,6 +31,7 @@ public class DiscordNotifier {
     private static final NumberFormat MONEY = NumberFormat.getCurrencyInstance(Locale.CANADA);
     private static final int RED = 0xE53935;
     private static final int YELLOW = 0xF1C40F;
+    private static final int GREEN = 0x2ECC71;
 
     private final RestTemplate restTemplate;
     private final String webhookUrl;
@@ -54,6 +55,12 @@ public class DiscordNotifier {
         sendEmbed("🔴 Over budget: " + category, RED,
                 "Spent " + money(spent) + " of " + money(planned) + " budgeted for " + month
                         + " (over by " + money(spent.subtract(planned)) + ").");
+    }
+
+    /** Daily SimpleFIN health digest — green when everything is fresh, yellow otherwise. */
+    public void sendDailyStatus(final String description, final boolean healthy) {
+        sendEmbed(healthy ? "🟢 SimpleFIN daily check" : "🟡 SimpleFIN daily check", healthy ? GREEN : YELLOW,
+                description);
     }
 
     /** Yellow alert: the SimpleFIN bridge reported connection problems during a sync. */
