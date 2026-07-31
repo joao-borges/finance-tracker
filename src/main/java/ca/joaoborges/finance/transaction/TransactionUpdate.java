@@ -17,5 +17,6 @@ public record TransactionUpdate(
         Boolean needsReview,
         Boolean excludedFromBudget,
         Boolean awaitingRefund,
-        LocalDate postedAt) {
+        LocalDate postedAt,
+        String timeZone) {
 }

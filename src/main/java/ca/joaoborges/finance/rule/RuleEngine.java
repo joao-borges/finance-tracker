@@ -61,7 +61,8 @@ public class RuleEngine {
             // source-reported date stays pinned for dedup, and the guard makes
             // re-applying the rule a no-op instead of drifting further.
             final LocalDate day = transaction.getPostedAt().atZone(ZoneOffset.UTC).toLocalDate();
-            transaction.setPostedAt(day.plusMonths(1).withDayOfMonth(1).atStartOfDay(ZoneOffset.UTC).toInstant());
+            // Noon UTC: a timezone-safe calendar day (renders identically everywhere).
+            transaction.setPostedAt(day.plusMonths(1).withDayOfMonth(1).atTime(12, 0).atOffset(ZoneOffset.UTC).toInstant());
         }
         transaction.setNeedsReview(!rule.isAutoApprove());
         rule.setMatchCount(rule.getMatchCount() + 1);

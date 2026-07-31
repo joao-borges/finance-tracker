@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
     Chip,
     IconButton,
@@ -36,6 +37,18 @@ interface Props {
 
 export default function TransactionsTable({ rows, onOpen, merchants, categories, onUpdated, accountIconOnly }: Props) {
     const { message } = AntApp.useApp();
+    const [flashCategoryRow, setFlashCategoryRow] = useState<number | null>(null);
+
+    const markReviewed = (row: Transaction) => {
+        // Every budget-relevant transaction needs a category before review —
+        // off-budget accounts are exempt (blank category is their design).
+        if (!row.categoryId && !row.accountOffBudget) {
+            setFlashCategoryRow(row.id);
+            window.setTimeout(() => setFlashCategoryRow(null), 1300);
+            return;
+        }
+        save(row.id, { needsReview: false }, "Marked reviewed");
+    };
 
     const save = async (id: number, body: TransactionUpdate, label: string) => {
         try {
@@ -105,7 +118,14 @@ export default function TransactionsTable({ rows, onOpen, merchants, categories,
                     {rows.map((row) => {
                         return (
                             <TableRow key={row.id} hover>
-                                <TableCell className={shared.nowrap}>{formatDate(row.postedAt)}</TableCell>
+                                <TableCell className={shared.nowrap}>
+                                    {formatDate(row.postedAt)}
+                                    {row.dateAdjusted && row.sourcePostedAt && (
+                                        <Tooltip title={`Date adjusted — bank date: ${formatDate(row.sourcePostedAt)}`}>
+                                            <span className={styles.dateAdjusted}>✱</span>
+                                        </Tooltip>
+                                    )}
+                                </TableCell>
                                 <TableCell>
                                     {accountIconOnly ? (
                                         <Tooltip title={row.accountName}>
@@ -136,6 +156,7 @@ export default function TransactionsTable({ rows, onOpen, merchants, categories,
                                     )}
                                 </TableCell>
                                 <TableCell>
+                                    <div className={row.id === flashCategoryRow ? shared.flashError : undefined}>
                                     {categories && onUpdated ? (
                                         <InlineSelect
                                             display={categoryDisplay(row)}
@@ -149,6 +170,7 @@ export default function TransactionsTable({ rows, onOpen, merchants, categories,
                                     ) : (
                                         categoryDisplay(row)
                                     )}
+                                    </div>
                                 </TableCell>
                                 <TableCell align="right" className={shared.nowrap}>
                                     <Typography
@@ -172,7 +194,7 @@ export default function TransactionsTable({ rows, onOpen, merchants, categories,
                                                         size="small"
                                                         color="warning"
                                                         label="Review"
-                                                        onClick={() => save(row.id, { needsReview: false }, "Marked reviewed")}
+                                                        onClick={() => markReviewed(row)}
                                                     />
                                                 </Tooltip>
                                             ) : (

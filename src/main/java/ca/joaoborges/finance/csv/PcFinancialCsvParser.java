@@ -43,7 +43,7 @@ public final class PcFinancialCsvParser {
                 final BigDecimal amount = new BigDecimal(rawAmount.replace(",", "").trim());
                 final LocalDate date = LocalDate.parse(rawDate.trim(), DATE);
                 final String merchant = record.get("Description").trim();
-                rows.add(new ParsedTransaction(ACCOUNT, merchant, amount, date.atStartOfDay(ZoneOffset.UTC).toInstant()));
+                rows.add(new ParsedTransaction(ACCOUNT, merchant, amount, date.atTime(12, 0).atOffset(ZoneOffset.UTC).toInstant()));
             }
         } catch (final IOException wrapped) {
             throw new UncheckedIOException("Failed to read PC Financial CSV", wrapped);

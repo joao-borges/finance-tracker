@@ -45,7 +45,7 @@ public final class AmexCsvParser {
                 final LocalDate date = LocalDate.parse(rawDate.trim(), DATE);
                 final String merchant = collapse(record.get("Description"));
                 final String account = "Amex " + record.get("Account #").replaceAll("[^0-9]", "");
-                rows.add(new ParsedTransaction(account.trim(), merchant, amount, date.atStartOfDay(ZoneOffset.UTC).toInstant()));
+                rows.add(new ParsedTransaction(account.trim(), merchant, amount, date.atTime(12, 0).atOffset(ZoneOffset.UTC).toInstant()));
             }
         } catch (final IOException wrapped) {
             throw new UncheckedIOException("Failed to read Amex CSV", wrapped);

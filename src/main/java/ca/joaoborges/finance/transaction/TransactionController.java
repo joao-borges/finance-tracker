@@ -36,6 +36,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
@@ -74,9 +75,19 @@ public class TransactionController {
      * Payload for adding a single transaction by hand. {@code amount} is signed
      * (negative = outflow); {@code date} is the UTC posting day.
      */
-    public record ManualTransactionRequest(Long accountId, LocalDate date, String description, BigDecimal amount,
-                                           Long categoryId, Long merchantId, Boolean excludedFromBudget,
-                                           Boolean awaitingRefund) {
+    public record ManualTransactionRequest(Long accountId, LocalDate date, String timeZone, String description,
+                                           BigDecimal amount, Long categoryId, Long merchantId,
+                                           Boolean excludedFromBudget, Boolean awaitingRefund) {
+    }
+
+    /**
+     * A calendar day picked in the client's timezone becomes NOON in that zone:
+     * it renders as the picked day in the user's locale and still falls on the
+     * same UTC day, so budget-month bucketing (UTC) agrees with what they see.
+     */
+    private static Instant dayInstant(final LocalDate day, final String timeZone) {
+        final ZoneId zone = StringUtils.hasText(timeZone) ? ZoneId.of(timeZone) : ZoneOffset.UTC;
+        return day.atTime(12, 0).atZone(zone).toInstant();
     }
 
     /**
@@ -95,7 +106,7 @@ public class TransactionController {
         }
         final Account account = accountRepository.findById(body.accountId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown account " + body.accountId()));
-        final Instant postedAt = body.date().atStartOfDay(ZoneOffset.UTC).toInstant();
+        final Instant postedAt = dayInstant(body.date(), body.timeZone());
         final String merchantName = body.description().trim();
         final String hash = ContentHashing.of(String.valueOf(account.getId()), postedAt, body.amount(), merchantName);
         final Category category = body.categoryId() == null ? null : resolveCategory(body.categoryId());
@@ -169,7 +180,7 @@ public class TransactionController {
         if (body.postedAt() != null) {
             // Move the operator-visible date (and thus the budget month). Dedup
             // stays keyed on sourcePostedAt, so re-imports don't duplicate this row.
-            transaction.setPostedAt(body.postedAt().atStartOfDay(ZoneOffset.UTC).toInstant());
+            transaction.setPostedAt(dayInstant(body.postedAt(), body.timeZone()));
         }
         final TransactionDto dto = transactionMapper.toDto(transactionRepository.save(transaction));
 

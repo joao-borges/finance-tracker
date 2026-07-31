@@ -46,7 +46,7 @@ public final class RbcCsvParser {
                 final LocalDate date = LocalDate.parse(record.get(2).trim(), DATE);
                 final String merchant = record.get(4).trim();
                 final String account = (record.get(0).trim() + " " + record.get(1).trim()).trim();
-                rows.add(new ParsedTransaction(account, merchant, amount, date.atStartOfDay(ZoneOffset.UTC).toInstant()));
+                rows.add(new ParsedTransaction(account, merchant, amount, date.atTime(12, 0).atOffset(ZoneOffset.UTC).toInstant()));
             }
         } catch (final IOException wrapped) {
             throw new UncheckedIOException("Failed to read RBC CSV", wrapped);

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Calendar-day rows (CSV, manual, operator-edited, rule-shifted) used to
+         persist at midnight UTC, which renders as the PREVIOUS day in any
+         western timezone. The convention is now noon (UTC for bank days, the
+         user's zone for picked days); shift the legacy midnight rows to noon
+         UTC — same UTC day, so dedup hashes and budget months are unaffected. -->
+    <changeSet id="021-noon-utc-day-instants" author="joao">
+        <sql>
+            UPDATE transactions SET posted_at = posted_at + interval '12 hours'
+            WHERE (posted_at AT TIME ZONE 'UTC')::time = '00:00:00';
+            UPDATE transactions SET source_posted_at = source_posted_at + interval '12 hours'
+            WHERE source_posted_at IS NOT NULL AND (source_posted_at AT TIME ZONE 'UTC')::time = '00:00:00';
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

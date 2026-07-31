@@ -171,6 +171,8 @@ export const rulesApi = {
 export interface Transaction {
     id: number;
     postedAt: string;
+    sourcePostedAt?: string | null;
+    dateAdjusted?: boolean;
     accountId: number;
     accountName: string;
     accountLogoUrl?: string | null;
@@ -237,11 +239,13 @@ export interface TransactionUpdate {
     excludedFromBudget?: boolean | null;
     awaitingRefund?: boolean | null;
     postedAt?: string | null;
+    timeZone?: string | null;
 }
 
 export interface ManualTransactionInput {
     accountId: number;
     date: string;
+    timeZone?: string;
     description: string;
     amount: number;
     categoryId?: number | null;

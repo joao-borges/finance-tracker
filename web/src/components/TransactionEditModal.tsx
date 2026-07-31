@@ -14,7 +14,7 @@ import {
 } from "../lib/api";
 import EmojiField from "./EmojiField";
 import SplitModal from "./SplitModal";
-import { errorText, formatMoney } from "../lib/format";
+import { browserTimeZone, errorText, formatMoney } from "../lib/format";
 import shared from "../styles/shared.module.css";
 import styles from "./TransactionEditModal.module.css";
 
@@ -50,6 +50,7 @@ export default function TransactionEditModal({ transaction, categories, merchant
     const [ruleAuto, setRuleAuto] = useState(true);
     const [applyRule, setApplyRule] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [flashCategory, setFlashCategory] = useState(false);
 
     // Mirrors RuleEngine: case-insensitive `contains` on the raw statement.
     const coveringRule = useMemo(() => {
@@ -87,6 +88,13 @@ export default function TransactionEditModal({ transaction, categories, merchant
     }
 
     const save = async () => {
+        // Reviewed requires a category (off-budget accounts exempt — blank is their design).
+        if (reviewed && categoryId === undefined && !transaction.accountOffBudget) {
+            setFlashCategory(true);
+            window.setTimeout(() => setFlashCategory(false), 1300);
+            message.error("Pick a category before marking reviewed");
+            return;
+        }
         const ruleHasMerchant = merchantMode === "existing"
             ? existingMerchantId !== undefined
             : merchantMode === "new" && newName.trim() !== "";
@@ -117,6 +125,7 @@ export default function TransactionEditModal({ transaction, categories, merchant
                 excludedFromBudget: excluded,
                 awaitingRefund: awaiting,
                 postedAt: dateChanged ? editedDate.format("YYYY-MM-DD") : undefined,
+                timeZone: dateChanged ? browserTimeZone() : undefined,
             };
             const updated = await transactionsApi.update(transaction.id, body);
 
@@ -218,7 +227,7 @@ export default function TransactionEditModal({ transaction, categories, merchant
             <Select
                 showSearch
                 optionFilterProp="label"
-                className={styles.categorySelect}
+                className={flashCategory ? `${styles.categorySelect} ${shared.flashError}` : styles.categorySelect}
                 placeholder="Choose category"
                 value={categoryId}
                 onChange={(value: number) => setCategoryId(value)}

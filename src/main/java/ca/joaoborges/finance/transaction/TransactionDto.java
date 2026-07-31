@@ -15,6 +15,8 @@ import java.time.Instant;
 public record TransactionDto(
         Long id,
         Instant postedAt,
+        Instant sourcePostedAt,
+        boolean dateAdjusted,
         Long accountId,
         String accountName,
         String accountLogoUrl,

@@ -58,3 +58,10 @@
     min-width: 80px;
     min-height: 1em;
 }
+
+.dateAdjusted {
+    color: var(--color-primary);
+    margin-left: 4px;
+    font-size: 12px;
+    cursor: default;
+}

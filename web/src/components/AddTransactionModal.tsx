@@ -8,7 +8,7 @@ import {
     type ManualTransactionInput,
     type Merchant,
 } from "../lib/api";
-import { errorText } from "../lib/format";
+import { browserTimeZone, errorText } from "../lib/format";
 import shared from "../styles/shared.module.css";
 import styles from "./AddTransactionModal.module.css";
 
@@ -70,6 +70,7 @@ export default function AddTransactionModal({ open, accounts, categories, mercha
             const body: ManualTransactionInput = {
                 accountId,
                 date: date.format("YYYY-MM-DD"),
+                timeZone: browserTimeZone(),
                 description: description.trim(),
                 amount: signed,
                 categoryId: categoryId ?? null,
