@@ -39,17 +39,23 @@ public class BudgetAlertService {
         final BigDecimal planned = budgetRepository.findByMonthAndCategoryId(label, category.getId())
                 .map(Budget::getPlannedAmount)
                 .orElse(null);
-        if (planned != null && planned.signum() > 0 && crosses(spentBefore, spentAfter, planned)) {
+        if (planned != null && planned.signum() > 0 && crossesAbove(spentBefore, spentAfter, planned)) {
             discordNotifier.sendBudgetOverflow(category.getName(), label, spentAfter, planned);
         }
 
         final BigDecimal threshold = category.getAlertThreshold();
-        if (threshold != null && threshold.signum() > 0 && crosses(spentBefore, spentAfter, threshold)) {
+        if (threshold != null && threshold.signum() > 0 && reaches(spentBefore, spentAfter, threshold)) {
             discordNotifier.sendThresholdAlert(category.getName(), label, spentAfter, threshold);
         }
     }
 
-    private boolean crosses(final BigDecimal before, final BigDecimal after, final BigDecimal limit) {
+    /** Over budget means STRICTLY over — landing exactly on the limit is on-budget, not an overflow. */
+    private boolean crossesAbove(final BigDecimal before, final BigDecimal after, final BigDecimal limit) {
+        return before.compareTo(limit) <= 0 && after.compareTo(limit) > 0;
+    }
+
+    /** A threshold is a warning level — hitting it exactly counts as reached. */
+    private boolean reaches(final BigDecimal before, final BigDecimal after, final BigDecimal limit) {
         return before.compareTo(limit) < 0 && after.compareTo(limit) >= 0;
     }
 

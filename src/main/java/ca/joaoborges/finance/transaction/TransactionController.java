@@ -149,6 +149,7 @@ public class TransactionController {
         final Transaction transaction = transactionRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found"));
         final Long previousCategoryId = transaction.getCategory() == null ? null : transaction.getCategory().getId();
+        final YearMonth previousMonth = YearMonth.from(transaction.getPostedAt().atZone(ZoneOffset.UTC));
         if (body.categoryId() != null) {
             transaction.setCategory(resolveCategory(body.categoryId()));
         }
@@ -173,10 +174,14 @@ public class TransactionController {
         final TransactionDto dto = transactionMapper.toDto(transactionRepository.save(transaction));
 
         final Category category = transaction.getCategory();
-        if (category != null && !category.getId().equals(previousCategoryId)
-                && !transaction.isExcludedFromBudget() && !transaction.isSplit() && !transaction.isDedup()) {
-            budgetAlertService.checkAfterSpend(category,
-                    YearMonth.from(transaction.getPostedAt().atZone(ZoneOffset.UTC)), transaction.getAmount().negate());
+        final YearMonth month = YearMonth.from(transaction.getPostedAt().atZone(ZoneOffset.UTC));
+        final boolean categoryChanged = category != null && !category.getId().equals(previousCategoryId);
+        // A date edit that moves the row into another month adds spend there too.
+        final boolean monthChanged = !month.equals(previousMonth);
+        if (category != null && (categoryChanged || monthChanged)
+                && !transaction.isExcludedFromBudget() && !transaction.isSplit()
+                && !transaction.isDedup() && !transaction.isAwaitingRefund()) {
+            budgetAlertService.checkAfterSpend(category, month, transaction.getAmount().negate());
         }
         return dto;
     }
