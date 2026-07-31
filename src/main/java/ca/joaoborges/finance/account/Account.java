@@ -1,6 +1,7 @@
 package ca.joaoborges.finance.account;
 
 import ca.joaoborges.finance.common.CacheRegions;
+import ca.joaoborges.finance.institution.Institution;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -86,6 +87,11 @@ public class Account {
 
     @Column(name = "logo_url")
     private String logoUrl;
+
+    /** The bank/provider this account belongs to; used for grouping + cascaded toggles. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "institution_id")
+    private Institution institution;
 
     /**
      * Off-budget: money in this account is outside the household budget

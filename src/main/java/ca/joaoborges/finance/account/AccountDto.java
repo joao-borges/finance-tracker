@@ -20,6 +20,8 @@ public record AccountDto(
         BigDecimal balance,
         String website,
         String logoUrl,
+        Long institutionId,
+        String institutionName,
         Boolean offBudget,
         Boolean hidden,
         Boolean archived,

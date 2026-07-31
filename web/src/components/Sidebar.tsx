@@ -15,6 +15,7 @@ import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import BusinessIcon from "@mui/icons-material/Business";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import StorefrontIcon from "@mui/icons-material/Storefront";
 import CategoryIcon from "@mui/icons-material/Category";
@@ -40,6 +41,7 @@ const MAIN_NAV: NavItem[] = [
 
 const SETUP_NAV: NavItem[] = [
     { to: "/accounts", label: "Accounts", icon: <AccountBalanceIcon /> },
+    { to: "/institutions", label: "Institutions", icon: <BusinessIcon /> },
     { to: "/merchants", label: "Merchants", icon: <StorefrontIcon /> },
     { to: "/categories", label: "Categories", icon: <CategoryIcon /> },
     { to: "/category-groups", label: "Category Groups", icon: <FolderIcon /> },

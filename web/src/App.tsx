@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import TransactionsPage from "./pages/TransactionsPage";
 import BudgetPage from "./pages/BudgetPage";
 import AccountsPage from "./pages/AccountsPage";
+import InstitutionsPage from "./pages/InstitutionsPage";
 import MerchantsPage from "./pages/MerchantsPage";
 import CategoriesPage from "./pages/CategoriesPage";
 import CategoryGroupsPage from "./pages/CategoryGroupsPage";
@@ -65,6 +66,7 @@ export default function App() {
                     <Route path="/transactions" element={<TransactionsPage />} />
                     <Route path="/budget" element={<BudgetPage />} />
                     <Route path="/accounts" element={<AccountsPage />} />
+                    <Route path="/institutions" element={<InstitutionsPage />} />
                     <Route path="/merchants" element={<MerchantsPage />} />
                     <Route path="/categories" element={<CategoriesPage />} />
                     <Route path="/category-groups" element={<CategoryGroupsPage />} />

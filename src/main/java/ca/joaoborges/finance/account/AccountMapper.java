@@ -17,11 +17,14 @@ public interface AccountMapper {
 
     @Mapping(target = "mergedIntoId", source = "mergedInto.id")
     @Mapping(target = "mergedIntoName", source = "mergedInto.name")
+    @Mapping(target = "institutionId", source = "institution.id")
+    @Mapping(target = "institutionName", source = "institution.name")
     AccountDto toDto(Account account);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "importRef", ignore = true)
     @Mapping(target = "mergedInto", ignore = true)
+    @Mapping(target = "institution", ignore = true)
     @Mapping(target = "logoUrl", ignore = true)
     @Mapping(target = "balanceDate", ignore = true)
     @Mapping(target = "lastSyncedAt", ignore = true)
@@ -31,6 +34,7 @@ public interface AccountMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "importRef", ignore = true)
     @Mapping(target = "mergedInto", ignore = true)
+    @Mapping(target = "institution", ignore = true)
     @Mapping(target = "logoUrl", ignore = true)
     @Mapping(target = "balanceDate", ignore = true)
     @Mapping(target = "lastSyncedAt", ignore = true)

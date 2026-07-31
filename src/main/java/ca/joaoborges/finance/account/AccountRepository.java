@@ -19,4 +19,7 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     /** Accounts shown on the accounts page: canonical/standalone (not merged away). */
     List<Account> findByMergedIntoIsNullOrderByNameAsc();
 
+    /** Accounts of an institution (off-budget cascade). */
+    List<Account> findByInstitution(ca.joaoborges.finance.institution.Institution institution);
+
 }

@@ -1,7 +1,6 @@
 package ca.joaoborges.finance.account;
 
 import ca.joaoborges.finance.common.FaviconService;
-import ca.joaoborges.finance.transaction.Transaction;
 import ca.joaoborges.finance.transaction.TransactionHashMaintenance;
 import ca.joaoborges.finance.transaction.TransactionRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +29,8 @@ public class AccountController {
     private final AccountMapper accountMapper;
     private final FaviconService faviconService;
     private final TransactionHashMaintenance hashMaintenance;
+    private final OffBudgetService offBudgetService;
+    private final ca.joaoborges.finance.institution.InstitutionRepository institutionRepository;
 
     /** Target for a merge: the canonical account a source is folded into. */
     public record MergeRequest(Long targetId) {
@@ -65,20 +66,17 @@ public class AccountController {
         if (dto.website() != null) {
             account.setLogoUrl(faviconService.resolveLogoUrl(dto.website()));
         }
+        if (dto.institutionId() != null) {
+            // 0 clears the institution; any other id links it.
+            account.setInstitution(dto.institutionId() == 0 ? null
+                    : institutionRepository.findById(dto.institutionId())
+                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                                    "Unknown institution " + dto.institutionId())));
+        }
         final AccountDto saved = accountMapper.toDto(accountRepository.save(account));
         if (!wasOffBudget && account.isOffBudget()) {
-            // Enabling applies backwards: every existing transaction of this
-            // account leaves the budget, is marked reviewed, and loses its
-            // category — matched transfer legs keep their pairing (they are
-            // already excluded and their category documents the transfer).
-            for (final Transaction transaction : transactionRepository.findByAccount(account)) {
-                transaction.setExcludedFromBudget(true);
-                transaction.setNeedsReview(false);
-                if (transaction.getMatchType() == null) {
-                    transaction.setCategory(null);
-                }
-                transactionRepository.save(transaction);
-            }
+            // Enabling applies backwards — see OffBudgetService.
+            offBudgetService.applyBackwards(account);
         }
         return saved;
     }

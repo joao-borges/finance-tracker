@@ -17,6 +17,8 @@ import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import { App as AntApp, Form, Input, InputNumber, Modal, Select, Switch } from "antd";
 import EmojiField from "./EmojiField";
+import InlineSelect from "./InlineSelect";
+import InlineText from "./InlineText";
 import type { Crud } from "../lib/api";
 import styles from "./CrudPage.module.css";
 
@@ -43,13 +45,18 @@ interface CrudPageProps<T> {
     api: Crud<T>;
     beforeSubmit?: (values: Record<string, unknown>, editing: T | null) => Record<string, unknown>;
     rowActions?: (row: T, reload: () => void) => ReactNode;
+    // Edit cells directly in the table (switches, click-to-edit text/selects).
+    // The pencil/modal stays for the full form.
+    inlineEdit?: boolean;
+    // Optional display order (e.g. group accounts by institution).
+    sortRows?: (rows: T[]) => T[];
 }
 
 function errorMessage(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
 }
 
-export default function CrudPage<T extends { id: number }>({ title, fields, api, beforeSubmit, rowActions }: CrudPageProps<T>) {
+export default function CrudPage<T extends { id: number }>({ title, fields, api, beforeSubmit, rowActions, inlineEdit, sortRows }: CrudPageProps<T>) {
     const { message } = AntApp.useApp();
     const [rows, setRows] = useState<T[]>([]);
     const [open, setOpen] = useState(false);
@@ -108,11 +115,22 @@ export default function CrudPage<T extends { id: number }>({ title, fields, api,
     const tableFields = fields.filter((field) => !field.formOnly);
     const formFields = fields.filter((field) => !field.tableOnly);
 
+    const patchField = async (row: T, name: string, value: unknown) => {
+        try {
+            await api.update(row.id, { [name]: value } as Partial<T>);
+            message.success(`${title} updated`);
+            reload();
+        } catch (error: unknown) {
+            message.error(errorMessage(error));
+        }
+    };
+
     // Simple client-side text filter over the textual table columns.
     const query = filter.trim().toLowerCase();
+    const ordered = sortRows ? sortRows([...rows]) : rows;
     const visibleRows = query === ""
-        ? rows
-        : rows.filter((row) =>
+        ? ordered
+        : ordered.filter((row) =>
               tableFields.some((field) => {
                   if (field.renderCell || field.type === "boolean") {
                       return false;
@@ -126,18 +144,55 @@ export default function CrudPage<T extends { id: number }>({ title, fields, api,
           );
 
     const cell = (field: FieldDef<T>, row: T): ReactNode => {
-        if (field.renderCell) {
-            return field.renderCell(row);
-        }
         const value = (row as Record<string, unknown>)[field.name];
+        const readOnlyCell = (): ReactNode => {
+            if (field.renderCell) {
+                return field.renderCell(row);
+            }
+            if (field.type === "boolean") {
+                return <Chip size="small" label={value ? "Yes" : "No"} color={value ? "success" : "default"} />;
+            }
+            if (field.type === "select" && field.options) {
+                const option = field.options.find((candidate) => candidate.value === value);
+                return option ? option.label : "—";
+            }
+            return value === null || value === undefined || value === "" ? "—" : String(value);
+        };
+        // Inline editing: booleans flip in place, selects and text open on click.
+        // tableOnly fields are display-only (they have no editable counterpart).
+        if (!inlineEdit || field.tableOnly) {
+            return readOnlyCell();
+        }
         if (field.type === "boolean") {
-            return <Chip size="small" label={value ? "Yes" : "No"} color={value ? "success" : "default"} />;
+            return (
+                <Switch
+                    size="small"
+                    checked={Boolean(value)}
+                    onChange={(next) => patchField(row, field.name, next)}
+                />
+            );
         }
         if (field.type === "select" && field.options) {
-            const option = field.options.find((candidate) => candidate.value === value);
-            return option ? option.label : "—";
+            return (
+                <InlineSelect
+                    display={readOnlyCell()}
+                    value={typeof value === "number" ? value : undefined}
+                    options={field.options.filter((option) => typeof option.value === "number") as { label: string; value: number }[]}
+                    onSave={(next) => patchField(row, field.name, next)}
+                />
+            );
         }
-        return value === null || value === undefined || value === "" ? "—" : String(value);
+        if (field.type === "text" || field.type === "number" || field.type === "emoji") {
+            return (
+                <InlineText
+                    display={readOnlyCell()}
+                    value={value === null || value === undefined ? null : (value as string | number)}
+                    type={field.type === "number" ? "number" : "text"}
+                    onSave={(next) => patchField(row, field.name, next)}
+                />
+            );
+        }
+        return readOnlyCell();
     };
 
     const control = (field: FieldDef<T>) => {

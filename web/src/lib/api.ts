@@ -13,11 +13,21 @@ export interface Account {
     balance?: number | null;
     website?: string | null;
     logoUrl?: string | null;
+    institutionId?: number | null;
+    institutionName?: string | null;
     offBudget?: boolean;
     hidden?: boolean;
     archived?: boolean;
     mergedIntoId?: number | null;
     mergedIntoName?: string | null;
+}
+
+export interface Institution {
+    id: number;
+    name: string;
+    website?: string | null;
+    logoUrl?: string | null;
+    offBudget?: boolean;
 }
 
 export interface Merchant {
@@ -149,6 +159,7 @@ export const accountsApi = {
     ...crud<Account>("/api/accounts"),
     merge: (id: number, targetId: number) => http<Account>("POST", `/api/accounts/${id}/merge`, { targetId }),
 };
+export const institutionsApi = crud<Institution>("/api/institutions");
 export const merchantsApi = crud<Merchant>("/api/merchants");
 export const categoryGroupsApi = crud<CategoryGroup>("/api/category-groups");
 export const categoriesApi = crud<Category>("/api/categories");

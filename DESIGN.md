@@ -327,6 +327,9 @@ Ingest matching is **bidirectional**: a new inflow searches back for its purchas
 - **Guarded apply:** confirming re-validates against the purchase's *hard* remainder (409 if stale), manual refund matches are validated the same way (400), and every apply prunes sibling suggestions that no longer fit the new remainder — a purchase can never be over-refunded.
 - **Effect:** the refund inherits the purchase's `category_id` so the `+` nets the `−` in that category — *unless* the purchase is `awaiting_refund`, in which case **both legs are excluded** (a known refund that should never have counted), and the flag resolves.
 
+### Institutions
+A grouping layer above accounts — the bank/provider (`institutions`: name, website/logo, `off_budget`). Accounts link via `accounts.institution_id`; the Accounts page groups rows by institution. Toggling an institution's off-budget flag **cascades to all its accounts** (each with the account-level apply-backwards semantics below); the account-level flag remains the source of truth for ingest, so per-account overrides stay possible.
+
 ### Off-budget accounts
 An account can be flagged **off-budget** (`accounts.off_budget`, toggled on the Accounts page) for money that should never touch the household budget (personal throwaway accounts). Its transactions land `excluded_from_budget = true`, `needs_review = false`, and **uncategorized** — rules are skipped, and the UI shows the category cell blank rather than "Uncategorized". Any of it can be overridden per transaction. **Enabling applies backwards**: existing rows leave the budget, are marked reviewed, and lose their category (matched transfer legs keep their pairing and category). Disabling is not retroactive — new transactions simply flow through rules/review again.
 
@@ -374,6 +377,7 @@ Group the dashboard like the screenshot: Cash, Credit Cards, Loans. Respect `hid
 
 **What fires:**
 - **Import summary** — after every import (`IngestService`): file, total imported, per-account breakdown, reviewed-vs-needs-review split.
+- **Daily SimpleFIN health digest** (10:00 America/Vancouver by default, `finance.simplefin.status-cron`): the last sync's outcome plus any linked account whose bridge balance feed is >48h stale — the reliable signal for the silent failure mode where a bank connection stops delivering without reporting an error. Green when everything is fresh, yellow otherwise.
 - **Over budget (red embed)** — when categorized spend crosses a category's monthly budget, with the category, the month's spend, and the overflow amount.
 - **Threshold reached (yellow embed)** — when monthly spend crosses a category's configured `alert_threshold`.
 
