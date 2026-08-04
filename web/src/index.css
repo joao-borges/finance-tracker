@@ -21,6 +21,27 @@ body {
     --warning: #ed6c02;
     --border: rgba(0, 0, 0, 0.12);
     --color-primary: #1677ff;
+
+    /*
+     * Shape scale. The same values are fed to antd (token.borderRadius*) and MUI
+     * (shape/component overrides) in AppTheme, so every surface — antd control,
+     * MUI Paper, hand-written CSS module — lands on one curvature system.
+     * Never hardcode a radius in a component; reference these.
+     */
+    --radius-xs: 6px;
+    --radius-sm: 10px;
+    --radius-md: 14px;
+    --radius-lg: 18px;
+    --radius-xl: 24px;
+    --radius-pill: 999px;
+
+    /* Soft, layered elevation — fluent surfaces lift rather than outline. */
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.08);
+    --shadow-md: 0 2px 6px rgba(15, 23, 42, 0.06), 0 6px 16px rgba(15, 23, 42, 0.09);
+    --shadow-lg: 0 4px 12px rgba(15, 23, 42, 0.08), 0 16px 32px rgba(15, 23, 42, 0.12);
+
+    --transition-fast: 140ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 220ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 :root[data-theme="dark"] {
@@ -29,4 +50,17 @@ body {
     --success: #66bb6a;
     --warning: #ffa726;
     --border: rgba(255, 255, 255, 0.16);
+
+    /* Dark surfaces need a deeper shadow to read as lifted at all. */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.44), 0 6px 16px rgba(0, 0, 0, 0.36);
+    --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.5), 0 16px 32px rgba(0, 0, 0, 0.44);
+}
+
+/* Respect a reduced-motion preference for the transitions the theme introduces. */
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --transition-fast: 0ms;
+        --transition-base: 0ms;
+    }
 }

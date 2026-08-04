@@ -4,6 +4,20 @@ import { App as AntApp, ConfigProvider, theme as antdTheme } from "antd";
 
 export type Mode = "light" | "dark" | "system";
 
+/*
+ * The shape scale, mirrored from the --radius-* custom properties in index.css.
+ * antd and MUI both need it as numbers at theme-build time, so the values are
+ * duplicated here rather than read from CSS. Change both together.
+ */
+const RADIUS = {
+    xs: 6,
+    sm: 10,
+    md: 14,
+    lg: 18,
+    xl: 24,
+    pill: 999,
+} as const;
+
 export interface ColorScheme {
     key: string;
     label: string;
@@ -62,14 +76,100 @@ export default function AppTheme({ children }: { children: ReactNode }) {
     }, []);
 
     const muiTheme = useMemo(
-        () => createTheme({ palette: { mode: effective, primary: { main: scheme.primary } } }),
+        () =>
+            createTheme({
+                palette: { mode: effective, primary: { main: scheme.primary } },
+                shape: { borderRadius: RADIUS.sm },
+                components: {
+                    // Overriding the "rounded" slot (not "root") deliberately leaves
+                    // square Papers — the AppBar — flush with the viewport edge.
+                    MuiPaper: {
+                        styleOverrides: {
+                            rounded: {
+                                borderRadius: RADIUS.lg,
+                            },
+                        },
+                    },
+                    MuiCard: {
+                        styleOverrides: {
+                            root: {
+                                borderRadius: RADIUS.lg,
+                            },
+                        },
+                    },
+                    MuiButton: {
+                        styleOverrides: {
+                            root: {
+                                borderRadius: RADIUS.sm,
+                                textTransform: "none",
+                            },
+                        },
+                    },
+                    MuiToggleButton: {
+                        styleOverrides: {
+                            root: {
+                                borderRadius: RADIUS.sm,
+                                textTransform: "none",
+                            },
+                        },
+                    },
+                    MuiChip: {
+                        styleOverrides: {
+                            root: {
+                                borderRadius: RADIUS.pill,
+                            },
+                        },
+                    },
+                    MuiOutlinedInput: {
+                        styleOverrides: {
+                            root: {
+                                borderRadius: RADIUS.sm,
+                            },
+                        },
+                    },
+                    MuiAlert: {
+                        styleOverrides: {
+                            root: {
+                                borderRadius: RADIUS.md,
+                            },
+                        },
+                    },
+                    MuiDialog: {
+                        styleOverrides: {
+                            paper: {
+                                borderRadius: RADIUS.xl,
+                            },
+                        },
+                    },
+                    // Sidebar / saved-filter rows read as pills; the horizontal margin
+                    // is what keeps a rounded row from colliding with the drawer edge.
+                    MuiListItemButton: {
+                        styleOverrides: {
+                            root: {
+                                borderRadius: RADIUS.md,
+                            },
+                        },
+                    },
+                },
+            }),
         [effective, scheme.primary],
     );
 
     const antdConfig = useMemo(
         () => ({
             algorithm: effective === "dark" ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
-            token: { colorPrimary: scheme.primary },
+            token: {
+                colorPrimary: scheme.primary,
+                borderRadiusXS: RADIUS.xs,
+                borderRadiusSM: RADIUS.xs,
+                borderRadius: RADIUS.sm,
+                borderRadiusLG: RADIUS.md,
+            },
+            components: {
+                Modal: { borderRadiusLG: RADIUS.xl },
+                Tag: { borderRadiusSM: RADIUS.pill },
+                Segmented: { borderRadius: RADIUS.sm, borderRadiusSM: RADIUS.xs },
+            },
         }),
         [effective, scheme.primary],
     );

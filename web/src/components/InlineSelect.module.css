@@ -1,8 +1,9 @@
 .display {
     cursor: pointer;
-    border-radius: 4px;
-    margin: -2px -4px;
-    padding: 2px 4px;
+    border-radius: var(--radius-xs);
+    margin: -2px -6px;
+    padding: 2px 6px;
+    transition: background var(--transition-fast);
 }
 
 .display:hover {

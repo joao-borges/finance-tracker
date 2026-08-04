@@ -3,6 +3,17 @@
     width: 100%;
 }
 
+/*
+ * The fixed column widths below need roughly this much room. Without a floor a
+ * fixed-layout table keeps shrinking columns past legibility on a phone; with
+ * it, the surrounding TableContainer scrolls horizontally instead and every
+ * column stays readable. Only the full-width variant gets the floor — the
+ * icon-only variant renders inside a modal that is narrower by design.
+ */
+.tableWide {
+    min-width: 900px;
+}
+
 .colDate {
     width: 110px;
     white-space: nowrap;

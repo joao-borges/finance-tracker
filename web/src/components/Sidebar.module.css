@@ -24,10 +24,16 @@
     box-sizing: border-box;
 }
 
+/*
+ * Nav rows render as pills (radius comes from the MuiListItemButton override in
+ * AppTheme). The horizontal margin is what keeps the rounded edge off the drawer
+ * border; the reduced padding compensates so labels keep their old alignment.
+ */
 .navButton {
     min-height: 48px;
-    padding-left: 20px;
-    padding-right: 20px;
+    margin: 2px 8px;
+    padding-left: 12px;
+    padding-right: 12px;
     justify-content: initial;
 }
 

@@ -4,5 +4,12 @@
     left: 0;
     right: 0;
     z-index: 1100;
-    border-radius: 0;
+    /* Curved top edge only — the bar stays flush with the bottom of the screen. */
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+}
+
+.root :global(.MuiBottomNavigation-root) {
+    background: transparent;
 }

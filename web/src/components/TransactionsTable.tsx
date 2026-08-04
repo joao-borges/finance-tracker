@@ -100,7 +100,7 @@ export default function TransactionsTable({ rows, onOpen, merchants, categories,
 
     return (
         <TableContainer component={Paper}>
-            <Table size="small" className={styles.table}>
+            <Table size="small" className={accountIconOnly ? styles.table : `${styles.table} ${styles.tableWide}`}>
                 <TableHead>
                     <TableRow>
                         <TableCell className={styles.colDate}>Date</TableCell>

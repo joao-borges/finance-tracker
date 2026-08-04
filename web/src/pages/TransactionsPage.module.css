@@ -3,10 +3,21 @@
     align-items: center;
     margin-bottom: 16px;
     gap: 8px;
+    flex-wrap: wrap;
 }
 
 .title {
     flex-grow: 1;
+}
+
+/*
+ * On phones the title takes its own line so the saved-filter controls and the
+ * add button stay on one row instead of being squeezed to a few pixels.
+ */
+@media (max-width: 600px) {
+    .title {
+        flex-basis: 100%;
+    }
 }
 
 .sentinel {
