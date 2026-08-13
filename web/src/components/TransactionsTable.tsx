@@ -72,6 +72,9 @@ export default function TransactionsTable({ rows, onOpen, merchants, categories,
                         <EntityAvatar name={row.merchant ?? row.merchantName} />
                     )}
                     <span className={shared.ellipsis}>{row.merchant ?? row.merchantName}</span>
+                    {row.tags?.map((tag) => {
+                        return <Chip key={tag} size="small" variant="outlined" label={tag} className={styles.tagChip} />;
+                    })}
                 </div>
             </Tooltip>
         );

@@ -12,6 +12,7 @@ interface Props {
     accounts: Account[];
     merchants: Merchant[];
     categories: Category[];
+    tagOptions?: string[];
     onChange: (next: Partial<TransactionFilters>) => void;
     onClear: () => void;
 }
@@ -38,7 +39,7 @@ function activeCount(filters: TransactionFilters): number {
     return count;
 }
 
-export default function TransactionFilterBar({ filters, accounts, merchants, categories, onChange, onClear }: Props) {
+export default function TransactionFilterBar({ filters, accounts, merchants, categories, tagOptions, onChange, onClear }: Props) {
     const [open, setOpen] = useState(false);
     const reviewValue = filters.review === undefined ? "all" : filters.review ? "needs" : "reviewed";
     const range: [dayjs.Dayjs, dayjs.Dayjs] | undefined =
@@ -104,6 +105,16 @@ export default function TransactionFilterBar({ filters, accounts, merchants, cat
                         label: `${category.icon ? category.icon + " " : ""}${category.name}`,
                         value: category.id,
                     }))}
+                />
+                <Select
+                    mode="multiple"
+                    allowClear
+                    maxTagCount="responsive"
+                    placeholder="Tags"
+                    className={styles.control}
+                    value={filters.tags}
+                    onChange={(value: string[]) => onChange({ tags: value.length > 0 ? value : undefined })}
+                    options={(tagOptions ?? []).map((tag) => ({ label: tag, value: tag }))}
                 />
                 <Select
                     className={styles.control}

@@ -120,10 +120,15 @@ Budget
   id, month (YYYY-MM), category_id, planned_amount
   UNIQUE(month, category_id)
 
+Tag                      # free-form label, orthogonal to categories
+  id, name (unique, case-insensitive match)
+TransactionTag           # join table: transaction_id + tag_id
+
 SavedFilter              # named, shared transactions filter (household)
   id, name (unique)
   from_date, to_date
   account_ids, merchant_ids, category_ids   # comma-separated id lists (no FKs, survive deletes)
+  tags                 # comma-separated tag names
   review               # nullable bool
 
 ImportRun
@@ -344,6 +349,12 @@ Manual, set on the Categories/transaction UI ahead of the refund: a purchase you
 - **Suggested** (medium) — the **Matches** page (Confirm applies it, Reject dismisses so it isn't proposed again).
 - **Manual** — pair two transactions explicitly; **Unmatch** undoes any match.
 Dedup/split rows are skipped; a manually-set or already-matched row is never auto-touched.
+
+---
+
+## Tags
+
+Free-form labels on transactions, deliberately **orthogonal to categories**: mark a few rows (a trip, something to reimburse, anything worth finding later) without disturbing categorization or the budget. Tags are created implicitly by typing a new name in the transaction editor and matched case-insensitively, so `Trip` and `trip` stay one tag. `GET /api/tags` lists existing names for the editor's suggestions and the transactions-page filter; the filter is **any-of** (distinct-joined, so a row carrying several selected tags still appears once) and combines with every other filter. Saved filters carry their tag selection.
 
 ---
 

@@ -191,6 +191,7 @@ export interface Transaction {
     needsReview: boolean;
     excludedFromBudget: boolean;
     awaitingRefund: boolean;
+    tags?: string[];
     matchType?: MatchType | null;
     matchedWithId?: number | null;
     splitParentId?: number | null;
@@ -204,6 +205,7 @@ export interface TransactionFilters {
     accountIds?: number[];
     merchantIds?: number[];
     categoryIds?: number[];
+    tags?: string[];
     review?: boolean;
 }
 
@@ -224,6 +226,9 @@ function queryString(filters: TransactionFilters): string {
     if (filters.categoryIds && filters.categoryIds.length > 0) {
         params.set("categoryIds", filters.categoryIds.join(","));
     }
+    if (filters.tags && filters.tags.length > 0) {
+        params.set("tags", filters.tags.join(","));
+    }
     if (filters.review !== undefined) {
         params.set("review", String(filters.review));
     }
@@ -240,6 +245,7 @@ export interface TransactionUpdate {
     awaitingRefund?: boolean | null;
     postedAt?: string | null;
     timeZone?: string | null;
+    tags?: string[] | null;
 }
 
 export interface ManualTransactionInput {
@@ -306,6 +312,7 @@ export interface SavedFilter {
     accountIds?: number[] | null;
     merchantIds?: number[] | null;
     categoryIds?: number[] | null;
+    tags?: string[] | null;
     review?: boolean | null;
 }
 
@@ -314,6 +321,10 @@ export const savedFiltersApi = {
     create: (body: Partial<SavedFilter>) => http<SavedFilter>("POST", "/api/saved-filters", body),
     update: (id: number, body: Partial<SavedFilter>) => http<SavedFilter>("PATCH", `/api/saved-filters/${id}`, body),
     remove: (id: number) => http<void>("DELETE", `/api/saved-filters/${id}`),
+};
+
+export const tagsApi = {
+    list: () => http<string[]>("GET", "/api/tags"),
 };
 
 export const dashboardApi = {

@@ -1,9 +1,11 @@
 package ca.joaoborges.finance.transaction;
 
+import jakarta.persistence.criteria.JoinType;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Reusable JPA criteria for the transactions list. {@link #visible()} encodes
@@ -34,6 +36,18 @@ public final class TransactionSpecs {
 
     public static Specification<Transaction> categoryIn(final List<Long> categoryIds) {
         return (root, query, cb) -> root.get("category").get("id").in(categoryIds);
+    }
+
+    /** Rows carrying ANY of the given tag names (case-insensitive). */
+    public static Specification<Transaction> taggedAny(final List<String> tagNames) {
+        final List<String> lowered = tagNames.stream().map(name -> name.toLowerCase(Locale.ROOT)).toList();
+        return (root, query, cb) -> {
+            if (query != null) {
+                // A row can carry several matching tags — don't multiply it.
+                query.distinct(true);
+            }
+            return cb.lower(root.join("tags", JoinType.INNER).get("name")).in(lowered);
+        };
     }
 
     public static Specification<Transaction> needsReview(final boolean review) {

@@ -11,6 +11,8 @@ public interface TransactionMapper {
     @Mapping(target = "accountName", source = "account.name")
     @Mapping(target = "accountLogoUrl", source = "account.logoUrl")
     @Mapping(target = "accountOffBudget", source = "account.offBudget")
+    @Mapping(target = "tags", expression =
+            "java(transaction.getTags().stream().map(ca.joaoborges.finance.tag.Tag::getName).sorted().toList())")
     @Mapping(target = "dateAdjusted", expression =
             "java(transaction.getSourcePostedAt() != null && !transaction.getSourcePostedAt().equals(transaction.getPostedAt()))")
     @Mapping(target = "merchantId", source = "merchant.id")

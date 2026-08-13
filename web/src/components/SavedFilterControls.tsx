@@ -23,6 +23,7 @@ function toFilters(filter: SavedFilter): TransactionFilters {
         accountIds: filter.accountIds ?? undefined,
         merchantIds: filter.merchantIds ?? undefined,
         categoryIds: filter.categoryIds ?? undefined,
+        tags: filter.tags ?? undefined,
         review: filter.review ?? undefined,
     };
 }
@@ -48,6 +49,7 @@ export default function SavedFilterControls({ filters, loadedId, loadedName, set
             accountIds: filters.accountIds ?? [],
             merchantIds: filters.merchantIds ?? [],
             categoryIds: filters.categoryIds ?? [],
+            tags: filters.tags ?? [],
             review: filters.review ?? null,
         };
         try {

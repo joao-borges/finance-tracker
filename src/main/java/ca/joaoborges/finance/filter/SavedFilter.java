@@ -60,6 +60,10 @@ public class SavedFilter {
     @Column(name = "category_ids")
     private List<Long> categoryIds = new ArrayList<>();
 
+    @Builder.Default
+    @Convert(converter = ca.joaoborges.finance.common.StringListConverter.class)
+    private List<String> tags = new ArrayList<>();
+
     private Boolean review;
 
 }

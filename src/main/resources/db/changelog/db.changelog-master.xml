@@ -26,5 +26,6 @@
     <include file="changes/019-off-budget-date-shift.xml" relativeToChangelogFile="true"/>
     <include file="changes/020-institutions.xml" relativeToChangelogFile="true"/>
     <include file="changes/021-noon-utc-day-instants.xml" relativeToChangelogFile="true"/>
+    <include file="changes/022-tags.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

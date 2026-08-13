@@ -63,6 +63,7 @@ public class TransactionController {
     private final RuleEngine ruleEngine;
     private final RuleRepository ruleRepository;
     private final MatchingService matchingService;
+    private final ca.joaoborges.finance.tag.TagService tagService;
 
     /** One leg of a split: an amount and the category it belongs to. */
     public record SplitLine(BigDecimal amount, Long categoryId) {
@@ -176,6 +177,10 @@ public class TransactionController {
         }
         if (body.awaitingRefund() != null) {
             transaction.setAwaitingRefund(body.awaitingRefund());
+        }
+        if (body.tags() != null) {
+            // Replace the whole set — the editor always sends the full list.
+            transaction.setTags(tagService.resolve(body.tags()));
         }
         if (body.postedAt() != null) {
             // Move the operator-visible date (and thus the budget month). Dedup

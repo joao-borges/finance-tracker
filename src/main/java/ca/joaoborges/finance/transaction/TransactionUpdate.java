@@ -1,6 +1,7 @@
 package ca.joaoborges.finance.transaction;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * Inline edit of a single transaction from the list. Partial: only non-null
@@ -18,5 +19,6 @@ public record TransactionUpdate(
         Boolean excludedFromBudget,
         Boolean awaitingRefund,
         LocalDate postedAt,
-        String timeZone) {
+        String timeZone,
+        List<String> tags) {
 }

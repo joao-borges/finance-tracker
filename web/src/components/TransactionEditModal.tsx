@@ -24,6 +24,8 @@ interface Props {
     transaction: Transaction | null;
     categories: Category[];
     merchants: Merchant[];
+    // Existing tag names, offered as suggestions (new ones can be typed freely).
+    tagOptions?: string[];
     // When provided, the create-rule section hides itself if an enabled rule
     // already matches this transaction's statement (avoids duplicate rules).
     rules?: Rule[];
@@ -32,7 +34,7 @@ interface Props {
     onStructuralChange?: () => void;
 }
 
-export default function TransactionEditModal({ transaction, categories, merchants, rules, onClose, onSaved, onStructuralChange }: Props) {
+export default function TransactionEditModal({ transaction, categories, merchants, tagOptions, rules, onClose, onSaved, onStructuralChange }: Props) {
     const { message } = AntApp.useApp();
     const [splitOpen, setSplitOpen] = useState(false);
     const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
@@ -51,6 +53,7 @@ export default function TransactionEditModal({ transaction, categories, merchant
     const [applyRule, setApplyRule] = useState(true);
     const [saving, setSaving] = useState(false);
     const [flashCategory, setFlashCategory] = useState(false);
+    const [tags, setTags] = useState<string[]>([]);
 
     // Mirrors RuleEngine: case-insensitive `contains` on the raw statement.
     const coveringRule = useMemo(() => {
@@ -75,6 +78,7 @@ export default function TransactionEditModal({ transaction, categories, merchant
         setNewIcon("");
         setNewWebsite("");
         setReviewed(true);
+        setTags(transaction.tags ?? []);
         setExcluded(transaction.excludedFromBudget);
         setAwaiting(transaction.awaitingRefund);
         setMakeRule(false);
@@ -125,6 +129,7 @@ export default function TransactionEditModal({ transaction, categories, merchant
                 excludedFromBudget: excluded,
                 awaitingRefund: awaiting,
                 postedAt: dateChanged ? editedDate.format("YYYY-MM-DD") : undefined,
+                tags,
                 timeZone: dateChanged ? browserTimeZone() : undefined,
             };
             const updated = await transactionsApi.update(transaction.id, body);
@@ -274,6 +279,18 @@ export default function TransactionEditModal({ transaction, categories, merchant
                     Keeps {transaction.merchant ? `“${transaction.merchant}”` : "the current merchant"} unchanged.
                 </Typography.Text>
             )}
+
+            <Divider />
+            <Typography.Text strong>Tags</Typography.Text>
+            <Select
+                mode="tags"
+                allowClear
+                className={shared.fullWidth}
+                placeholder="Add tags — type a new one or pick an existing"
+                value={tags}
+                onChange={(value: string[]) => setTags(value)}
+                options={(tagOptions ?? []).map((tag) => ({ label: tag, value: tag }))}
+            />
 
             <Divider />
             <Space direction="vertical">

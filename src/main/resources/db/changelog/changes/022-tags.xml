@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Free-form transaction tags: mark transactions without recategorizing
+         them, filter by tag on the transactions page. -->
+    <changeSet id="022-tags" author="joao">
+        <createTable tableName="tags">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_tags"/>
+            </column>
+            <column name="name" type="varchar(64)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uq_tags_name"/>
+            </column>
+        </createTable>
+        <createTable tableName="transaction_tags">
+            <column name="transaction_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tag_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="transaction_tags" columnNames="transaction_id, tag_id"
+                       constraintName="pk_transaction_tags"/>
+        <addForeignKeyConstraint baseTableName="transaction_tags" baseColumnNames="transaction_id"
+                                 constraintName="fk_transaction_tags_transaction"
+                                 referencedTableName="transactions" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="transaction_tags" baseColumnNames="tag_id"
+                                 constraintName="fk_transaction_tags_tag"
+                                 referencedTableName="tags" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <createIndex tableName="transaction_tags" indexName="idx_transaction_tags_tag">
+            <column name="tag_id"/>
+        </createIndex>
+        <addColumn tableName="saved_filters">
+            <column name="tags" type="varchar(512)"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

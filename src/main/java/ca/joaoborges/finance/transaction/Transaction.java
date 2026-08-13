@@ -6,6 +6,7 @@ import ca.joaoborges.finance.common.SourceType;
 import ca.joaoborges.finance.ingest.ImportRun;
 import ca.joaoborges.finance.match.MatchType;
 import ca.joaoborges.finance.merchant.Merchant;
+import ca.joaoborges.finance.tag.Tag;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -15,6 +16,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -25,6 +28,8 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * A single transaction. Amounts are signed: negative = outflow, positive =
@@ -156,6 +161,14 @@ public class Transaction {
     @Enumerated(EnumType.STRING)
     @Column(name = "match_type")
     private MatchType matchType;
+
+    /** Free-form labels — orthogonal to the category; see {@link Tag}. */
+    @Builder.Default
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "transaction_tags",
+            joinColumns = @JoinColumn(name = "transaction_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id"))
+    private Set<Tag> tags = new LinkedHashSet<>();
 
     private String notes;
 

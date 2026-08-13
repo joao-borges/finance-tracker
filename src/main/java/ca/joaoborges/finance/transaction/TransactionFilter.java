@@ -20,6 +20,7 @@ public record TransactionFilter(
         List<Long> accountIds,
         List<Long> merchantIds,
         List<Long> categoryIds,
+        List<String> tags,
         Boolean review) {
 
     public Specification<Transaction> toSpecification() {
@@ -39,6 +40,9 @@ public record TransactionFilter(
         }
         if (categoryIds != null && !categoryIds.isEmpty()) {
             specs.add(TransactionSpecs.categoryIn(categoryIds));
+        }
+        if (tags != null && !tags.isEmpty()) {
+            specs.add(TransactionSpecs.taggedAny(tags));
         }
         if (review != null) {
             specs.add(TransactionSpecs.needsReview(review));

@@ -76,3 +76,8 @@
     font-size: 12px;
     cursor: default;
 }
+
+.tagChip {
+    height: 18px;
+    font-size: 11px;
+}

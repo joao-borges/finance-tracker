@@ -14,5 +14,6 @@ public record SavedFilterDto(
         List<Long> accountIds,
         List<Long> merchantIds,
         List<Long> categoryIds,
+        List<String> tags,
         Boolean review) {
 }

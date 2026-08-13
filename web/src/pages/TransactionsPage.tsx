@@ -12,6 +12,7 @@ import {
     categoriesApi,
     merchantsApi,
     rulesApi,
+    tagsApi,
     transactionsApi,
     type Account,
     type Category,
@@ -37,6 +38,7 @@ export default function TransactionsPage() {
     const [merchants, setMerchants] = useState<Merchant[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [rules, setRules] = useState<Rule[]>([]);
+    const [tagOptions, setTagOptions] = useState<string[]>([]);
     const [loadedId, setLoadedId] = useState<number | undefined>(undefined);
     const [loadedName, setLoadedName] = useState("");
     const [editing, setEditing] = useState<Transaction | null>(null);
@@ -51,6 +53,10 @@ export default function TransactionsPage() {
         rulesApi.list().then(setRules).catch(() => setRules([]));
     }, []);
 
+    const loadTags = useCallback(() => {
+        tagsApi.list().then(setTagOptions).catch(() => setTagOptions([]));
+    }, []);
+
     const filtersKey = JSON.stringify(filters);
 
     useEffect(() => {
@@ -58,7 +64,8 @@ export default function TransactionsPage() {
         categoriesApi.list().then(setCategories).catch(() => setCategories([]));
         loadMerchants();
         loadRules();
-    }, [loadMerchants, loadRules]);
+        loadTags();
+    }, [loadMerchants, loadRules, loadTags]);
 
     // Reset to the first page whenever the filters change.
     useEffect(() => {
@@ -118,6 +125,7 @@ export default function TransactionsPage() {
         setRows((current) => current.map((row) => (row.id === updated.id ? updated : row)));
         loadMerchants();
         loadRules();
+        loadTags();
     };
 
     // Splits/unsplits change which rows exist, so reload the list from the top.
@@ -151,6 +159,7 @@ export default function TransactionsPage() {
                 accounts={accounts}
                 merchants={merchants}
                 categories={categories}
+                tagOptions={tagOptions}
                 onChange={(next) => setFilters((current) => ({ ...current, ...next }))}
                 onClear={() => {
                     setFilters({});
@@ -179,6 +188,7 @@ export default function TransactionsPage() {
                 transaction={editing}
                 categories={categories}
                 merchants={merchants}
+                tagOptions={tagOptions}
                 rules={rules}
                 onClose={() => setEditing(null)}
                 onSaved={onEdited}
