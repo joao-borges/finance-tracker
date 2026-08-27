@@ -65,6 +65,30 @@ class RuleEngineTest {
     }
 
     @Test
+    void moreSpecificMatchWinsOverBroaderOneAtTheSamePriority() {
+        // The real-world bug: a generic "payment" rule hijacked
+        // "Bill Payment IC Premium Fina" from the rule written for it.
+        final Rule broad = rule("payment", 0, true, true, category("Credit Card Payment"));
+        final Rule specific = rule("ic premium fina", 0, true, true, category("Car Insurance"));
+
+        final Optional<Rule> match = engine.firstMatch("Bill Payment IC Premium Fina", List.of(broad, specific));
+
+        assertTrue(match.isPresent());
+        assertEquals("ic premium fina", match.get().getMerchantMatch());
+    }
+
+    @Test
+    void explicitPriorityStillOverridesSpecificity() {
+        final Rule broadButPrioritised = rule("payment", 1, true, true, category("Credit Card Payment"));
+        final Rule specific = rule("ic premium fina", 5, true, true, category("Car Insurance"));
+
+        final Optional<Rule> match = engine.firstMatch("Bill Payment IC Premium Fina",
+                List.of(specific, broadButPrioritised));
+
+        assertEquals("payment", match.get().getMerchantMatch());
+    }
+
+    @Test
     void skipsDisabledRules() {
         final Rule disabled = rule("netflix", 0, false, true, category("Subscriptions"));
 

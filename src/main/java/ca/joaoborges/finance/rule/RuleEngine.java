@@ -27,8 +27,15 @@ import java.util.Optional;
 public class RuleEngine {
 
     /**
-     * The first enabled rule (by ascending priority, then encounter order) whose
-     * {@code merchantMatch} is contained in {@code merchantName}, case-insensitive.
+     * The best enabled rule whose {@code merchantMatch} is contained in
+     * {@code merchantName}, case-insensitive.
+     *
+     * <p>Order is {@code priority}, then <strong>longest match wins</strong>,
+     * then id. Specificity as the default tie-break is what keeps a broad rule
+     * from hijacking a precise one: "payment" must never beat "ic premium fina"
+     * on "Bill Payment IC Premium Fina" just because it was created earlier or
+     * landed on a lower priority number. {@code priority} stays available as an
+     * explicit override for the rare case where the longer match is wrong.
      */
     public Optional<Rule> firstMatch(final String merchantName, final Collection<Rule> rules) {
         if (!StringUtils.hasText(merchantName) || rules == null) {
@@ -38,7 +45,9 @@ public class RuleEngine {
         return rules.stream()
                 .filter(Rule::isEnabled)
                 .filter(rule -> StringUtils.hasText(rule.getMerchantMatch()))
-                .sorted(Comparator.comparingInt(Rule::getPriority))
+                .sorted(Comparator.comparingInt(Rule::getPriority)
+                        .thenComparing(Comparator.comparingInt((Rule rule) -> rule.getMerchantMatch().length()).reversed())
+                        .thenComparing(rule -> rule.getId() == null ? Long.MAX_VALUE : rule.getId()))
                 .filter(rule -> haystack.contains(rule.getMerchantMatch().toLowerCase(Locale.ROOT)))
                 .findFirst();
     }

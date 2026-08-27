@@ -112,7 +112,7 @@ Rule
   category_id          # target category for the recategorize action
   merchant_id          # nullable — also associate the txn to this canonical Merchant
   auto_approve (bool)
-  priority             # lower = evaluated first; first match wins
+  priority             # explicit override; ties broken by longest match (see Rules)
   enabled (bool)
   last_matched_at, match_count
 
@@ -259,7 +259,9 @@ Intentionally tiny. One condition type, one action, one toggle.
 - **Toggle:** `auto_approve`.
 
 ### Evaluation
-For a given transaction, walk enabled rules by `priority` ascending; **first match wins** (no chaining in phase 1).
+For a given transaction, walk enabled rules by `priority` ascending, then **longest `merchant_match` first**, then id; **first match wins** (no chaining in phase 1). Specificity as the default tie-break is load-bearing: without it a broad rule silently hijacks a precise one — a `payment` rule stole `Bill Payment IC Premium Fina` from the `ic premium fina` rule written for it, purely because it had been created earlier. Keep all rules at the same `priority` (0) and let specificity govern; reserve `priority` for the rare case where the longer match is genuinely wrong.
+
+**Matching stays case-insensitive by design.** The same merchant arrives with different casing per source — SimpleFIN's payee is title-cased (`Amazon`, `Costco`, `Payment`) while CSV exports are upper-cased (`AMAZON.CA*…`, `COSTCO GAS`, `PAYMENT RECEIVED`) — so a case-sensitive rule could only ever cover one source. Measured on real data: 12 high-traffic merchants (Amazon, Costco, Telus, …) appear in both casings, and flipping to case-sensitive would break 48 of 232 rules and drop 134 of 440 transactions out of categorization.
 - Match + `auto_approve = true` → set category (+ merchant if set), `needs_review = false`.
 - Match + `auto_approve = false` → set category/merchant (as a suggestion), leave `needs_review = true`.
 - No match → stays uncategorized, `needs_review = true`.
