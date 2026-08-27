@@ -88,7 +88,7 @@ Hibernate is `validate`-only, so entity/schema drift fails fast at boot.
 | `SPRING_PROFILES_ACTIVE` | `oauth` enables Google sign-in (recommended for anything exposed) |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Your Google OAuth client (required with the `oauth` profile) |
 | `FINANCE_AUTH_ALLOWED_EMAILS` | Comma-separated Google emails allowed to sign in — **fail-closed**: an empty allowlist rejects everyone |
-| `IMPORT_MIN_POSTED_DATE` | Optional hard floor (ISO date, UTC); transactions posted earlier are dropped by every ingest path |
+| `IMPORT_MIN_POSTED_DATE` | Optional floor (ISO date, UTC) for the **automatic** sync window only; CSV uploads, explicit date-range imports, and manual entry ignore it |
 | `DISCORD_WEBHOOK_URL` | Optional Discord webhook for import summaries, budget alerts, and SimpleFIN connection warnings |
 | `FINANCE_SEED_FILE` | Optional path to a personal `seed-data.json` (category groups, categories, merchants, rules) seeded idempotently at startup — mount the file into the container; unset = no seeding |
 

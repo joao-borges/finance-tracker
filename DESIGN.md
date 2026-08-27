@@ -184,7 +184,7 @@ SimpleFIN is a thin JSON API — claim a setup token once, exchange it for a lon
 2. For each account → upsert; update `balance`, `balance_date`, `last_synced_at`.
 3. For each transaction in the payload:
    - **Skip if pending.** Posted-only. (SimpleFIN flags pending; drop those.)
-   - **Skip if below the import floor** (`common/ImportCutoff`, `finance.import.min-posted-date`) — the daily window is small, but the floor still drops anything posted before it so the boundary day can't leak pre-cutoff transactions.
+   - **Skip if below the import floor** (`common/ImportCutoff`, `finance.import.min-posted-date`) — applies to this automatic window only, so the boundary day can't leak pre-cutoff history. Operator-initiated imports (CSV upload, explicit `from`/`to` range, manual entry) bypass the floor: the operator chose the range, and silently dropping their rows reads as a bug rather than a guard.
    - Build `dedup_key = simplefin_id + ':' + posted_ts`.
    - **Dedup decision** (see below).
    - If new → insert, `category_id = null`, `needs_review = true`.

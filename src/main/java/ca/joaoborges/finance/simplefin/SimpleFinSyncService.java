@@ -105,15 +105,22 @@ public class SimpleFinSyncService {
     /** Incremental sync over the default recent window (scheduled / "Sync now"). */
     @Transactional
     public ImportRun sync() {
-        return sync(defaultStart(), null);
+        // Automatic window: the import floor applies, so a first-ever sync can't
+        // drag in years of history.
+        return sync(defaultStart(), null, true);
     }
 
     /**
      * Sync transactions posted in [startDate, endDate). endDate null = up to now.
-     * Used for the forced custom-range import from the UI.
+     * Used for the forced custom-range import from the UI — the operator named
+     * the range, so the import floor is deliberately NOT applied.
      */
     @Transactional
     public ImportRun sync(final Instant startDate, final Instant endDate) {
+        return sync(startDate, endDate, false);
+    }
+
+    private ImportRun sync(final Instant startDate, final Instant endDate, final boolean enforceCutoff) {
         final SimpleFinConnection connection = connectionRepository.findFirstByOrderByIdAsc()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "SimpleFIN is not connected"));
         final JsonNode root = objectMapper.readTree(
@@ -188,7 +195,7 @@ public class SimpleFinSyncService {
                     continue;
                 }
                 final Instant postedAt = Instant.ofEpochSecond(posted);
-                if (importCutoff.excludes(postedAt)) {
+                if (enforceCutoff && importCutoff.excludes(postedAt)) {
                     continue;
                 }
                 if (deletedKeys.contains(txId + ":" + posted)) {

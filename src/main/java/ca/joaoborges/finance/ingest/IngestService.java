@@ -6,7 +6,6 @@ import ca.joaoborges.finance.account.AccountType;
 import ca.joaoborges.finance.budget.BudgetAlertService;
 import ca.joaoborges.finance.category.Category;
 import ca.joaoborges.finance.common.ContentHashing;
-import ca.joaoborges.finance.common.ImportCutoff;
 import ca.joaoborges.finance.common.SourceType;
 import ca.joaoborges.finance.csv.ParsedTransaction;
 import ca.joaoborges.finance.rule.Rule;
@@ -52,7 +51,6 @@ public class IngestService {
     private final RuleEngine ruleEngine;
     private final DiscordNotifier discordNotifier;
     private final BudgetAlertService budgetAlertService;
-    private final ImportCutoff importCutoff;
     private final ca.joaoborges.finance.match.MatchingService matchingService;
     private final ca.joaoborges.finance.transaction.DeletedTransactionKeyRepository deletedTransactionKeyRepository;
 
@@ -90,14 +88,13 @@ public class IngestService {
         int dedupCount = 0;
         int reviewed = 0;
         int needsReview = 0;
-        int skippedBeforeCutoff = 0;
 
         for (final ParsedTransaction row : rows) {
+            // No import floor here: a CSV upload is always deliberate, and the
+            // operator picked the file's date range themselves. The floor exists
+            // to stop the automatic SimpleFIN window dragging in old history,
+            // and silently dropping hand-picked rows only looks like a bug.
             final Instant postedAt = row.postedAt() != null ? row.postedAt() : fallbackPostedAt;
-            if (importCutoff.excludes(postedAt)) {
-                skippedBeforeCutoff++;
-                continue;
-            }
             final Account account = resolveAccount(row.accountName());
             final String accountKey = String.valueOf(account.getId());
             final String hash = ContentHashing.of(accountKey, postedAt, row.amount(), row.merchantName());
@@ -163,9 +160,6 @@ public class IngestService {
             }
         }
 
-        if (skippedBeforeCutoff > 0) {
-            log.info("Import '{}': skipped {} row(s) posted before the import cutoff", fileName, skippedBeforeCutoff);
-        }
 
         run.setNewCount(newCount);
         run.setDedupCount(dedupCount);

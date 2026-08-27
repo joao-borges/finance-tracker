@@ -34,7 +34,7 @@ services:
       DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-finance}
       DB_USER: ${POSTGRES_USER:-finance}
       DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
-      # Hard floor on imported transactions (ISO date, UTC). Blank = no floor.
+      # Floor for the automatic SimpleFIN window only (ISO date, UTC). Blank = none.
       IMPORT_MIN_POSTED_DATE: ${IMPORT_MIN_POSTED_DATE:-}
       # Optional personal seed file (mount it into the container). Blank = no seeding.
       FINANCE_SEED_FILE: ${FINANCE_SEED_FILE:-}
