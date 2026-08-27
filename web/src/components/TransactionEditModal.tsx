@@ -367,6 +367,7 @@ export default function TransactionEditModal({ transaction, categories, merchant
         <SplitModal
             transaction={transaction}
             categories={categories}
+            tagOptions={tagOptions}
             open={splitOpen}
             onClose={() => setSplitOpen(false)}
             onDone={() => {

@@ -26,3 +26,21 @@
     padding: 16px 0;
     min-height: 32px;
 }
+
+.totalsBar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 16px;
+    padding: 8px 4px;
+}
+
+.totalsNegative {
+    color: var(--error);
+    font-weight: 600;
+}
+
+.totalsPositive {
+    color: var(--success);
+    font-weight: 600;
+}

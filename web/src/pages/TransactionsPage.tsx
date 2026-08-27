@@ -17,11 +17,12 @@ import {
     type Account,
     type Category,
     type Merchant,
+    type FilterTotals,
     type Rule,
     type Transaction,
     type TransactionFilters,
 } from "../lib/api";
-import { errorText } from "../lib/format";
+import { errorText, formatMoney } from "../lib/format";
 import styles from "./TransactionsPage.module.css";
 
 const PAGE_SIZE = 25;
@@ -39,6 +40,7 @@ export default function TransactionsPage() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [rules, setRules] = useState<Rule[]>([]);
     const [tagOptions, setTagOptions] = useState<string[]>([]);
+    const [totals, setTotals] = useState<FilterTotals | null>(null);
     const [loadedId, setLoadedId] = useState<number | undefined>(undefined);
     const [loadedName, setLoadedName] = useState("");
     const [editing, setEditing] = useState<Transaction | null>(null);
@@ -99,6 +101,27 @@ export default function TransactionsPage() {
             cancelled = true;
         };
     }, [page, filtersKey, reloadKey, message]);
+
+    // Totals cover everything the filter matches, not just the loaded pages.
+    useEffect(() => {
+        let cancelled = false;
+        transactionsApi
+            .summary(filters)
+            .then((result) => {
+                if (!cancelled) {
+                    setTotals(result);
+                }
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setTotals(null);
+                }
+            });
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filtersKey, reloadKey]);
 
     // Infinite scroll: load the next page when the sentinel scrolls into view.
     useEffect(() => {
@@ -166,6 +189,20 @@ export default function TransactionsPage() {
                     setLoaded(undefined, "");
                 }}
             />
+
+            {totals && (
+                <Box className={styles.totalsBar}>
+                    <Typography variant="body2">
+                        <strong>{totals.count}</strong> transaction{totals.count === 1 ? "" : "s"}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        in {formatMoney(totals.inflow)} · out {formatMoney(Math.abs(totals.outflow))}
+                    </Typography>
+                    <Typography variant="body2" className={totals.net < 0 ? styles.totalsNegative : styles.totalsPositive}>
+                        net {formatMoney(totals.net)}
+                    </Typography>
+                </Box>
+            )}
 
             <TransactionsTable
                 rows={rows}

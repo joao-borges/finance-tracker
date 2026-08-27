@@ -454,6 +454,7 @@ POST   /api/rules/:id/apply               # retroactive run over uncategorized
 # Transactions  (visible rows only; newest first; paginated)
 GET    /api/transactions?from=&to=&accountIds=&merchantIds=&categoryIds=&review=&page=&size=
 POST   /api/transactions                  # manual single entry (source MANUAL; rules run if no category; never auto-matched)
+GET    /api/transactions/summary?<same filters>   # count + net/inflow/outflow over everything the filter matches
 PATCH  /api/transactions/:id              # categorize, link/create merchant, approve, exclude-from-budget
 POST   /api/transactions/:id/split        # split into (amount, category) children
 POST   /api/transactions/:id/unsplit      # undo a split

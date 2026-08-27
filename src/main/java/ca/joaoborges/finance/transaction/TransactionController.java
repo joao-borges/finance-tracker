@@ -65,8 +65,8 @@ public class TransactionController {
     private final MatchingService matchingService;
     private final ca.joaoborges.finance.tag.TagService tagService;
 
-    /** One leg of a split: an amount and the category it belongs to. */
-    public record SplitLine(BigDecimal amount, Long categoryId) {
+    /** One leg of a split: an amount, the category it belongs to, and optional tags. */
+    public record SplitLine(BigDecimal amount, Long categoryId, List<String> tags) {
     }
 
     public record SplitRequest(List<SplitLine> splits) {
@@ -153,6 +153,26 @@ public class TransactionController {
         final Page<Transaction> result = transactionRepository.findAll(filter.toSpecification(), pageable);
         final List<TransactionDto> content = result.getContent().stream().map(transactionMapper::toDto).toList();
         return new PageResponse<>(content, result.getNumber(), pageSize, result.hasNext(), result.getTotalElements());
+    }
+
+    /** Totals over everything the current filter matches — not just the page on screen. */
+    public record FilterTotals(long count, BigDecimal net, BigDecimal inflow, BigDecimal outflow) {
+    }
+
+    @GetMapping("/summary")
+    @Transactional(readOnly = true)
+    public FilterTotals summary(final TransactionFilter filter) {
+        BigDecimal inflow = BigDecimal.ZERO;
+        BigDecimal outflow = BigDecimal.ZERO;
+        final List<Transaction> matched = transactionRepository.findAll(filter.toSpecification());
+        for (final Transaction transaction : matched) {
+            if (transaction.getAmount().signum() >= 0) {
+                inflow = inflow.add(transaction.getAmount());
+            } else {
+                outflow = outflow.add(transaction.getAmount());
+            }
+        }
+        return new FilterTotals(matched.size(), inflow.add(outflow), inflow, outflow);
     }
 
     @PatchMapping("/{id}")
@@ -281,7 +301,9 @@ public class TransactionController {
                     .merchantName(parent.getMerchantName())
                     .merchant(parent.getMerchant())
                     .amount(split.amount())
+                    .tags(tagService.resolve(split.tags()))
                     .postedAt(parent.getPostedAt())
+                    .sourcePostedAt(parent.getSourcePostedAt())
                     .currency(parent.getCurrency())
                     .category(resolveCategory(split.categoryId()))
                     .contentHash(parent.getContentHash() + "#s" + index)

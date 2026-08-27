@@ -312,6 +312,14 @@ export interface Page<T> {
 export interface SplitLine {
     amount: number;
     categoryId: number;
+    tags?: string[];
+}
+
+export interface FilterTotals {
+    count: number;
+    net: number;
+    inflow: number;
+    outflow: number;
 }
 
 export const transactionsApi = {
@@ -321,6 +329,8 @@ export const transactionsApi = {
         return http<Page<Transaction>>("GET", `/api/transactions${qs}${sep}page=${page}&size=${size}`);
     },
     create: (body: ManualTransactionInput) => http<Transaction>("POST", "/api/transactions", body),
+    summary: (filters: TransactionFilters = {}) =>
+        http<FilterTotals>("GET", `/api/transactions/summary${queryString(filters)}`),
     update: (id: number, body: TransactionUpdate) => http<Transaction>("PATCH", `/api/transactions/${id}`, body),
     duplicates: () => http<Transaction[]>("GET", "/api/transactions/duplicates"),
     restore: (id: number) => http<Transaction>("POST", `/api/transactions/${id}/restore`),
