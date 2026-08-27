@@ -121,16 +121,47 @@ export interface ImportRun {
     accountCount: number;
 }
 
+// Only navigate once per page load: several requests usually fail together
+// when a session dies, and each must not queue its own navigation (or, at "/",
+// reload in a loop).
+let redirectingToLogin = false;
+
+/**
+ * Send the browser to the app root, which re-triggers sign-in (Spring Security
+ * / the SSO proxy redirect a document request, unlike an XHR). Returns a
+ * promise that never settles: the page is navigating away, so callers should
+ * neither render an error toast nor act on a result.
+ */
+function redirectToLogin(): Promise<never> {
+    if (!redirectingToLogin) {
+        redirectingToLogin = true;
+        window.location.assign("/");
+    }
+    return new Promise<never>(() => {});
+}
+
+/**
+ * True when a response means "you are not signed in" rather than a real error.
+ * Besides 401/403, an SSO proxy in front of the app (e.g. Cloudflare Access)
+ * answers an expired session with its own login PAGE — HTML, status 200 — which
+ * would otherwise blow up in JSON.parse and surface as a bogus error.
+ */
+function isAuthFailure(res: Response, payload?: string): boolean {
+    if (res.status === 401 || res.status === 403) {
+        return true;
+    }
+    const contentType = res.headers.get("content-type") ?? "";
+    return payload !== undefined && !contentType.includes("json") && /^\s*<(!doctype|html)/i.test(payload);
+}
+
 async function http<T>(method: string, path: string, body?: unknown): Promise<T> {
     const res = await fetch(path, {
         method,
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: body === undefined ? undefined : JSON.stringify(body),
     });
-    if (res.status === 401) {
-        // Session expired or not signed in — send the browser through Google login.
-        window.location.href = "/oauth2/authorization/google";
-        throw new Error("Not authenticated");
+    if (isAuthFailure(res)) {
+        return redirectToLogin();
     }
     if (!res.ok) {
         const text = await res.text();
@@ -138,7 +169,17 @@ async function http<T>(method: string, path: string, body?: unknown): Promise<T>
     }
     // Tolerate empty bodies (204, or void endpoints that return 200 with no JSON).
     const payload = await res.text();
-    return (payload ? JSON.parse(payload) : undefined) as T;
+    if (isAuthFailure(res, payload)) {
+        return redirectToLogin();
+    }
+    if (!payload) {
+        return undefined as T;
+    }
+    try {
+        return JSON.parse(payload) as T;
+    } catch {
+        throw new Error(`Unexpected response from ${path}`);
+    }
 }
 
 export interface Crud<T> {
@@ -391,10 +432,17 @@ export const importApi = {
         const form = new FormData();
         form.append("file", file);
         const res = await fetch(`/api/imports/csv?format=${format}`, { method: "POST", body: form });
+        if (isAuthFailure(res)) {
+            return redirectToLogin();
+        }
         if (!res.ok) {
             throw new Error((await res.text()) || `${res.status} ${res.statusText}`);
         }
-        return (await res.json()) as ImportRun;
+        const payload = await res.text();
+        if (isAuthFailure(res, payload)) {
+            return redirectToLogin();
+        }
+        return JSON.parse(payload) as ImportRun;
     },
 };
 

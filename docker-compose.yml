@@ -15,7 +15,10 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-finance}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-finance}
     ports:
-      - "5432:5432"
+      # Bind to loopback only — the app reaches the db over the compose network
+      # as "db:5432", so the published port is just for host-side tooling (IDE,
+      # psql). "5432:5432" would publish it to the whole LAN.
+      - "127.0.0.1:5432:5432"
     volumes:
       # Postgres 18+ images store data under a version subdir; mount the parent.
       - pgdata:/var/lib/postgresql
