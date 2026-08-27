@@ -372,6 +372,10 @@ Monthly. Page mirrors the Monarch layout you sent: an Income section (planned vs
 
 Uncategorized transactions contribute to no category line by definition; surface a count somewhere so they don't silently distort your sense of the month.
 
+**Carrying a shortfall forward.** A button on the budget page pulls the *previous* month's planned shortfall (planned income − planned expenses, when negative) into this month as a planned expense on a **Budget Adjustment** category under *Financial* (created on demand). It keys on the plan, not actuals, so the figure is stable the moment that month is budgeted and doesn't drift as transactions land. The amount is **set, not added** — pressing twice is a no-op, and if the previous month later turns to a surplus the line is removed, so it always reflects the previous month as it currently stands.
+
+**One-time categories.** A category may carry `one_time_month` (YYYY-MM): it appears in that month's budget and nowhere else — not in other months, not in the Categories page — but stays selectable on transactions so the actual payment can be filed against it. For genuine one-offs (a single payment to a friend) that deserve their own budget line without permanently enlarging the category list. Created from the budget page.
+
 **Hidden categories.** A category can be `hidden` (set only on the Categories page) to declutter the budget page — distinct from `archived`. Hidden categories are excluded from the budget summary (lines and totals) unless a **Show hidden** toggle is on (`?includeHidden=true`). Giving a category a planned amount **auto-unhides** it; setting the amount back to 0 does *not* re-hide it (hiding stays a manual Categories-page action).
 
 ---

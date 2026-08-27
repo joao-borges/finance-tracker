@@ -51,6 +51,16 @@ public class Category {
     @Column(name = "is_income", nullable = false)
     private boolean income = false;
 
+    /**
+     * Set (YYYY-MM) when this category exists for a single month only — a
+     * one-off expense that still deserves its own budget line. It appears in
+     * that month's budget and nowhere else: no other month's budget, and not in
+     * the Categories admin list. It stays selectable on transactions so the
+     * actual payment can be filed against it.
+     */
+    @Column(name = "one_time_month")
+    private String oneTimeMonth;
+
     @Builder.Default
     @Column(name = "sort_order", nullable = false)
     private int sortOrder = 0;

@@ -10,6 +10,7 @@ public record CategoryDto(
         String name,
         String icon,
         Boolean income,
+        String oneTimeMonth,
         Integer sortOrder,
         Boolean archived,
         Boolean hidden,

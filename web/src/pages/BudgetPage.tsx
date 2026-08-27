@@ -4,6 +4,9 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import TrendingDownIcon from "@mui/icons-material/TrendingDown";
+import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
+import OneTimeCategoryModal from "../components/OneTimeCategoryModal";
 import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
 import { App as AntApp } from "antd";
 import dayjs from "dayjs";
@@ -13,6 +16,7 @@ import {
     budgetsApi,
     categoriesApi,
     categoryGroupsApi,
+    type CategoryGroup,
     merchantsApi,
     type BudgetLine,
     type BudgetSummary,
@@ -48,6 +52,8 @@ export default function BudgetPage() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [merchants, setMerchants] = useState<Merchant[]>([]);
     const [drillLine, setDrillLine] = useState<BudgetLine | null>(null);
+    const [oneTimeOpen, setOneTimeOpen] = useState(false);
+    const [groups, setGroups] = useState<CategoryGroup[]>([]);
     const [shownHidden, setShownHidden] = useState<Record<string, boolean>>({});
     const dirty = useRef<Map<number, number | null>>(new Map());
 
@@ -81,6 +87,7 @@ export default function BudgetPage() {
 
     useEffect(() => {
         categoriesApi.list().then(setCategories).catch(() => setCategories([]));
+        categoryGroupsApi.list().then(setGroups).catch(() => setGroups([]));
         merchantsApi.list().then(setMerchants).catch(() => setMerchants([]));
     }, []);
 
@@ -170,6 +177,19 @@ export default function BudgetPage() {
                                     <ContentCopyIcon />
                                 </IconButton>
                             </Tooltip>
+                            <Tooltip title="Add a one-time budget line for this month only">
+                                <IconButton onClick={() => setOneTimeOpen(true)} aria-label="add one-time budget line">
+                                    <PlaylistAddIcon />
+                                </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Pull previous month's planned shortfall into Budget Adjustment">
+                                <IconButton
+                                    onClick={() => runAction(() => budgetsApi.pullPreviousShortfall(month, true))}
+                                    aria-label="pull previous month shortfall"
+                                >
+                                    <TrendingDownIcon />
+                                </IconButton>
+                            </Tooltip>
                             <Tooltip title="Clear all">
                                 <IconButton color="error" onClick={() => runAction(() => budgetsApi.clear(month, true))} aria-label="clear all">
                                     <DeleteSweepIcon />
@@ -225,6 +245,14 @@ export default function BudgetPage() {
                     />
                 );
             })}
+
+            <OneTimeCategoryModal
+                open={oneTimeOpen}
+                month={month}
+                groups={groups}
+                onClose={() => setOneTimeOpen(false)}
+                onCreated={load}
+            />
 
             <BudgetCategoryModal
                 line={drillLine}

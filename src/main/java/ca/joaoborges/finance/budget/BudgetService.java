@@ -28,8 +28,13 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class BudgetService {
 
+    /** Where a pulled-forward shortfall lands. Created on demand if missing. */
+    private static final String ADJUSTMENT_CATEGORY = "Budget Adjustment";
+    private static final String ADJUSTMENT_GROUP = "Financial";
+
     private final BudgetRepository budgetRepository;
     private final CategoryRepository categoryRepository;
+    private final ca.joaoborges.finance.category.CategoryGroupRepository categoryGroupRepository;
     private final TransactionRepository transactionRepository;
 
     private record GroupAccumulator(String name, boolean collapsed, List<BudgetSummary.BudgetLine> lines) {
@@ -58,6 +63,11 @@ public class BudgetService {
 
         for (final Category category : categoryRepository.findAllByOrderBySortOrderAscNameAsc()) {
             if (category.isArchived() || (category.isHidden() && !includeHidden)) {
+                continue;
+            }
+            // A one-time category belongs to a single month and must not clutter
+            // every other month's budget.
+            if (category.getOneTimeMonth() != null && !category.getOneTimeMonth().equals(month)) {
                 continue;
             }
             final BigDecimal plan = planned.getOrDefault(category.getId(), BigDecimal.ZERO);
@@ -166,6 +176,108 @@ public class BudgetService {
                     .build());
         }
         return summary(month, includeHidden);
+    }
+
+    /**
+     * Carry the previous month's planned shortfall into this month as a planned
+     * expense on {@value #ADJUSTMENT_CATEGORY}.
+     *
+     * <p>The shortfall is the previous month's <em>plan</em> — planned income
+     * minus planned expenses — not what was actually spent, so it is stable the
+     * moment that month's budget is set and doesn't drift as transactions land.
+     * A month that planned to break even or better pulls nothing. The amount is
+     * SET, not added, so pressing the button twice is a no-op rather than
+     * doubling the adjustment.
+     */
+    @Transactional
+    public BudgetSummary pullPreviousShortfall(final String month, final boolean includeHidden) {
+        final YearMonth ym = requireEditable(month);
+        final String previous = ym.minusMonths(1).toString();
+
+        BigDecimal plannedIncome = BigDecimal.ZERO;
+        BigDecimal plannedExpense = BigDecimal.ZERO;
+        for (final Budget budget : budgetRepository.findByMonth(previous)) {
+            final BigDecimal planned = budget.getPlannedAmount() == null ? BigDecimal.ZERO : budget.getPlannedAmount();
+            if (budget.getCategory().isIncome()) {
+                plannedIncome = plannedIncome.add(planned);
+            } else {
+                plannedExpense = plannedExpense.add(planned);
+            }
+        }
+        final BigDecimal shortfall = plannedIncome.subtract(plannedExpense);
+        final Category adjustment = adjustmentCategory();
+        if (shortfall.signum() >= 0) {
+            // The previous month planned to break even or better. Clear any
+            // adjustment a previous press left behind, so the line always
+            // reflects the previous month as it stands now.
+            budgetRepository.findByMonthAndCategoryId(month, adjustment.getId())
+                    .ifPresent(budgetRepository::delete);
+            return summary(month, includeHidden);
+        }
+
+        final BigDecimal amount = shortfall.abs();
+        budgetRepository.findByMonthAndCategoryId(month, adjustment.getId())
+                .ifPresentOrElse(existing -> {
+                    existing.setPlannedAmount(amount);
+                    budgetRepository.save(existing);
+                }, () -> budgetRepository.save(Budget.builder()
+                        .month(month)
+                        .category(adjustment)
+                        .plannedAmount(amount)
+                        .build()));
+        return summary(month, includeHidden);
+    }
+
+    /**
+     * Create a category scoped to one month and plan an amount against it. Used
+     * for genuine one-offs (a single payment to a friend) that deserve their own
+     * budget line without permanently enlarging the category list.
+     */
+    @Transactional
+    public BudgetSummary addOneTimeCategory(final String month,
+                                            final BudgetController.OneTimeCategoryRequest request,
+                                            final boolean includeHidden) {
+        requireEditable(month);
+        if (request == null || !org.springframework.util.StringUtils.hasText(request.name())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A name is required");
+        }
+        if (request.plannedAmount() == null || request.plannedAmount().signum() <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A planned amount greater than zero is required");
+        }
+        final ca.joaoborges.finance.category.CategoryGroup group = request.groupId() == null ? null
+                : categoryGroupRepository.findById(request.groupId())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown group " + request.groupId()));
+        final Category category = categoryRepository.save(Category.builder()
+                .group(group)
+                .name(request.name().trim())
+                .icon(request.icon())
+                .oneTimeMonth(month)
+                .build());
+        budgetRepository.save(Budget.builder()
+                .month(month)
+                .category(category)
+                .plannedAmount(request.plannedAmount())
+                .build());
+        return summary(month, includeHidden);
+    }
+
+    private Category adjustmentCategory() {
+        final ca.joaoborges.finance.category.CategoryGroup group =
+                categoryGroupRepository.findByName(ADJUSTMENT_GROUP)
+                        .orElseGet(() -> categoryGroupRepository.save(
+                                ca.joaoborges.finance.category.CategoryGroup.builder().name(ADJUSTMENT_GROUP).build()));
+        final Category category = categoryRepository.findByGroupAndName(group, ADJUSTMENT_CATEGORY)
+                .orElseGet(() -> categoryRepository.save(Category.builder()
+                        .group(group)
+                        .name(ADJUSTMENT_CATEGORY)
+                        .icon("\u2696\uFE0F")
+                        .build()));
+        // A carried shortfall must be visible on the page that just created it.
+        if (category.isHidden()) {
+            category.setHidden(false);
+            categoryRepository.save(category);
+        }
+        return category;
     }
 
     private BudgetSummary.BudgetLine line(final Category category, final BigDecimal planned, final BigDecimal actual) {

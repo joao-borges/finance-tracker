@@ -52,6 +52,7 @@ export interface Category {
     name: string;
     icon?: string | null;
     income?: boolean;
+    oneTimeMonth?: string | null;
     sortOrder?: number;
     archived?: boolean;
     hidden?: boolean;
@@ -428,6 +429,13 @@ export const budgetsApi = {
         http<BudgetSummary>("DELETE", `/api/budgets/${month}${hiddenQuery(includeHidden)}`),
     copyPrevious: (month: string, includeHidden = false) =>
         http<BudgetSummary>("POST", `/api/budgets/${month}/copy-previous${hiddenQuery(includeHidden)}`),
+    pullPreviousShortfall: (month: string, includeHidden = false) =>
+        http<BudgetSummary>("POST", `/api/budgets/${month}/pull-previous-shortfall${hiddenQuery(includeHidden)}`),
+    addOneTimeCategory: (
+        month: string,
+        body: { name: string; groupId?: number | null; plannedAmount: number; icon?: string | null },
+        includeHidden = false,
+    ) => http<BudgetSummary>("POST", `/api/budgets/${month}/one-time-category${hiddenQuery(includeHidden)}`, body),
 };
 
 export const rulesExtraApi = {

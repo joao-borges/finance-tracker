@@ -27,5 +27,6 @@
     <include file="changes/020-institutions.xml" relativeToChangelogFile="true"/>
     <include file="changes/021-noon-utc-day-instants.xml" relativeToChangelogFile="true"/>
     <include file="changes/022-tags.xml" relativeToChangelogFile="true"/>
+    <include file="changes/023-one-time-categories.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

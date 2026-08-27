@@ -30,7 +30,12 @@ export default function CategoriesPage() {
         <CrudPage<Category>
             title="Categories"
             fields={fields}
-            api={categoriesApi}
+            api={{
+                ...categoriesApi,
+                // One-time categories belong to a single month's budget, not to
+                // the permanent category list.
+                list: () => categoriesApi.list().then((rows) => rows.filter((row) => !row.oneTimeMonth)),
+            }}
             rowActions={(row, reload) => <CategoryRowToggles category={row} reload={reload} />}
         />
     );

@@ -50,6 +50,25 @@ public class BudgetController {
         return budgetService.copyFromPrevious(month, includeHidden);
     }
 
+    /** A one-off budget line for this month only — name, group, and planned amount. */
+    public record OneTimeCategoryRequest(String name, Long groupId, java.math.BigDecimal plannedAmount, String icon) {
+    }
+
+    /** Create a category that exists only for this month and give it a planned amount. */
+    @PostMapping("/{month}/one-time-category")
+    public BudgetSummary addOneTimeCategory(@PathVariable final String month,
+                                            @RequestBody final OneTimeCategoryRequest request,
+                                            @RequestParam(name = "includeHidden", defaultValue = "false") final boolean includeHidden) {
+        return budgetService.addOneTimeCategory(month, request, includeHidden);
+    }
+
+    /** Carry the previous month's planned shortfall into this month as an adjustment line. */
+    @PostMapping("/{month}/pull-previous-shortfall")
+    public BudgetSummary pullPreviousShortfall(@PathVariable final String month,
+                                               @RequestParam(name = "includeHidden", defaultValue = "false") final boolean includeHidden) {
+        return budgetService.pullPreviousShortfall(month, includeHidden);
+    }
+
     @GetMapping("/{month}/export")
     public ResponseEntity<byte[]> export(@PathVariable final String month) {
         final byte[] pdf = budgetPdfExporter.export(month);
