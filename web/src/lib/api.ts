@@ -233,6 +233,8 @@ export interface Transaction {
     needsReview: boolean;
     excludedFromBudget: boolean;
     awaitingRefund: boolean;
+    /** Quarantined duplicate — hidden from the normal list, restorable. */
+    dedup: boolean;
     tags?: string[];
     matchType?: MatchType | null;
     matchedWithId?: number | null;
@@ -446,6 +448,11 @@ export type CsvFormat = "SIMPLE" | "AMEX" | "RBC" | "PC_FINANCIAL";
 
 export const importApi = {
     history: () => http<ImportRun[]>("GET", "/api/imports"),
+    // Everything a run brought in, quarantined duplicates included.
+    transactions: (id: number) => http<Transaction[]>("GET", `/api/imports/${id}/transactions`),
+    // Undo a run: drops its rows and the run itself. Not tombstoned — a
+    // deliberate re-import can bring the same transactions back.
+    remove: (id: number) => http<{ deleted: number }>("DELETE", `/api/imports/${id}`),
     uploadCsv: async (file: File, format: CsvFormat): Promise<ImportRun> => {
         const form = new FormData();
         form.append("file", file);

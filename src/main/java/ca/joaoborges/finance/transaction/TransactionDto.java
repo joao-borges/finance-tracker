@@ -35,6 +35,7 @@ public record TransactionDto(
         boolean needsReview,
         boolean excludedFromBudget,
         boolean awaitingRefund,
+        boolean dedup,
         java.util.List<String> tags,
         MatchType matchType,
         Long matchedWithId,

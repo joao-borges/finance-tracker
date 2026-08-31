@@ -17,3 +17,7 @@
 .hint {
     margin-bottom: 16px;
 }
+
+.actions {
+    white-space: nowrap;
+}

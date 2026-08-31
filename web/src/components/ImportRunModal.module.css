@@ -1,0 +1,9 @@
+.summary {
+    display: block;
+    margin-bottom: 12px;
+    color: var(--text-secondary);
+}
+
+.flag {
+    margin-left: 8px;
+}

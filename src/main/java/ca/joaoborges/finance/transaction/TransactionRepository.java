@@ -2,6 +2,7 @@ package ca.joaoborges.finance.transaction;
 
 import ca.joaoborges.finance.account.Account;
 import ca.joaoborges.finance.common.SourceType;
+import ca.joaoborges.finance.ingest.ImportRun;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -63,6 +64,12 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
 
     /** Refund legs pointing at a purchase (for detaching before deletion). */
     List<Transaction> findByMatchedWith(Transaction purchase);
+
+    /** Everything one import run produced — quarantined rows and split children included. */
+    List<Transaction> findByImportRun(ImportRun run);
+
+    /** The rows an import run produced, as the import detail lists them (split children fold into their parent). */
+    List<Transaction> findByImportRunAndSplitParentIsNullOrderByPostedAtDesc(ImportRun run);
 
     /** All transactions of an account (hash recompute after a merge). */
     List<Transaction> findByAccount(Account account);

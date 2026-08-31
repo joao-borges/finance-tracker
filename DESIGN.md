@@ -230,6 +230,21 @@ Same destination, same pipeline. A CSV row becomes a `Transaction` exactly like 
 4. **Dedup** (see cross-source note below), then insert new rows `category_id = null`, `needs_review = true`.
 5. Run the rules engine over the new rows. Fire events. Write the `ImportRun` (`source = 'csv'`, `file_name`).
 
+### Undoing a run
+An import can be wrong wholesale — the wrong file, or the right file over a date
+range that shouldn't have been pulled in (lifting the import floor for CSV made
+this easy to do by accident: one PC Financial export dragged in a year of
+history). `ImportRunService.delete` therefore removes **every** row an
+`ImportRun` produced — quarantined duplicates and split children included —
+detaching matches first, then the run row itself. The Imports page hangs both a
+"show transactions" and a delete off each history row, so the run can be
+inspected before it's dropped.
+
+Unlike deleting a single transaction, this deliberately **does not tombstone**
+the dedup keys. A single-row delete means "I never want this row"; dropping a
+whole run means the import itself was a mistake, and a later deliberate
+re-import has to be able to bring those transactions back.
+
 Parsing uses **Apache Commons CSV** — not hand-rolled — since bank CSVs are full of commas-in-descriptions and inconsistent quoting. A new institution = a new parser class + a `CsvFormat` enum value.
 
 ### Simplified CSV (bootstrap — built first)
@@ -440,6 +455,8 @@ Implemented unless marked _(planned)_.
 ```
 # CSV import
 GET    /api/imports                       # ImportRun history
+GET    /api/imports/:id/transactions      # what one run brought in (quarantined rows included)
+DELETE /api/imports/:id                   # undo a run: drop its rows and the run
 POST   /api/imports/csv?format=SIMPLE|AMEX|RBC|PC_FINANCIAL   # upload + ingest
 
 # Accounts

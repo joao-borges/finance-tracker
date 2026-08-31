@@ -3,12 +3,9 @@ package ca.joaoborges.finance.csv;
 import ca.joaoborges.finance.common.SourceType;
 import ca.joaoborges.finance.ingest.ImportRunDto;
 import ca.joaoborges.finance.ingest.ImportRunMapper;
-import ca.joaoborges.finance.ingest.ImportRunRepository;
 import ca.joaoborges.finance.ingest.IngestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,14 +26,7 @@ import java.util.List;
 public class CsvImportController {
 
     private final IngestService ingestService;
-    private final ImportRunRepository importRunRepository;
     private final ImportRunMapper importRunMapper;
-
-    @GetMapping
-    @Transactional(readOnly = true)
-    public List<ImportRunDto> history() {
-        return importRunRepository.findAllByOrderByStartedAtDesc().stream().map(importRunMapper::toDto).toList();
-    }
 
     /** Upload a CSV in one of the supported {@link CsvFormat}s and ingest it. */
     @PostMapping("/csv")
