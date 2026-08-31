@@ -5,10 +5,14 @@ import SyncIcon from "@mui/icons-material/Sync";
 import LinkIcon from "@mui/icons-material/Link";
 import LaunchIcon from "@mui/icons-material/Launch";
 import { Alert, App as AntApp, DatePicker } from "antd";
-import SimpleFinBridgeModal from "./SimpleFinBridgeModal";
 import { simplefinApi, type SimpleFinHealth, type SimpleFinStatus } from "../lib/api";
 import { errorText } from "../lib/format";
 import styles from "./SimpleFinSection.module.css";
+
+// Where an install with no connection yet goes to create an account and mint a
+// setup token. Once connected, the origin of the stored access URL wins, so a
+// self-hosted bridge is honoured.
+const PUBLIC_BRIDGE = "https://beta-bridge.simplefin.org/";
 
 /** SimpleFIN connect + manual sync. The access URL never leaves the server. */
 export default function SimpleFinSection({ onSynced }: { onSynced: () => void }) {
@@ -18,7 +22,6 @@ export default function SimpleFinSection({ onSynced }: { onSynced: () => void })
     const [token, setToken] = useState("");
     const [range, setRange] = useState<[string, string] | null>(null);
     const [health, setHealth] = useState<SimpleFinHealth | null>(null);
-    const [bridgeOpen, setBridgeOpen] = useState(false);
     const [busy, setBusy] = useState(false);
 
     const reload = () => {
@@ -103,7 +106,7 @@ export default function SimpleFinSection({ onSynced }: { onSynced: () => void })
             <Typography variant="body2" color="text.secondary" className={styles.hint}>
                 Paste a SimpleFIN setup token to connect. "Sync now" pulls the recent window; syncs also run
                 automatically once a day around noon. Use a date range to force-import a specific period.
-                "Open bridge" opens SimpleFIN itself, for re-authenticating a bank connection.
+                "Open bridge" opens SimpleFIN itself in a new tab, for re-authenticating a bank connection.
             </Typography>
 
             <Box className={styles.controls}>
@@ -131,7 +134,9 @@ export default function SimpleFinSection({ onSynced }: { onSynced: () => void })
                 <Button
                     variant="outlined"
                     startIcon={<LaunchIcon />}
-                    onClick={() => setBridgeOpen(true)}
+                    href={status?.bridgeUrl ?? PUBLIC_BRIDGE}
+                    target="_blank"
+                    rel="noreferrer"
                 >
                     Open bridge
                 </Button>
@@ -161,10 +166,6 @@ export default function SimpleFinSection({ onSynced }: { onSynced: () => void })
                     Import range
                 </Button>
             </Box>
-
-            {bridgeOpen && (
-                <SimpleFinBridgeModal bridgeUrl={status?.bridgeUrl ?? null} onClose={() => setBridgeOpen(false)} />
-            )}
         </Paper>
     );
 }
