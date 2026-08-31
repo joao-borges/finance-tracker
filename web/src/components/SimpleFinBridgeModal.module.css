@@ -1,0 +1,14 @@
+.modal {
+    top: 24px;
+}
+
+.notice {
+    margin-bottom: 12px;
+}
+
+.frame {
+    width: 100%;
+    height: 70vh;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}

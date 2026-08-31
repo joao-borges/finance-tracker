@@ -19,18 +19,6 @@ import org.springframework.stereotype.Component;
 public class SimpleFinScheduler {
 
     private final SimpleFinSyncService syncService;
-    private final SimpleFinStatusDigest statusDigest;
-
-    /** Daily 10:00 health digest to Discord (override with finance.simplefin.status-cron). */
-    @Scheduled(cron = "${finance.simplefin.status-cron:0 0 10 * * *}",
-            zone = "${finance.simplefin.sync-zone:America/Vancouver}")
-    public void scheduledStatusDigest() {
-        try {
-            statusDigest.send();
-        } catch (final RuntimeException failure) {
-            log.warn("SimpleFIN status digest failed: {}", failure.getMessage());
-        }
-    }
 
     @Scheduled(cron = "${finance.simplefin.sync-cron:0 0 12 * * *}",
             zone = "${finance.simplefin.sync-zone:America/Vancouver}")

@@ -116,6 +116,10 @@ UI by design — the allowlist **is** the user list: add an email, restart, done
    with a 7-day lookback. **Sync now** and a custom **date-range import** live
    on the same page. Bridge-side connection problems ("Auth required") are
    logged, counted on the import run, and pushed to Discord if configured.
+4. **Open bridge** embeds the SimpleFIN site in the app, so re-authenticating a
+   bank connection doesn't need a second tab. If your browser blocks
+   third-party cookies (Safari does by default), the frame shows you signed
+   out — use the **Open in a new tab** link in the dialog instead.
 
 ## CSV import
 

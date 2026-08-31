@@ -3,7 +3,9 @@ import { Box, Button, Chip, Paper, TextField, Tooltip, Typography } from "@mui/m
 import MonitorHeartIcon from "@mui/icons-material/MonitorHeart";
 import SyncIcon from "@mui/icons-material/Sync";
 import LinkIcon from "@mui/icons-material/Link";
+import LaunchIcon from "@mui/icons-material/Launch";
 import { Alert, App as AntApp, DatePicker } from "antd";
+import SimpleFinBridgeModal from "./SimpleFinBridgeModal";
 import { simplefinApi, type SimpleFinHealth, type SimpleFinStatus } from "../lib/api";
 import { errorText } from "../lib/format";
 import styles from "./SimpleFinSection.module.css";
@@ -16,6 +18,7 @@ export default function SimpleFinSection({ onSynced }: { onSynced: () => void })
     const [token, setToken] = useState("");
     const [range, setRange] = useState<[string, string] | null>(null);
     const [health, setHealth] = useState<SimpleFinHealth | null>(null);
+    const [bridgeOpen, setBridgeOpen] = useState(false);
     const [busy, setBusy] = useState(false);
 
     const reload = () => {
@@ -100,6 +103,7 @@ export default function SimpleFinSection({ onSynced }: { onSynced: () => void })
             <Typography variant="body2" color="text.secondary" className={styles.hint}>
                 Paste a SimpleFIN setup token to connect. "Sync now" pulls the recent window; syncs also run
                 automatically once a day around noon. Use a date range to force-import a specific period.
+                "Open bridge" opens SimpleFIN itself, for re-authenticating a bank connection.
             </Typography>
 
             <Box className={styles.controls}>
@@ -123,6 +127,13 @@ export default function SimpleFinSection({ onSynced }: { onSynced: () => void })
                     disabled={busy || !status?.connected}
                 >
                     Health check
+                </Button>
+                <Button
+                    variant="outlined"
+                    startIcon={<LaunchIcon />}
+                    onClick={() => setBridgeOpen(true)}
+                >
+                    Open bridge
                 </Button>
             </Box>
 
@@ -150,6 +161,10 @@ export default function SimpleFinSection({ onSynced }: { onSynced: () => void })
                     Import range
                 </Button>
             </Box>
+
+            {bridgeOpen && (
+                <SimpleFinBridgeModal bridgeUrl={status?.bridgeUrl ?? null} onClose={() => setBridgeOpen(false)} />
+            )}
         </Paper>
     );
 }

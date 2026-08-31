@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Daily SimpleFIN health digest for Discord, built from a LIVE bridge probe
+ * On-demand SimpleFIN health check for the Imports page, built from a LIVE bridge probe
  * ({@code balances-only=1} — accounts and balances, no transactions), not from
  * whatever the last sync left in the database. A healthy bridge refreshes
  * every account's balance daily even with no new transactions, so a stale
@@ -41,7 +41,7 @@ public class SimpleFinStatusDigest {
     private final ImportRunRepository importRunRepository;
     private final DiscordNotifier discordNotifier;
 
-    /** Outcome of one health check — also what the on-demand endpoint returns. */
+    /** Outcome of one health check — what the on-demand endpoint returns. */
     public record Result(boolean healthy, String report) {
     }
 
@@ -58,9 +58,9 @@ public class SimpleFinStatusDigest {
         try {
             root = objectMapper.readTree(simpleFinClient.fetchBalances(connection.getAccessUrl()));
         } catch (final RuntimeException unreachable) {
-            log.warn("SimpleFIN daily digest: bridge unreachable: {}", unreachable.getMessage());
+            log.warn("SimpleFIN health check: bridge unreachable: {}", unreachable.getMessage());
             final Result down = new Result(false, "Bridge unreachable: " + unreachable.getMessage());
-            discordNotifier.sendDailyStatus(down.report(), false);
+            discordNotifier.sendHealthStatus(down.report(), false);
             return down;
         }
 
@@ -110,8 +110,8 @@ public class SimpleFinStatusDigest {
         }
 
         final boolean healthy = issues.isEmpty() && stale.isEmpty();
-        log.info("SimpleFIN daily digest (healthy={}): {}", healthy, body.toString().replace('\n', ' '));
-        discordNotifier.sendDailyStatus(body.toString(), healthy);
+        log.info("SimpleFIN health check (healthy={}): {}", healthy, body.toString().replace('\n', ' '));
+        discordNotifier.sendHealthStatus(body.toString(), healthy);
         return new Result(healthy, body.toString());
     }
 

@@ -47,7 +47,7 @@ public class SimpleFinClient {
 
     /**
      * Fetch just the accounts + balances (no transactions) — the lightweight
-     * live health probe for the daily status digest.
+     * live health probe behind the on-demand health check.
      */
     public String fetchBalances(final String accessUrl) {
         final URI uri = URI.create(accessUrl.trim());

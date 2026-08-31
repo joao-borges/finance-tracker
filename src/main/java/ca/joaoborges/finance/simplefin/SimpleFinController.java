@@ -48,11 +48,10 @@ public class SimpleFinController {
     @GetMapping("/status")
     @Transactional(readOnly = true)
     public SimpleFinStatus status() {
-        final SimpleFinConnection connection = syncService.connection();
-        return new SimpleFinStatus(connection != null, connection == null ? null : connection.getLastSyncedAt());
+        return SimpleFinStatus.of(syncService.connection());
     }
 
-    /** On-demand bridge health check — same live probe as the daily digest (also posts to Discord). */
+    /** On-demand bridge health check — a live balances-only probe (also posts to Discord). */
     @PostMapping("/health-check")
     public SimpleFinStatusDigest.Result healthCheck() {
         return statusDigest.send();

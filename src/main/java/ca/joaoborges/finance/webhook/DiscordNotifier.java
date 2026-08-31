@@ -57,9 +57,9 @@ public class DiscordNotifier {
                         + " (over by " + money(spent.subtract(planned)) + ").");
     }
 
-    /** Daily SimpleFIN health digest — green when everything is fresh, yellow otherwise. */
-    public void sendDailyStatus(final String description, final boolean healthy) {
-        sendEmbed(healthy ? "🟢 SimpleFIN daily check" : "🟡 SimpleFIN daily check", healthy ? GREEN : YELLOW,
+    /** On-demand SimpleFIN health check — green when everything is fresh, yellow otherwise. */
+    public void sendHealthStatus(final String description, final boolean healthy) {
+        sendEmbed(healthy ? "🟢 SimpleFIN health check" : "🟡 SimpleFIN health check", healthy ? GREEN : YELLOW,
                 description);
     }
 

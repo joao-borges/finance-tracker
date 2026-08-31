@@ -467,6 +467,9 @@ export const importApi = {
 export interface SimpleFinStatus {
     connected: boolean;
     lastSyncedAt: string | null;
+    // Origin of the bridge this connection points at (no credentials, no path),
+    // so the UI can open the bridge's own site. Null when not connected.
+    bridgeUrl: string | null;
 }
 
 export interface SimpleFinHealth {
