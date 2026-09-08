@@ -18,7 +18,7 @@ import { browserTimeZone, errorText, formatMoney } from "../lib/format";
 import shared from "../styles/shared.module.css";
 import styles from "./TransactionEditModal.module.css";
 
-type MerchantMode = "existing" | "new" | "keep";
+type MerchantMode = "existing" | "new" | "none" | "keep";
 
 interface Props {
     transaction: Transaction | null;
@@ -125,6 +125,7 @@ export default function TransactionEditModal({ transaction, categories, merchant
             const body: TransactionUpdate = {
                 categoryId: categoryId ?? undefined,
                 merchantId,
+                clearMerchant: merchantMode === "none",
                 needsReview: !reviewed,
                 excludedFromBudget: excluded,
                 awaitingRefund: awaiting,
@@ -251,6 +252,7 @@ export default function TransactionEditModal({ transaction, categories, merchant
             >
                 <Radio value="existing">Existing</Radio>
                 <Radio value="new">New</Radio>
+                <Radio value="none">Statement</Radio>
                 <Radio value="keep">Keep</Radio>
             </Radio.Group>
             {merchantMode === "existing" && (
@@ -273,6 +275,11 @@ export default function TransactionEditModal({ transaction, categories, merchant
                     <EmojiField value={newIcon} onChange={setNewIcon} />
                     <Input placeholder="Website (optional, for logo)" value={newWebsite} onChange={(event) => setNewWebsite(event.target.value)} />
                 </Space>
+            )}
+            {merchantMode === "none" && (
+                <Typography.Text type="secondary">
+                    Drops the merchant link, so this row goes back to showing “{transaction.merchantName}”.
+                </Typography.Text>
             )}
             {merchantMode === "keep" && (
                 <Typography.Text type="secondary">
@@ -309,7 +316,8 @@ export default function TransactionEditModal({ transaction, categories, merchant
             <Divider />
             {coveringRule ? (
                 <Typography.Text type="secondary">
-                    Rule “{coveringRule.name}” already covers this statement — manage it on the Rules page.
+                    Rule “{coveringRule.name}” already covers this statement — it matches on
+                    “{coveringRule.merchantMatch}”. Narrow or disable it on the Rules page.
                 </Typography.Text>
             ) : (
                 <Checkbox checked={makeRule} onChange={(event) => setMakeRule(event.target.checked)}>

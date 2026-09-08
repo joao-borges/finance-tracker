@@ -35,6 +35,11 @@ interface Props {
     accountIconOnly?: boolean;
 }
 
+// Sentinel option in the inline merchant select: unlink the canonical merchant
+// so the row falls back to its raw statement text. Merchant ids are positive
+// identities, so 0 can never collide with a real one.
+const CLEAR_MERCHANT = 0;
+
 export default function TransactionsTable({ rows, onOpen, merchants, categories, onUpdated, accountIconOnly }: Props) {
     const { message } = AntApp.useApp();
     const [flashCategoryRow, setFlashCategoryRow] = useState<number | null>(null);
@@ -148,11 +153,20 @@ export default function TransactionsTable({ rows, onOpen, merchants, categories,
                                         <InlineSelect
                                             display={merchantDisplay(row)}
                                             value={row.merchantId ?? undefined}
-                                            options={merchants.map((merchant) => ({
-                                                label: `${merchant.icon ? merchant.icon + " " : ""}${merchant.name}`,
-                                                value: merchant.id,
-                                            }))}
-                                            onSave={(merchantId) => save(row.id, { merchantId }, "Merchant updated")}
+                                            options={[
+                                                { label: `⤺ Statement — ${row.merchantName}`, value: CLEAR_MERCHANT },
+                                                ...merchants.map((merchant) => ({
+                                                    label: `${merchant.icon ? merchant.icon + " " : ""}${merchant.name}`,
+                                                    value: merchant.id,
+                                                })),
+                                            ]}
+                                            onSave={(merchantId) => {
+                                                if (merchantId === CLEAR_MERCHANT) {
+                                                    save(row.id, { clearMerchant: true }, "Back to the statement name");
+                                                    return;
+                                                }
+                                                save(row.id, { merchantId }, "Merchant updated");
+                                            }}
                                         />
                                     ) : (
                                         merchantDisplay(row)

@@ -10,11 +10,18 @@ import java.util.List;
  * excludedFromBudget} toggles whether the row counts toward budgets;
  * {@code postedAt} moves the operator-visible date (budget month) while dedup
  * stays keyed on the source-reported date.
+ *
+ * <p>{@code clearMerchant} unlinks the canonical merchant so the row falls back
+ * to the raw statement text. It needs its own flag because a null
+ * {@code merchantId} already means "leave the merchant alone" under PATCH
+ * semantics — without it, a merchant an over-broad rule attached can never be
+ * taken off.
  */
 public record TransactionUpdate(
         Long categoryId,
         Long merchantId,
         String newMerchantName,
+        Boolean clearMerchant,
         Boolean needsReview,
         Boolean excludedFromBudget,
         Boolean awaitingRefund,

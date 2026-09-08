@@ -185,9 +185,15 @@ public class TransactionController {
         if (body.categoryId() != null) {
             transaction.setCategory(resolveCategory(body.categoryId()));
         }
-        final Merchant merchant = merchantService.resolve(body.merchantId(), body.newMerchantName());
-        if (merchant != null) {
-            transaction.setMerchant(merchant);
+        if (Boolean.TRUE.equals(body.clearMerchant())) {
+            // Back to the raw statement text — the escape hatch when a rule
+            // matched more broadly than it should have.
+            transaction.setMerchant(null);
+        } else {
+            final Merchant merchant = merchantService.resolve(body.merchantId(), body.newMerchantName());
+            if (merchant != null) {
+                transaction.setMerchant(merchant);
+            }
         }
         if (body.needsReview() != null) {
             transaction.setNeedsReview(body.needsReview());

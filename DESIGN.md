@@ -297,6 +297,16 @@ Separately, a **`Merchant`** is the canonical, deduplicated payee you actually c
 - **By a rule.** A rule's action can set `merchant_id` alongside `category_id`. When writing a rule you can pick an existing merchant or type a new name — the latter creates the `Merchant` on the fly (handled at rule-save time), so the engine itself only ever sets an existing `merchant_id`.
 - **Manually**, from the transaction UI (phase 2+).
 
+**Unlinking matters as much as linking.** Once a rule attaches a merchant, the
+lists show the canonical name, and the raw descriptor — the thing that reveals
+*why* an over-broad rule fired — recedes into a tooltip. So the link has to be
+removable: `PATCH /api/transactions/:id {"clearMerchant": true}` sets
+`merchant_id` back to null and the row shows its statement text again. It takes
+its own flag rather than a null `merchantId`, which already means "leave the
+merchant alone" under PATCH semantics. In the UI it's the **Statement** option
+in the edit modal's merchant picker, and the first entry (labelled with the raw
+descriptor) in the list's inline merchant select.
+
 **Logos for easy identification.** A `Merchant` (and an `Account`) can carry a `website`; the app resolves a favicon from it and stores `logo_url` so lists can show a recognizable icon. Phase 1 resolves the icon URL from a favicon service (`https://www.google.com/s2/favicons?domain=<host>`); downloading and caching the bytes is a later enhancement.
 
 ---
@@ -476,7 +486,7 @@ POST   /api/rules/:id/apply               # retroactive run over uncategorized
 GET    /api/transactions?from=&to=&accountIds=&merchantIds=&categoryIds=&review=&page=&size=
 POST   /api/transactions                  # manual single entry (source MANUAL; rules run if no category; never auto-matched)
 GET    /api/transactions/summary?<same filters>   # count + net/inflow/outflow over everything the filter matches
-PATCH  /api/transactions/:id              # categorize, link/create merchant, approve, exclude-from-budget
+PATCH  /api/transactions/:id              # categorize, link/create/clear merchant, approve, exclude-from-budget
 POST   /api/transactions/:id/split        # split into (amount, category) children
 POST   /api/transactions/:id/unsplit      # undo a split
 GET    /api/transactions/duplicates       # quarantined dups

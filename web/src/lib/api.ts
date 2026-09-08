@@ -284,6 +284,8 @@ export interface TransactionUpdate {
     categoryId?: number | null;
     merchantId?: number | null;
     newMerchantName?: string | null;
+    /** Unlink the canonical merchant so the row shows its raw statement text again. */
+    clearMerchant?: boolean;
     needsReview?: boolean | null;
     excludedFromBudget?: boolean | null;
     awaitingRefund?: boolean | null;
