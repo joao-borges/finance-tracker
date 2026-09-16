@@ -121,7 +121,19 @@ export default function ImportPage() {
                                     <TableCell>{new Date(run.startedAt).toLocaleString()}</TableCell>
                                     <TableCell>{run.source}</TableCell>
                                     <TableCell>{run.fileName ?? "—"}</TableCell>
-                                    <TableCell>{run.status}</TableCell>
+                                    <TableCell>
+                                        <Tooltip
+                                            title={
+                                                run.status === "PARTIAL"
+                                                    ? `Some accounts didn't sync${run.errorCount > 0 ? ` — ${run.errorCount} bridge connection problem(s)` : ""}. Re-authenticate at the bridge, then sync again.`
+                                                    : ""
+                                            }
+                                        >
+                                            <span className={run.status === "SUCCESS" ? undefined : styles.statusBad}>
+                                                {run.status === "PARTIAL" ? "⚠ PARTIAL" : run.status}
+                                            </span>
+                                        </Tooltip>
+                                    </TableCell>
                                     <TableCell align="right">{run.newCount}</TableCell>
                                     <TableCell align="right">{run.accountCount}</TableCell>
                                     <TableCell align="right" className={styles.actions}>

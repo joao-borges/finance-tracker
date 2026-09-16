@@ -21,3 +21,9 @@
 .actions {
     white-space: nowrap;
 }
+
+.statusBad {
+    color: var(--warning);
+    font-weight: 600;
+    white-space: nowrap;
+}

@@ -29,7 +29,6 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -71,14 +70,12 @@ public class SimpleFinSyncService {
     }
 
     /**
-     * Incremental sync window for the scheduled run / "Sync now": the past 7 days
-     * (UTC). Wide on purpose: a bank connection can go stale at the bridge for
-     * days and then catch up with transactions posted in the past — a 1-day
-     * lookback would miss those forever. The {@code simplefin_id} dedup makes the
-     * overlap free.
+     * Incremental sync window for the scheduled run / "Sync now": from the
+     * furthest-behind account's watermark to now, rather than a fixed lookback.
+     * See {@link SyncWindow} for why, and for the clamps.
      */
     private Instant defaultStart() {
-        return LocalDate.now(ZoneOffset.UTC).minusDays(7).atStartOfDay(ZoneOffset.UTC).toInstant();
+        return SyncWindow.startFrom(accountRepository.earliestSyncedThrough(), Instant.now());
     }
 
     @Transactional
@@ -278,11 +275,20 @@ public class SimpleFinSyncService {
             }
         }
 
+        // An account the bridge never reached during this window didn't sync,
+        // whether or not the bridge bothered to say so in `errors`.
+        final List<String> stale = staleAccounts(startDate);
+        if (!stale.isEmpty()) {
+            log.warn("SimpleFIN accounts with no fresh data through {}: {}", startDate, stale);
+        }
+
         run.setNewCount(newCount);
         run.setDedupCount(dedupCount);
         run.setErrorCount(bridgeIssues.size());
         run.setAccountCount(byAccount.size());
-        run.setStatus(ImportStatus.SUCCESS);
+        // A run that couldn't reach every account is not a success — calling it
+        // one is what let a dead Amex connection go unnoticed for a week.
+        run.setStatus(bridgeIssues.isEmpty() && stale.isEmpty() ? ImportStatus.SUCCESS : ImportStatus.PARTIAL);
         run.setFinishedAt(Instant.now());
         final ImportRun saved = importRunRepository.save(run);
 
@@ -293,6 +299,20 @@ public class SimpleFinSyncService {
         spendByCategoryMonth.forEach((key, delta) ->
                 budgetAlertService.checkAfterSpend(categoriesById.get(key.categoryId()), key.month(), delta));
         return saved;
+    }
+
+    /**
+     * Accounts whose data still doesn't reach the start of the window we just
+     * requested — the bridge either omitted them or answered with a stale
+     * balance-date. Hidden accounts count: hidden is a display choice, not a
+     * statement that the account stopped mattering.
+     */
+    private List<String> staleAccounts(final Instant windowStart) {
+        return accountRepository.findBySimplefinIdIsNotNullAndMergedIntoIsNullAndArchivedFalse().stream()
+                .filter(account -> account.getSyncedThrough() == null
+                        || account.getSyncedThrough().isBefore(windowStart))
+                .map(Account::getName)
+                .toList();
     }
 
     private Account upsertAccount(final JsonNode accountNode, final String simplefinId,
@@ -318,7 +338,15 @@ public class SimpleFinSyncService {
         }
         final long balanceDate = accountNode.path("balance-date").asLong(0);
         if (balanceDate > 0) {
-            account.setBalanceDate(Instant.ofEpochSecond(balanceDate));
+            final Instant reachedBankAt = Instant.ofEpochSecond(balanceDate);
+            account.setBalanceDate(reachedBankAt);
+            // The watermark only moves forward, and only as far as the bridge
+            // actually reached the bank. A dead connection keeps answering with
+            // the same stale balance-date, so this pins — which is exactly what
+            // makes the next window reach back over the gap.
+            if (account.getSyncedThrough() == null || reachedBankAt.isAfter(account.getSyncedThrough())) {
+                account.setSyncedThrough(reachedBankAt);
+            }
         }
         account.setLastSyncedAt(Instant.now());
         return accountRepository.save(account);

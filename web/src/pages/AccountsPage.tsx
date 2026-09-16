@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import AccountFreshness from "../components/AccountFreshness";
 import CrudPage, { type FieldDef } from "../components/CrudPage";
 import EntityAvatar from "../components/EntityAvatar";
 import MergeAccountButton from "../components/MergeAccountButton";
@@ -37,6 +38,13 @@ export default function AccountsPage() {
         { name: "type", label: "Type", type: "select", required: true, options: ACCOUNT_TYPES },
         { name: "currency", label: "Currency", type: "text", required: true, initial: "CAD" },
         { name: "balance", label: "Balance", type: "number", renderCell: (row) => formatMoney(row.balance, row.currency) },
+        {
+            name: "syncedThrough",
+            label: "Synced",
+            type: "text",
+            tableOnly: true,
+            renderCell: (row) => <AccountFreshness account={row} />,
+        },
         { name: "website", label: "Website", type: "text", formOnly: true },
         { name: "offBudget", label: "Off budget", type: "boolean", initial: false },
         { name: "hidden", label: "Hidden", type: "boolean", initial: false },

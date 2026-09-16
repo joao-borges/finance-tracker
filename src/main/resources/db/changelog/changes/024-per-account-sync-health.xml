@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Per-account sync health. `last_synced_at` only records that the bridge
+         answered about an account, which stays true while its bank connection is
+         dead. `synced_through` records how far that account's data is actually
+         known good (the bridge's balance-date, i.e. when it last really reached
+         the bank), so a stale connection is visible and the next sync window can
+         reach back far enough to backfill it. -->
+    <changeSet id="024-per-account-sync-health" author="joao">
+        <addColumn tableName="accounts">
+            <column name="synced_through" type="timestamptz"/>
+        </addColumn>
+        <!-- Seed from the balance date we already hold, so the first sync after
+             this migration doesn't treat every account as never-synced. -->
+        <update tableName="accounts">
+            <column name="synced_through" valueComputed="balance_date"/>
+            <where>balance_date IS NOT NULL AND synced_through IS NULL</where>
+        </update>
+    </changeSet>
+
+</databaseChangeLog>

@@ -28,5 +28,6 @@ public record AccountDto(
         Long mergedIntoId,
         String mergedIntoName,
         Instant balanceDate,
-        Instant lastSyncedAt) {
+        Instant lastSyncedAt,
+        Instant syncedThrough) {
 }

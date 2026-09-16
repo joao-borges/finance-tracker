@@ -177,7 +177,7 @@ Splits never double-count because the parent (`is_split=true`) is excluded and o
 
 SimpleFIN is a thin JSON API — claim a setup token once, exchange it for a long-lived access URL, then `GET <access_url>/accounts` returns accounts (with balances) and their transactions. No need for any intermediary; the Spring Boot app calls it directly.
 
-**Implemented** in `simplefin/`: `SimpleFinClient` (claim + `fetchAccounts`, over the shared Apache-HttpClient `RestTemplate`), `SimpleFinSyncService` (`setup`/`sync`, the pipeline below), `SimpleFinScheduler` (daily at noon America/Vancouver by default — `@Scheduled` cron/zone overridable via `finance.simplefin.sync-cron`/`sync-zone`; separate bean so the `@Transactional` proxy applies), and `SimpleFinController` (`POST /api/simplefin/setup`, `GET /api/simplefin/status`, `POST /api/simplefin/sync`). The access URL is stored only in `simplefin_connection` — never returned by any endpoint or logged. The scheduled/"Sync now" run uses a 7-day lookback window (UTC) — wide on purpose, since a bank connection can go stale at the bridge for days and then catch up with transactions posted in the past (the `simplefin_id` dedup makes the overlap free); `POST /api/simplefin/sync?from=&to=` forces a custom range (used for the initial backfill and the Imports-UI range picker). `GET /api/simplefin/status` also returns `bridgeUrl` — the access URL's **origin only** (credentials and path stripped, derived in `SimpleFinStatus.of`) — which the Imports page's "Open bridge" button links to in a new tab for re-auth. **Deliberately a link, not an embed.** An iframe version was built and reverted: the bridge frames fine (no `X-Frame-Options`, no `frame-ancestors`), but its sign-in is a passkey, and WebAuthn is scoped to the top-level origin — the ceremony cannot complete in a cross-origin frame at all, so no cookie or header tweak rescues it. `fetchAccounts` sends `start-date` (and optional `end-date`) since the bridge omits transactions without a start date. Bridge-side per-connection problems (the payload's `errors` array, e.g. "Auth required") are logged, counted on the `ImportRun`, and pushed to Discord — a dead bank connection must never fail silently.
+**Implemented** in `simplefin/`: `SimpleFinClient` (claim + `fetchAccounts`, over the shared Apache-HttpClient `RestTemplate`), `SimpleFinSyncService` (`setup`/`sync`, the pipeline below), `SimpleFinScheduler` (daily at noon America/Vancouver by default — `@Scheduled` cron/zone overridable via `finance.simplefin.sync-cron`/`sync-zone`; separate bean so the `@Transactional` proxy applies), and `SimpleFinController` (`POST /api/simplefin/setup`, `GET /api/simplefin/status`, `POST /api/simplefin/sync`). The access URL is stored only in `simplefin_connection` — never returned by any endpoint or logged. The scheduled/"Sync now" run starts from the **furthest-behind account's watermark** (`accounts.synced_through`) rather than a fixed lookback — see "Per-account sync health" below (the `simplefin_id` dedup makes the overlap free); `POST /api/simplefin/sync?from=&to=` forces a custom range (used for the initial backfill and the Imports-UI range picker). `GET /api/simplefin/status` also returns `bridgeUrl` — the access URL's **origin only** (credentials and path stripped, derived in `SimpleFinStatus.of`) — which the Imports page's "Open bridge" button links to in a new tab for re-auth. **Deliberately a link, not an embed.** An iframe version was built and reverted: the bridge frames fine (no `X-Frame-Options`, no `frame-ancestors`), but its sign-in is a passkey, and WebAuthn is scoped to the top-level origin — the ceremony cannot complete in a cross-origin frame at all, so no cookie or header tweak rescues it. `fetchAccounts` sends `start-date` (and optional `end-date`) since the bridge omits transactions without a start date. Bridge-side per-connection problems (the payload's `errors` array, e.g. "Auth required") are logged, counted on the `ImportRun`, and pushed to Discord — a dead bank connection must never fail silently.
 
 ### Sync flow (cron, daily at noon)
 1. `GET /accounts?start-date=<epoch>` with the stored access URL.
@@ -193,6 +193,33 @@ SimpleFIN is a thin JSON API — claim a setup token once, exchange it for a lon
 6. Write the `ImportRun` row.
 
 SimpleFIN Bridge rate-limits to ~24 requests/day, so a daily sync is comfortably within budget; don't poll hot.
+
+### Per-account sync health
+A fixed sync window silently loses data, and did: an Amex connection sat dead at
+the bridge for a week, and by the time it was re-authenticated the rows it had
+been holding were already older than the 7-day lookback — so they were never
+requested again and the gap was permanent. Two causes, both fixed:
+
+- **`SUCCESS` meant "the run finished", not "the data arrived".** A run that
+  couldn't reach every account is now `PARTIAL` (`ImportStatus`), so a dead bank
+  connection can't hide behind a green row in the import history.
+- **The window is a watermark now, not a lookback.** Each account carries
+  `synced_through` — the bridge's `balance-date`, i.e. when it last genuinely
+  reached *that* bank. A dead connection keeps answering with a stale one, so the
+  watermark pins, and the next sync starts from the furthest-behind account and
+  reaches back over the whole outage. A reconnect self-heals, with no manual
+  range import. `last_synced_at` ("we asked") stays separate from
+  `synced_through` ("the data is good") precisely because the first remains true
+  while a connection is dead.
+
+`SyncWindow` owns the clamping and is pure, so it is tested without a bridge or a
+database: at least `MIN_OVERLAP` (2 days, for rows the bank posts late), at most
+`MAX_LOOKBACK` (90 days, so one permanently dead account — a closed card the
+bridge still lists — can't turn every sync into a full-history pull), and a
+7-day cold start when no account has a watermark yet. Past the ceiling, backfill
+with an explicit range import, or archive the account to drop it out of the
+watermark entirely. The Accounts page shows each account's lag, flagged once it
+exceeds three days.
 
 ### Dedup (soft, restorable)
 The job isn't "are these similar" — it's "did this exact record come back on the next overlapping sync." Two tiers:

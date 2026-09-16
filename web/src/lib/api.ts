@@ -20,6 +20,8 @@ export interface Account {
     archived?: boolean;
     mergedIntoId?: number | null;
     mergedIntoName?: string | null;
+    /** How far this account's data is known good — the bridge's balance date, not "we asked". */
+    syncedThrough?: string | null;
 }
 
 export interface Institution {

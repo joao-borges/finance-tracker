@@ -110,7 +110,18 @@ public class Account {
     @Column(nullable = false)
     private boolean archived = false;
 
+    /** When the bridge last answered about this account — true even if its bank connection is dead. */
     @Column(name = "last_synced_at")
     private Instant lastSyncedAt;
+
+    /**
+     * How far this account's data is actually known good: the bridge's
+     * balance-date, i.e. when it last genuinely reached the bank. A dead
+     * connection keeps answering with a stale one, which is what makes this — and
+     * not {@link #lastSyncedAt} — the honest per-account success marker and the
+     * watermark the next sync window starts from.
+     */
+    @Column(name = "synced_through")
+    private Instant syncedThrough;
 
 }

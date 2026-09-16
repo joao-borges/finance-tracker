@@ -1,0 +1,14 @@
+.fresh {
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.stale {
+    color: var(--warning);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.unknown {
+    color: var(--text-secondary);
+}
