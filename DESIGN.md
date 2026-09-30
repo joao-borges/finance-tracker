@@ -214,9 +214,9 @@ requested again and the gap was permanent. Two causes, both fixed:
 
 `SyncWindow` owns the clamping and is pure, so it is tested without a bridge or a
 database: at least `MIN_OVERLAP` (2 days, for rows the bank posts late), at most
-`MAX_LOOKBACK` (45 days, so one permanently dead account — a closed card the
-bridge still lists — can't turn every sync into a full-history pull; 45 is the
-bridge's recommended range, past which it warns on every request), and a
+`MAX_LOOKBACK` (40 days, so one permanently dead account — a closed card the
+bridge still lists — can't turn every sync into a full-history pull; kept under
+the bridge's recommended 45 days, which it warns on even when met exactly), and a
 7-day cold start when no account has a watermark yet. A merged-away account's
 feed also advances its canonical's watermark: after a bridge reconnect rotates an
 id, the new account is merged into the old one and carries all its transactions,

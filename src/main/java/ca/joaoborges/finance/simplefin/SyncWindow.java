@@ -27,11 +27,12 @@ final class SyncWindow {
      * Ceiling on the window. Without it a permanently dead account (a closed card
      * the bridge still lists) would pin every sync to a full-history pull. Past
      * this, backfill with an explicit range import — or archive the account,
-     * which drops it out of the watermark entirely. Matches the bridge's
-     * recommended range: any wider and it attaches a "Requested date range
-     * exceeds recommended range of 45 days" warning to every sync.
+     * which drops it out of the watermark entirely. Kept under the bridge's
+     * recommended range of 45 days: at or past it (exactly 45 still trips it)
+     * the bridge attaches a "Requested date range exceeds recommended range"
+     * warning to every sync.
      */
-    static final Duration MAX_LOOKBACK = Duration.ofDays(45);
+    static final Duration MAX_LOOKBACK = Duration.ofDays(40);
 
     /** Fallback when no account has a watermark yet (a first-ever sync). */
     static final Duration COLD_START_LOOKBACK = Duration.ofDays(7);
