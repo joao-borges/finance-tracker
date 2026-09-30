@@ -217,7 +217,11 @@ database: at least `MIN_OVERLAP` (2 days, for rows the bank posts late), at most
 `MAX_LOOKBACK` (45 days, so one permanently dead account — a closed card the
 bridge still lists — can't turn every sync into a full-history pull; 45 is the
 bridge's recommended range, past which it warns on every request), and a
-7-day cold start when no account has a watermark yet. Past the ceiling, backfill
+7-day cold start when no account has a watermark yet. A merged-away account's
+feed also advances its canonical's watermark: after a bridge reconnect rotates an
+id, the new account is merged into the old one and carries all its transactions,
+while the canonical keeps the dead id — without this it read as stale forever and
+pinned the window at the ceiling (Amex Platinum, Jul–Sep 2026). Past the ceiling, backfill
 with an explicit range import, or archive the account to drop it out of the
 watermark entirely. The Accounts page shows each account's lag, flagged once it
 exceeds three days.

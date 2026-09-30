@@ -348,12 +348,23 @@ public class SimpleFinSyncService {
             // actually reached the bank. A dead connection keeps answering with
             // the same stale balance-date, so this pins — which is exactly what
             // makes the next window reach back over the gap.
-            if (account.getSyncedThrough() == null || reachedBankAt.isAfter(account.getSyncedThrough())) {
-                account.setSyncedThrough(reachedBankAt);
+            advanceWatermark(account, reachedBankAt);
+            // A merged-away account is the canonical's live feed (typically a
+            // bridge reconnect that rotated the id): its transactions land on the
+            // canonical, so its freshness must too, or the canonical — still
+            // holding the dead id — reads as stale forever and pins the window.
+            if (account.getMergedInto() != null) {
+                advanceWatermark(account.getMergedInto(), reachedBankAt);
             }
         }
         account.setLastSyncedAt(Instant.now());
         return accountRepository.save(account);
+    }
+
+    private void advanceWatermark(final Account account, final Instant reachedBankAt) {
+        if (account.getSyncedThrough() == null || reachedBankAt.isAfter(account.getSyncedThrough())) {
+            account.setSyncedThrough(reachedBankAt);
+        }
     }
 
     /**
