@@ -37,6 +37,7 @@ interface Props {
     showHidden?: boolean;
     onToggleHidden?: () => void;
     readOnly?: boolean;
+    income?: boolean;
 }
 
 export default function BudgetSection({
@@ -52,6 +53,7 @@ export default function BudgetSection({
     showHidden,
     onToggleHidden,
     readOnly,
+    income,
 }: Props) {
     const hasHidden = lines.some((line) => line.hidden);
     const visibleLines = showHidden ? lines : lines.filter((line) => !line.hidden);
@@ -64,6 +66,11 @@ export default function BudgetSection({
     const [zeroOpen, setZeroOpen] = useState(false);
 
     const renderLine = (line: BudgetLine) => {
+        // Income beating its plan is good news: show the surplus in green, unsigned.
+        const incomeSurplus = income && line.remaining < 0;
+        const remainingClass = incomeSurplus
+            ? shared.amountPos
+            : line.remaining < 0 ? shared.negative : undefined;
         return (
             <TableRow key={line.categoryId} hover>
                 <TableCell>
@@ -72,6 +79,7 @@ export default function BudgetSection({
                         type="button"
                         underline="hover"
                         color="inherit"
+                        tabIndex={-1}
                         onClick={() => onOpenCategory?.(line)}
                         className={line.hidden ? `${styles.categoryLink} ${styles.hiddenName}` : styles.categoryLink}
                     >
@@ -96,11 +104,8 @@ export default function BudgetSection({
                     {formatMoney(line.actual)}
                 </TableCell>
                 <TableCell align="right" className={shared.nowrap}>
-                    <Typography
-                        component="span"
-                        className={line.remaining < 0 ? shared.negative : undefined}
-                    >
-                        {formatMoney(line.remaining)}
+                    <Typography component="span" className={remainingClass}>
+                        {formatMoney(incomeSurplus ? -line.remaining : line.remaining)}
                     </Typography>
                 </TableCell>
             </TableRow>
@@ -112,13 +117,13 @@ export default function BudgetSection({
             <Box className={styles.header}>
                 <div className={styles.controls}>
                     {collapsible && (
-                        <IconButton size="small" onClick={onToggleCollapse} aria-label={collapsed ? "expand" : "collapse"}>
+                        <IconButton size="small" tabIndex={-1} onClick={onToggleCollapse} aria-label={collapsed ? "expand" : "collapse"}>
                             {collapsed ? <ChevronRightIcon /> : <ExpandMoreIcon />}
                         </IconButton>
                     )}
                     {hasHidden && (
                         <Tooltip title={showHidden ? "Hide hidden categories" : "Show hidden categories"}>
-                            <IconButton size="small" onClick={onToggleHidden} aria-label="toggle hidden categories">
+                            <IconButton size="small" tabIndex={-1} onClick={onToggleHidden} aria-label="toggle hidden categories">
                                 {showHidden ? <VisibilityIcon fontSize="small" /> : <VisibilityOffIcon fontSize="small" />}
                             </IconButton>
                         </Tooltip>

@@ -220,6 +220,7 @@ export default function BudgetPage() {
                 showHidden={!!shownHidden.income}
                 onToggleHidden={() => toggleHidden("income")}
                 readOnly={isPast}
+                income
             />
 
             {summary.groups

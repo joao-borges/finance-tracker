@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- The bridge issues we last alerted Discord about. A standing warning is
+         repeated by the bridge on every sync; remembering what was already sent
+         lets the daily sync alert only when the set of issues changes. -->
+    <changeSet id="025-simplefin-notified-issues" author="joao">
+        <addColumn tableName="simplefin_connection">
+            <column name="notified_issues" type="text"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

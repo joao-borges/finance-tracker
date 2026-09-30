@@ -38,4 +38,11 @@ public class SimpleFinConnection {
     @Column(name = "last_synced_at")
     private Instant lastSyncedAt;
 
+    /**
+     * Signature of the bridge issues last alerted to Discord (see
+     * {@link BridgeIssues}), so a standing warning is sent once, not every sync.
+     */
+    @Column(name = "notified_issues")
+    private String notifiedIssues;
+
 }

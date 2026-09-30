@@ -135,8 +135,12 @@ public class SimpleFinSyncService {
         }
         if (!bridgeIssues.isEmpty()) {
             log.warn("SimpleFIN bridge reported issues: {}", bridgeIssues);
+        }
+        final String issueSignature = BridgeIssues.signature(bridgeIssues);
+        if (BridgeIssues.shouldNotify(issueSignature, connection.getNotifiedIssues())) {
             discordNotifier.sendSyncIssues(bridgeIssues);
         }
+        connection.setNotifiedIssues(issueSignature);
 
         final ImportRun run = importRunRepository.save(ImportRun.builder()
                 .source(SourceType.SIMPLEFIN)
