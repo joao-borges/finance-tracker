@@ -2,6 +2,7 @@ package ca.joaoborges.finance.transaction;
 
 import ca.joaoborges.finance.account.Account;
 import ca.joaoborges.finance.account.AccountRepository;
+import ca.joaoborges.finance.amazon.AmazonService;
 import ca.joaoborges.finance.budget.BudgetAlertService;
 import ca.joaoborges.finance.category.Category;
 import ca.joaoborges.finance.category.CategoryRepository;
@@ -40,6 +41,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Transactions list with combinable filters (see {@link TransactionFilter}),
@@ -64,6 +66,7 @@ public class TransactionController {
     private final RuleRepository ruleRepository;
     private final MatchingService matchingService;
     private final ca.joaoborges.finance.tag.TagService tagService;
+    private final AmazonService amazonService;
 
     /** One leg of a split: an amount, the category it belongs to, and optional tags. */
     public record SplitLine(BigDecimal amount, Long categoryId, List<String> tags) {
@@ -151,7 +154,7 @@ public class TransactionController {
         final Pageable pageable = PageRequest.of(Math.max(page, 0), pageSize,
                 Sort.by(Sort.Order.desc("postedAt"), Sort.Order.desc("id")));
         final Page<Transaction> result = transactionRepository.findAll(filter.toSpecification(), pageable);
-        final List<TransactionDto> content = result.getContent().stream().map(transactionMapper::toDto).toList();
+        final List<TransactionDto> content = withAmazonSummaries(result.getContent());
         return new PageResponse<>(content, result.getNumber(), pageSize, result.hasNext(), result.getTotalElements());
     }
 
@@ -213,7 +216,7 @@ public class TransactionController {
             // stays keyed on sourcePostedAt, so re-imports don't duplicate this row.
             transaction.setPostedAt(dayInstant(body.postedAt(), body.timeZone()));
         }
-        final TransactionDto dto = transactionMapper.toDto(transactionRepository.save(transaction));
+        final TransactionDto dto = withAmazonSummaries(List.of(transactionRepository.save(transaction))).getFirst();
 
         final Category category = transaction.getCategory();
         final YearMonth month = YearMonth.from(transaction.getPostedAt().atZone(ZoneOffset.UTC));
@@ -343,6 +346,18 @@ public class TransactionController {
         transactionRepository.deleteAll(transactionRepository.findBySplitParent(parent));
         parent.setSplit(false);
         return transactionMapper.toDto(transactionRepository.save(parent));
+    }
+
+    /** Map rows to DTOs, naming what any linked Amazon charge bought. */
+    private List<TransactionDto> withAmazonSummaries(final List<Transaction> transactions) {
+        final Map<Long, String> summaries = amazonService.summaries(transactions);
+        return transactions.stream()
+                .map(transaction -> {
+                    final TransactionDto dto = transactionMapper.toDto(transaction);
+                    final String summary = summaries.get(transaction.getId());
+                    return summary == null ? dto : dto.toBuilder().amazonSummary(summary).build();
+                })
+                .toList();
     }
 
     private Category resolveCategory(final Long categoryId) {

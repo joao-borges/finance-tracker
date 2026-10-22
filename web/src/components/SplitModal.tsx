@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { App as AntApp, Button, InputNumber, Modal, Select, Typography } from "antd";
-import { transactionsApi, type Category, type SplitLine, type Transaction } from "../lib/api";
+import { transactionsApi, type Category, type SplitLine, type SplitSeed, type Transaction } from "../lib/api";
 import { errorText, formatMoney } from "../lib/format";
 import shared from "../styles/shared.module.css";
 import styles from "./SplitModal.module.css";
@@ -11,6 +11,8 @@ interface Row {
     amount: number | null;
     categoryId?: number;
     tags: string[];
+    // What this line is for, e.g. the Amazon item it was pre-filled from.
+    label?: string;
 }
 
 interface Props {
@@ -18,6 +20,8 @@ interface Props {
     categories: Category[];
     tagOptions?: string[];
     open: boolean;
+    // Lines to start from instead of two blank ones (e.g. one per Amazon item).
+    initialRows?: SplitSeed[];
     onClose: () => void;
     onDone: () => void;
 }
@@ -26,16 +30,18 @@ const blankRow = (): Row => ({ amount: null, categoryId: undefined, tags: [] });
 
 // Split one transaction into N (amount, category, tags) legs. The parent is
 // hidden and replaced by the children.
-export default function SplitModal({ transaction, categories, tagOptions, open, onClose, onDone }: Props) {
+export default function SplitModal({ transaction, categories, tagOptions, open, initialRows, onClose, onDone }: Props) {
     const { message } = AntApp.useApp();
     const [rows, setRows] = useState<Row[]>([]);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        if (transaction) {
-            setRows([blankRow(), blankRow()]);
+        if (transaction && open) {
+            setRows(initialRows && initialRows.length > 0
+                ? initialRows.map((seed) => ({ ...blankRow(), amount: seed.amount, label: seed.label }))
+                : [blankRow(), blankRow()]);
         }
-    }, [transaction]);
+    }, [transaction, open, initialRows]);
 
     if (!transaction) {
         return null;
@@ -96,45 +102,52 @@ export default function SplitModal({ transaction, categories, tagOptions, open, 
 
             {rows.map((row, index) => {
                 return (
-                    <div key={index} className={styles.row}>
-                        <InputNumber
-                            className={styles.amount}
-                            min={0}
-                            step={0.01}
-                            placeholder="0.00"
-                            value={row.amount}
-                            onChange={(value) => setRow(index, { amount: value })}
-                            prefix="$"
-                        />
-                        <Select
-                            showSearch
-                            optionFilterProp="label"
-                            className={styles.category}
-                            placeholder="Category"
-                            value={row.categoryId}
-                            onChange={(value: number) => setRow(index, { categoryId: value })}
-                            options={categories.map((category) => ({
-                                label: `${category.icon ? category.icon + " " : ""}${category.name}`,
-                                value: category.id,
-                            }))}
-                        />
-                        <Select
-                            mode="tags"
-                            allowClear
-                            className={styles.tags}
-                            placeholder="Tags"
-                            value={row.tags}
-                            onChange={(value: string[]) => setRow(index, { tags: value })}
-                            options={(tagOptions ?? []).map((tag) => ({ label: tag, value: tag }))}
-                        />
-                        <Button
-                            type="text"
-                            danger
-                            disabled={rows.length <= 1}
-                            onClick={() => setRows((current) => current.filter((_, i) => i !== index))}
-                        >
-                            ✕
-                        </Button>
+                    <div key={index}>
+                        {row.label && (
+                            <Typography.Text type="secondary" className={styles.rowLabel}>
+                                {row.label}
+                            </Typography.Text>
+                        )}
+                        <div className={styles.row}>
+                            <InputNumber
+                                className={styles.amount}
+                                min={0}
+                                step={0.01}
+                                placeholder="0.00"
+                                value={row.amount}
+                                onChange={(value) => setRow(index, { amount: value })}
+                                prefix="$"
+                            />
+                            <Select
+                                showSearch
+                                optionFilterProp="label"
+                                className={styles.category}
+                                placeholder="Category"
+                                value={row.categoryId}
+                                onChange={(value: number) => setRow(index, { categoryId: value })}
+                                options={categories.map((category) => ({
+                                    label: `${category.icon ? category.icon + " " : ""}${category.name}`,
+                                    value: category.id,
+                                }))}
+                            />
+                            <Select
+                                mode="tags"
+                                allowClear
+                                className={styles.tags}
+                                placeholder="Tags"
+                                value={row.tags}
+                                onChange={(value: string[]) => setRow(index, { tags: value })}
+                                options={(tagOptions ?? []).map((tag) => ({ label: tag, value: tag }))}
+                            />
+                            <Button
+                                type="text"
+                                danger
+                                disabled={rows.length <= 1}
+                                onClick={() => setRows((current) => current.filter((_, i) => i !== index))}
+                            >
+                                ✕
+                            </Button>
+                        </div>
                     </div>
                 );
             })}

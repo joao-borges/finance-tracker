@@ -2,18 +2,22 @@ import { useEffect, useMemo, useState } from "react";
 import { App as AntApp, Button, Checkbox, DatePicker, Divider, Input, Modal, Popconfirm, Radio, Select, Space, Switch, Typography } from "antd";
 import dayjs from "dayjs";
 import {
+    amazonApi,
     merchantsApi,
     rulesApi,
     rulesExtraApi,
     transactionsApi,
+    type AmazonOrder,
     type Category,
     type Merchant,
     type Rule,
+    type SplitSeed,
     type Transaction,
     type TransactionUpdate,
 } from "../lib/api";
 import EmojiField from "./EmojiField";
 import SplitModal from "./SplitModal";
+import AmazonOrderPanel from "./AmazonOrderPanel";
 import { browserTimeZone, errorText, formatMoney } from "../lib/format";
 import shared from "../styles/shared.module.css";
 import styles from "./TransactionEditModal.module.css";
@@ -37,6 +41,8 @@ interface Props {
 export default function TransactionEditModal({ transaction, categories, merchants, tagOptions, rules, onClose, onSaved, onStructuralChange }: Props) {
     const { message } = AntApp.useApp();
     const [splitOpen, setSplitOpen] = useState(false);
+    const [splitSeeds, setSplitSeeds] = useState<SplitSeed[] | undefined>(undefined);
+    const [amazonOrders, setAmazonOrders] = useState<AmazonOrder[]>([]);
     const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
     const [merchantMode, setMerchantMode] = useState<MerchantMode>("existing");
     const [existingMerchantId, setExistingMerchantId] = useState<number | undefined>(undefined);
@@ -85,7 +91,27 @@ export default function TransactionEditModal({ transaction, categories, merchant
         setRuleMatch(transaction.merchantName);
         setRuleAuto(true);
         setApplyRule(true);
+        setSplitSeeds(undefined);
     }, [transaction]);
+
+    // Only rows the list already knows are linked Amazon charges pay for the lookup.
+    useEffect(() => {
+        setAmazonOrders([]);
+        if (!transaction?.amazonSummary) {
+            return;
+        }
+        let current = true;
+        amazonApi.forTransaction(transaction.id)
+            .then((orders) => {
+                if (current) {
+                    setAmazonOrders(orders);
+                }
+            })
+            .catch((error: unknown) => message.error(errorText(error)));
+        return () => {
+            current = false;
+        };
+    }, [transaction, message]);
 
     if (!transaction) {
         return null;
@@ -229,6 +255,23 @@ export default function TransactionEditModal({ transaction, categories, merchant
                 <strong>Statement:</strong> {transaction.merchantName}
             </Typography.Paragraph>
 
+            {amazonOrders.length > 0 && (
+                <>
+                    <Typography.Text strong>Amazon order</Typography.Text>
+                    <AmazonOrderPanel
+                        transaction={transaction}
+                        orders={amazonOrders}
+                        onSplit={transaction.splitParentId == null
+                            ? (seeds) => {
+                                setSplitSeeds(seeds);
+                                setSplitOpen(true);
+                            }
+                            : undefined}
+                    />
+                    <Divider />
+                </>
+            )}
+
             <Typography.Text strong>Category</Typography.Text>
             <Select
                 showSearch
@@ -349,7 +392,13 @@ export default function TransactionEditModal({ transaction, categories, merchant
                 </Button>
             )}
             {transaction.splitParentId == null ? (
-                <Button block onClick={() => setSplitOpen(true)}>
+                <Button
+                    block
+                    onClick={() => {
+                        setSplitSeeds(undefined);
+                        setSplitOpen(true);
+                    }}
+                >
                     Split transaction…
                 </Button>
             ) : (
@@ -377,6 +426,7 @@ export default function TransactionEditModal({ transaction, categories, merchant
             categories={categories}
             tagOptions={tagOptions}
             open={splitOpen}
+            initialRows={splitSeeds}
             onClose={() => setSplitOpen(false)}
             onDone={() => {
                 onStructuralChange?.();

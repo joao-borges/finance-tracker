@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Amazon orders pulled by the browser extension: what each card charge
+         actually bought. A charge row links to the bank transaction it became;
+         deleting that transaction just unlinks the charge. -->
+    <changeSet id="026-amazon-orders" author="joao">
+        <createTable tableName="amazon_orders">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_amazon_orders"/>
+            </column>
+            <column name="order_number" type="varchar(32)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uq_amazon_orders_number"/>
+            </column>
+            <column name="marketplace" type="varchar(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ordered_on" type="date">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total" type="numeric(19,4)"/>
+            <column name="currency" type="varchar(3)"/>
+            <column name="imported_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="amazon_order_items">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_amazon_order_items"/>
+            </column>
+            <column name="order_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="position" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="title" type="varchar(1024)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="quantity" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="unit_price" type="numeric(19,4)"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="amazon_order_items" baseColumnNames="order_id"
+                                 constraintName="fk_amazon_order_items_order"
+                                 referencedTableName="amazon_orders" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <createIndex tableName="amazon_order_items" indexName="idx_amazon_order_items_order">
+            <column name="order_id"/>
+        </createIndex>
+
+        <createTable tableName="amazon_charges">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_amazon_charges"/>
+            </column>
+            <column name="order_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="charged_on" type="date">
+                <constraints nullable="false"/>
+            </column>
+            <column name="amount" type="numeric(19,4)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="card_label" type="varchar(128)"/>
+            <column name="card_last4" type="varchar(4)"/>
+            <column name="transaction_id" type="bigint"/>
+            <column name="manual" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="amazon_charges" baseColumnNames="order_id"
+                                 constraintName="fk_amazon_charges_order"
+                                 referencedTableName="amazon_orders" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="amazon_charges" baseColumnNames="transaction_id"
+                                 constraintName="fk_amazon_charges_transaction"
+                                 referencedTableName="transactions" referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+        <createIndex tableName="amazon_charges" indexName="idx_amazon_charges_order">
+            <column name="order_id"/>
+        </createIndex>
+        <createIndex tableName="amazon_charges" indexName="idx_amazon_charges_transaction">
+            <column name="transaction_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

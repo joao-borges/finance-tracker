@@ -22,6 +22,7 @@ import CategoryIcon from "@mui/icons-material/Category";
 import FolderIcon from "@mui/icons-material/Folder";
 import GavelIcon from "@mui/icons-material/Gavel";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
+import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import styles from "./Sidebar.module.css";
 
 export const SIDEBAR_WIDTH_EXPANDED = 224;
@@ -49,6 +50,7 @@ const SETUP_NAV: NavItem[] = [
     { to: "/matches", label: "Matches", icon: <CompareArrowsIcon /> },
     { to: "/duplicates", label: "Duplicates", icon: <ContentCopyIcon /> },
     { to: "/import", label: "Import", icon: <UploadFileIcon /> },
+    { to: "/amazon", label: "Amazon", icon: <ShoppingCartIcon /> },
 ];
 
 interface Props {

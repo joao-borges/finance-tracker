@@ -1,0 +1,23 @@
+.table {
+    table-layout: fixed;
+    width: 100%;
+    min-width: 760px;
+}
+
+.colDate {
+    width: 110px;
+}
+
+.colTotal {
+    width: 100px;
+}
+
+.colCharges {
+    width: 300px;
+}
+
+.charges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}

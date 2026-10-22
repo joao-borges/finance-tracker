@@ -30,5 +30,6 @@
     <include file="changes/023-one-time-categories.xml" relativeToChangelogFile="true"/>
     <include file="changes/024-per-account-sync-health.xml" relativeToChangelogFile="true"/>
     <include file="changes/025-simplefin-notified-issues.xml" relativeToChangelogFile="true"/>
+    <include file="changes/026-amazon-orders.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

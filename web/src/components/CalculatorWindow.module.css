@@ -1,0 +1,139 @@
+.window {
+    position: fixed;
+    width: 280px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    user-select: none;
+}
+
+.hidden {
+    display: none;
+}
+
+.titleBar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 4px 4px 12px;
+    cursor: move;
+    border-bottom: 1px solid var(--border);
+    touch-action: none;
+}
+
+.title {
+    flex-grow: 1;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.tape {
+    display: flex;
+    flex-direction: column;
+    padding: 6px 12px 0;
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.tapeLine {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 2px 0;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    text-align: left;
+    cursor: pointer;
+}
+
+.tapeLine:hover {
+    color: var(--color-primary);
+}
+
+.tapeExpression {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.input {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px 2px;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 22px;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    user-select: text;
+}
+
+.preview {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    min-height: 28px;
+    padding: 0 6px 6px 12px;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+
+.previewValue {
+    color: var(--text-secondary);
+    user-select: text;
+}
+
+.previewError {
+    color: var(--error);
+}
+
+.keypad {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    padding: 8px 10px 10px;
+    border-top: 1px solid var(--border);
+}
+
+.key {
+    height: 38px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xs);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+}
+
+.key:hover {
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.operator {
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+.equals {
+    grid-column: 1 / -1;
+    border-color: var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 16%, transparent);
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+.equals:hover {
+    background: color-mix(in srgb, var(--color-primary) 26%, transparent);
+}

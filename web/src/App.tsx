@@ -6,6 +6,7 @@ import SavingsIcon from "@mui/icons-material/Savings";
 import Sidebar from "./components/Sidebar";
 import BottomNav from "./components/BottomNav";
 import UserMenu from "./components/UserMenu";
+import CalculatorDock from "./components/CalculatorDock";
 import ThemeControls from "./theme/ThemeControls";
 import Dashboard from "./pages/Dashboard";
 import TransactionsPage from "./pages/TransactionsPage";
@@ -19,6 +20,7 @@ import RulesPage from "./pages/RulesPage";
 import MatchesPage from "./pages/MatchesPage";
 import DuplicatesPage from "./pages/DuplicatesPage";
 import ImportPage from "./pages/ImportPage";
+import AmazonPage from "./pages/AmazonPage";
 import styles from "./App.module.css";
 
 const COLLAPSE_KEY = "ft.sidebar.collapsed";
@@ -52,6 +54,7 @@ export default function App() {
                     </IconButton>
                     <SavingsIcon className={styles.logo} />
                     <Box className={styles.spacer} />
+                    {!mobile && <CalculatorDock />}
                     <ThemeControls />
                     <UserMenu />
                 </Toolbar>
@@ -74,6 +77,7 @@ export default function App() {
                     <Route path="/matches" element={<MatchesPage />} />
                     <Route path="/duplicates" element={<DuplicatesPage />} />
                     <Route path="/import" element={<ImportPage />} />
+                    <Route path="/amazon" element={<AmazonPage />} />
                 </Routes>
             </Box>
 

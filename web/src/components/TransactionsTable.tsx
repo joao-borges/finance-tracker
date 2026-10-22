@@ -67,7 +67,11 @@ export default function TransactionsTable({ rows, onOpen, merchants, categories,
 
     const merchantDisplay = (row: Transaction) => {
         return (
-            <Tooltip title={`Statement: ${row.merchantName}`}>
+            <Tooltip
+                title={row.amazonSummary
+                    ? `Statement: ${row.merchantName} — Amazon: ${row.amazonSummary}`
+                    : `Statement: ${row.merchantName}`}
+            >
                 <div className={shared.iconRow}>
                     {row.merchantLogoUrl ? (
                         <EntityAvatar url={row.merchantLogoUrl} name={row.merchant ?? row.merchantName} />
@@ -76,7 +80,12 @@ export default function TransactionsTable({ rows, onOpen, merchants, categories,
                     ) : (
                         <EntityAvatar name={row.merchant ?? row.merchantName} />
                     )}
-                    <span className={shared.ellipsis}>{row.merchant ?? row.merchantName}</span>
+                    <span className={styles.merchantText}>
+                        <span className={shared.ellipsis}>{row.merchant ?? row.merchantName}</span>
+                        {row.amazonSummary && (
+                            <span className={`${shared.ellipsis} ${styles.amazonSummary}`}>📦 {row.amazonSummary}</span>
+                        )}
+                    </span>
                     {row.tags?.map((tag) => {
                         return <Chip key={tag} size="small" variant="outlined" label={tag} className={styles.tagChip} />;
                     })}

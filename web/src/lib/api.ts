@@ -241,6 +241,8 @@ export interface Transaction {
     matchType?: MatchType | null;
     matchedWithId?: number | null;
     splitParentId?: number | null;
+    /** What a linked Amazon charge bought (first item titles), when the extension has imported it. */
+    amazonSummary?: string | null;
 }
 
 export type MatchType = "TRANSFER" | "REFUND";
@@ -314,6 +316,12 @@ export interface Page<T> {
     size: number;
     hasNext: boolean;
     total: number;
+}
+
+/** A pre-filled split line: a magnitude (or null to type it) and what it's for. */
+export interface SplitSeed {
+    amount: number | null;
+    label?: string;
 }
 
 export interface SplitLine {
@@ -521,4 +529,70 @@ export const authApi = {
         await fetch("/logout", { method: "POST" });
         window.location.href = "/";
     },
+};
+
+export type AmazonMarketplace = "www.amazon.ca" | "www.amazon.com";
+
+export interface AmazonItem {
+    title: string;
+    quantity: number;
+    unitPrice?: number | null;
+}
+
+export interface AmazonCharge {
+    id: number;
+    chargedOn: string;
+    amount: number;
+    cardLabel?: string | null;
+    cardLast4?: string | null;
+    /** Pinned by hand (a manual link, or a deliberate unlink) — re-matching leaves it alone. */
+    manual: boolean;
+    transactionId?: number | null;
+    transactionPostedAt?: string | null;
+    transactionAccountName?: string | null;
+    transactionCategoryId?: number | null;
+}
+
+export interface AmazonOrder {
+    id: number;
+    orderNumber: string;
+    marketplace: string;
+    url: string;
+    orderedOn: string;
+    total?: number | null;
+    currency?: string | null;
+    items: AmazonItem[];
+    charges: AmazonCharge[];
+}
+
+/** One order as the browser extension scraped it — the import payload. */
+export interface ScrapedAmazonOrder {
+    orderNumber: string;
+    orderedOn: string;
+    total?: number | null;
+    currency?: string | null;
+    items: AmazonItem[];
+    charges: { chargedOn: string; amount: number; cardLabel?: string | null; cardLast4?: string | null }[];
+}
+
+export interface AmazonImportResult {
+    orders: number;
+    newOrders: number;
+    charges: number;
+    matched: number;
+    unmatched: number;
+}
+
+export const amazonApi = {
+    importOrders: (marketplace: string, orders: ScrapedAmazonOrder[]) =>
+        http<AmazonImportResult>("POST", "/api/amazon/import", { marketplace, orders }),
+    rematch: () => http<{ matched: number }>("POST", "/api/amazon/rematch"),
+    orders: () => http<AmazonOrder[]>("GET", "/api/amazon/orders"),
+    forTransaction: (id: number) => http<AmazonOrder[]>("GET", `/api/amazon/transactions/${id}`),
+    candidates: (chargeId: number) => http<Transaction[]>("GET", `/api/amazon/charges/${chargeId}/candidates`),
+    link: (chargeId: number, transactionId: number) =>
+        http<AmazonOrder>("PUT", `/api/amazon/charges/${chargeId}/transaction`, { transactionId }),
+    unlink: (chargeId: number) => http<AmazonOrder>("DELETE", `/api/amazon/charges/${chargeId}/transaction`),
+    extension: () => http<{ version: string }>("GET", "/api/amazon/extension"),
+    extensionZipUrl: () => `/api/amazon/extension.zip?origin=${encodeURIComponent(window.location.origin)}`,
 };

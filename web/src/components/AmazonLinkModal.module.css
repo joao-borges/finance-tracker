@@ -1,0 +1,31 @@
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    max-height: 420px;
+    overflow-y: auto;
+}
+
+.option {
+    display: flex;
+    width: 100%;
+    margin-inline-end: 0;
+}
+
+/* antd's radio label wrapper must stretch for the row to lay out. */
+.option > span:last-child {
+    flex: 1;
+    min-width: 0;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.merchant {
+    flex: 1;
+}

@@ -107,6 +107,18 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
             """)
     List<Transaction> findMatchCandidates(@Param("start") Instant start, @Param("end") Instant end);
 
+    /**
+     * Outflows in a date window that could be a bank charge — split children
+     * excluded (the parent is the charged row), split parents kept.
+     */
+    @Query("""
+            SELECT t FROM Transaction t
+            WHERE t.splitParent IS NULL AND t.dedup = false AND t.amount < 0
+              AND t.postedAt >= :start AND t.postedAt < :end
+            ORDER BY t.postedAt ASC, t.id ASC
+            """)
+    List<Transaction> findOutflowsBetween(@Param("start") Instant start, @Param("end") Instant end);
+
     /** Total of refunds already matched to a purchase (positive). Supports one-to-many refunds. */
     @Query("""
             SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t

@@ -136,6 +136,15 @@ ImportRun
   started_at, finished_at, status
   file_name            # for CSV runs
   new_count, dedup_count, error_count, account_count
+
+AmazonOrder              # from the browser extension (see "Amazon order details")
+  id, order_number (unique), marketplace, ordered_on, total, currency, imported_at
+AmazonOrderItem
+  id, order_id, position, title, quantity, unit_price   # pre-tax, as the invoice lists it
+AmazonCharge             # one card charge an order's invoice lists
+  id, order_id, charged_on, amount (positive), card_label, card_last4
+  transaction_id       # nullable FK (ON DELETE SET NULL) — the bank row it became
+  manual (bool)        # hand-linked or hand-unlinked; the matcher leaves it alone
 ```
 
 ---
@@ -417,6 +426,22 @@ Free-form labels on transactions, deliberately **orthogonal to categories**: mar
 
 ---
 
+## Amazon order details
+
+Amazon charges a card **per shipment, not per order** — one order becomes several bank rows, one bank row can cover parts of several orders, and the amount rarely equals any single item. SimpleFIN also strips the descriptor to a bare `Amazon`, so nothing on the bank side says what was bought. A **browser extension** fills that in.
+
+- **Extension** (`src/main/resources/amazon-extension/`, Chrome MV3, installed unpacked). Downloaded from the Amazon page as a zip that `amazon/ExtensionPackager` builds on request, writing the app's own origin into the manifest's content-script match — so it only ever talks to this instance. `bridge.js` (on the app page) marks `<html data-ft-amazon-extension>` and relays a sync request; `background.js` opens or reuses an Amazon tab; `scraper.js` runs *inside* that tab, so every request uses the user's own Amazon session. It walks the order history newest-first and reads each order's printable invoice (`/gp/css/summary/print.html`), which lists the items and **every card charge** for the order. Parsing is on text lines, not CSS classes — Amazon's markup churns, the invoice wording doesn't. The extension stores nothing and sends nothing anywhere; the app page posts the result to its own API.
+- **Data.** `amazon_orders` (unique `order_number`) → `amazon_order_items` and `amazon_charges` (`charged_on`, `amount`, card last 4, `transaction_id` FK `ON DELETE SET NULL`, `manual`). Re-importing an order upserts it, keeps existing charges by key (so links survive) and drops charges the invoice no longer lists.
+- **Matching** (`amazon/AmazonChargeMatcher`, pure): a charge links to an outflow of exactly its amount whose raw or canonical merchant reads as Amazon (`amazon`/`amzn`), posted 3 days before to 7 days after the charge date. Split children are never candidates (the parent is the charged row). Ties: an unclaimed row beats a claimed one, then the account carrying the card's last 4, then nearest date, then on/after the charge, then lowest id. A row already linked to a charge with the **same key** (date, amount, card) stays eligible — that's one card charge covering several orders, listed on each invoice; two identical same-day charges for two orders still land on two rows.
+- **Manual control.** Linking by hand or unlinking sets `manual`, and the matcher never touches a manual charge again.
+- **Use.** The transaction list shows the first item titles under the merchant (`TransactionDto.amazonSummary`; a split child shows its parent's). The edit modal lists the linked orders, their items and every charge of each order, and **Split by selected items** pre-fills the split editor with one line per chosen item, scaled from pre-tax invoice prices to the charge total (the last line absorbs rounding).
+
+## Calculator
+
+A desktop-only (not mounted below the `sm` breakpoint) scratch calculator in the app bar: any number of floating, draggable windows, each minimizable into a bottom-right tray that shows its current result. Windows float above modals, so one stays usable while splitting. `lib/calc.ts` is a small parser (never `eval`): `+ − × ÷`, parentheses, and handheld-style percent — `a ± b%` adds or takes off b percent *of a* (`200 − 15%` = 170, `+ 13%` for tax), elsewhere `b%` is `b/100`.
+
+---
+
 ## Budgets
 
 Monthly. Page mirrors the Monarch layout you sent: an Income section (planned vs actual) and expense **groups** containing categories, each row showing planned / actual / remaining.
@@ -533,6 +558,17 @@ POST   /api/matches/suggestions/:id/confirm
 POST   /api/matches/suggestions/:id/dismiss
 POST   /api/matches {aId,bId,type}        # manual pair
 POST   /api/matches/scan                  # backfill existing transactions
+
+# Amazon order details (fed by the browser extension)
+POST   /api/amazon/import                 # upsert scraped orders (items + invoice charges), then match charges
+POST   /api/amazon/rematch                # retry matching every unlinked, unpinned charge
+GET    /api/amazon/orders                 # orders with items and charge → transaction links
+GET    /api/amazon/transactions/:id       # orders behind one transaction (split child → its parent)
+GET    /api/amazon/charges/:id/candidates # Amazon-looking outflows for a hand link
+PUT    /api/amazon/charges/:id/transaction {transactionId}   # hand link (pinned)
+DELETE /api/amazon/charges/:id/transaction                   # unlink (pinned unlinked)
+GET    /api/amazon/extension              # shipped extension version
+GET    /api/amazon/extension.zip?origin=  # the extension, its content script bound to that origin
 
 # Auth (Google sign-in; active only with the "oauth" profile)
 GET    /api/me                            # signed-in account (authenticated flag, email, name)

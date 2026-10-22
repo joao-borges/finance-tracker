@@ -10,8 +10,10 @@ import java.time.Instant;
  * Read DTO for the transactions list. {@code merchantName} is the raw bank
  * descriptor; {@code merchant} is the canonical merchant's name once linked.
  * Logo/icon fields drive the list's avatars and category emoji.
+ * {@code amazonSummary} names what a linked Amazon charge bought (filled by the
+ * controller, not the mapper).
  */
-@Builder
+@Builder(toBuilder = true)
 public record TransactionDto(
         Long id,
         Instant postedAt,
@@ -39,5 +41,6 @@ public record TransactionDto(
         java.util.List<String> tags,
         MatchType matchType,
         Long matchedWithId,
-        Long splitParentId) {
+        Long splitParentId,
+        String amazonSummary) {
 }

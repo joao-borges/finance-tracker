@@ -68,6 +68,7 @@ The Spring Boot app is the project root; `web/` holds the React UI. Java package
 - **`dashboard/`** — landing-page summary (account groups, review count, budget alerts).
 - **`match/`** — transfer/refund matching (`MatchingService`): pairs legs (`matched_with_id`/`match_type`), auto-applies high-confidence, proposes `MatchSuggestion`s; runs in the ingest pipeline after rules. See DESIGN.md "Matching".
 - **`seed/`** — `DataSeeder` (an idempotent `ApplicationRunner`) that ensures category groups, categories, merchants, and rules from an optional personal seed file exist at startup. The file is personal and does NOT ship with the repo: point `finance.seed.file` (env `FINANCE_SEED_FILE`) at it, or bake it into the classpath at `seed/seed-data.json`; with neither, seeding is skipped.
+- **`amazon/`** — Amazon order details from the browser extension (sources in `src/main/resources/amazon-extension/`, zipped on download by `ExtensionPackager`): orders, items, invoice charges, and `AmazonChargeMatcher` linking each charge to its bank transaction. See DESIGN.md "Amazon order details".
 - **`auth/`** — Google sign-in (OIDC). `AllowlistOidcUserService` enforces the `finance.auth.allowed-emails` allowlist (fail-closed); `MeController` exposes `GET /api/me`. The security chain is `config/SecurityConfig`, gated by the `oauth` profile — no profile ⇒ auth off (local dev). See DESIGN.md "Authentication".
 - **`common/`** — **shared query predicates (the flag table)** and other cross-cutting helpers.
 
