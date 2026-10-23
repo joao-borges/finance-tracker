@@ -48,7 +48,7 @@ export default function App() {
     return (
         <Box className={styles.root}>
             <AppBar position="fixed" className={styles.appBar}>
-                <Toolbar>
+                <Toolbar variant="dense">
                     <IconButton color="inherit" edge="start" onClick={onMenu} className={styles.menuButton} aria-label="menu">
                         <MenuIcon />
                     </IconButton>
@@ -63,7 +63,7 @@ export default function App() {
             <Sidebar mobile={mobile} collapsed={collapsed} mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
 
             <Box component="main" className={styles.main}>
-                <Toolbar />
+                <Toolbar variant="dense" />
                 <Routes>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/transactions" element={<TransactionsPage />} />
