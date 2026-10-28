@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Finance Tracker – Amazon orders",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "description": "Reads your Amazon order invoices so Finance Tracker can show what each Amazon card charge bought.",
     "permissions": ["scripting"],
     "host_permissions": ["https://www.amazon.ca/*", "https://www.amazon.com/*"],

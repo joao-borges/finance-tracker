@@ -284,13 +284,16 @@
 
     globalThis.ftAmazonInvoice = { parseInvoice, parsePaymentLines, linesOf };
 
-    globalThis.ftScrapeAmazonOrders = async ({ since, currency }) => {
+    // `settled` (order number → order date) lists orders the app already holds
+    // in full; their invoices are not re-read.
+    globalThis.ftScrapeAmazonOrders = async ({ since, currency, settled = {} }) => {
         const progress = (text) => {
             chrome.runtime.sendMessage({ type: "ft-progress", text }).catch(() => {});
         };
         const orders = [];
         const warnings = [];
         const seen = new Set();
+        let skipped = 0;
         let reachedStart = false;
         try {
             const payments = await readPayments(since, progress);
@@ -305,6 +308,14 @@
                     }
                     for (const number of numbers) {
                         seen.add(number);
+                        if (settled[number]) {
+                            if (settled[number] < since) {
+                                reachedStart = true;
+                                break;
+                            }
+                            skipped++;
+                            continue;
+                        }
                         await sleep(REQUEST_GAP_MS);
                         progress(`Reading order ${number} (${orders.length + 1} so far)…`);
                         const invoice = await fetchPage(`/gp/css/summary/print.html?orderID=${number}`);
@@ -331,7 +342,7 @@
                     }
                 }
             }
-            return { ok: true, orders, warnings };
+            return { ok: true, orders, warnings, skipped };
         } catch (failure) {
             if (failure instanceof SignedOut) {
                 return { ok: false, reason: "signed-out" };

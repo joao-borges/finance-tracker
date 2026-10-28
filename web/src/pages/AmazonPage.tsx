@@ -81,7 +81,7 @@ export default function AmazonPage() {
             </Typography>
 
             <AmazonExtensionCard installedVersion={installedVersion} latestVersion={latestVersion} />
-            <AmazonSyncCard installed={installedVersion != null} onImported={load} />
+            <AmazonSyncCard installed={installedVersion != null} orders={orders} onImported={load} />
 
             <Box className={styles.toolbar}>
                 <Typography variant="subtitle1" className={styles.title}>

@@ -3,13 +3,16 @@ import { Button, Paper, Typography } from "@mui/material";
 import SyncIcon from "@mui/icons-material/Sync";
 import { App as AntApp, DatePicker, Select } from "antd";
 import dayjs from "dayjs";
-import { amazonApi, type AmazonImportResult, type AmazonMarketplace } from "../lib/api";
+import { amazonApi, type AmazonImportResult, type AmazonMarketplace, type AmazonOrder } from "../lib/api";
+import { settledOrders } from "../lib/amazon";
 import { syncAmazonOrders } from "../lib/amazonExtension";
 import { errorText } from "../lib/format";
 import styles from "./AmazonSyncCard.module.css";
 
 interface Props {
     installed: boolean;
+    /** Already-imported orders; settled ones are skipped on sync. */
+    orders: AmazonOrder[];
     onImported: () => void;
 }
 
@@ -33,7 +36,7 @@ const storedMarketplace = (): AmazonMarketplace => {
 
 // Runs a sync through the extension, then posts what it read to the API,
 // which stores the orders and links each charge to its bank transaction.
-export default function AmazonSyncCard({ installed, onImported }: Props) {
+export default function AmazonSyncCard({ installed, orders, onImported }: Props) {
     const { message } = AntApp.useApp();
     const [marketplace, setMarketplace] = useState<AmazonMarketplace>(storedMarketplace);
     const [since, setSince] = useState(() => dayjs().subtract(DEFAULT_LOOKBACK_DAYS, "day"));
@@ -41,6 +44,7 @@ export default function AmazonSyncCard({ installed, onImported }: Props) {
     const [progress, setProgress] = useState("");
     const [warnings, setWarnings] = useState<string[]>([]);
     const [result, setResult] = useState<AmazonImportResult | null>(null);
+    const [skipped, setSkipped] = useState(0);
 
     const chooseMarketplace = (value: AmazonMarketplace) => {
         setMarketplace(value);
@@ -53,13 +57,20 @@ export default function AmazonSyncCard({ installed, onImported }: Props) {
         setBusy(true);
         setWarnings([]);
         setResult(null);
+        setSkipped(0);
         setProgress("Asking the extension…");
         try {
-            const scraped = await syncAmazonOrders(marketplace, since.format("YYYY-MM-DD"), setProgress);
+            const scraped = await syncAmazonOrders(
+                marketplace,
+                since.format("YYYY-MM-DD"),
+                settledOrders(orders, marketplace),
+                setProgress,
+            );
             setProgress(`Saving ${scraped.orders.length} order(s)…`);
             const imported = await amazonApi.importOrders(scraped.marketplace, scraped.orders);
             setWarnings(scraped.warnings);
             setResult(imported);
+            setSkipped(scraped.skipped);
             message.success(`${imported.orders} order(s) read · ${imported.matched} charge(s) matched`);
             onImported();
         } catch (error: unknown) {
@@ -107,6 +118,7 @@ export default function AmazonSyncCard({ installed, onImported }: Props) {
                 <Typography variant="body2">
                     {result.orders} order(s) read ({result.newOrders} new) · {result.charges} charge(s) ·{" "}
                     {result.matched} newly matched · {result.unmatched} still unmatched
+                    {skipped > 0 && ` · ${skipped} settled order(s) skipped`}
                 </Typography>
             )}
             {warnings.length > 0 && (

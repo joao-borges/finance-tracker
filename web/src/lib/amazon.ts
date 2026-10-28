@@ -1,6 +1,6 @@
 // Helpers for Amazon order details (non-component).
 
-import type { AmazonItem, SplitSeed } from "./api";
+import type { AmazonItem, AmazonOrder, SplitSeed } from "./api";
 
 const cents = (value: number): number => {
     return Math.round(value * 100) / 100;
@@ -30,4 +30,24 @@ export function splitSeedsFromItems(items: AmazonItem[], chargeTotal: number): S
     const drift = cents(Math.abs(chargeTotal) - amounts.reduce((total, amount) => total + amount, 0));
     amounts[amounts.length - 1] = cents(amounts[amounts.length - 1] + drift);
     return items.map((item, index) => ({ amount: amounts[index], label: label(item) }));
+}
+
+/**
+ * Orders a sync can skip, as order number → order date: charged in full (the
+ * charges add up to the invoice total) and every charge linked to a bank
+ * transaction. Anything else — new, partly shipped, or unmatched — is re-read.
+ */
+export function settledOrders(orders: AmazonOrder[], marketplace: string): Record<string, string> {
+    const settled: Record<string, string> = {};
+    orders
+        .filter((order) => order.marketplace === marketplace && order.total != null && order.charges.length > 0)
+        .filter((order) => order.charges.every((charge) => charge.transactionId != null))
+        .filter((order) => {
+            const charged = order.charges.reduce((total, charge) => total + charge.amount, 0);
+            return cents(charged) >= cents(order.total as number);
+        })
+        .forEach((order) => {
+            settled[order.orderNumber] = order.orderedOn;
+        });
+    return settled;
 }

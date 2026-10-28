@@ -53,7 +53,7 @@ const waitForLoad = (tabId) => {
     });
 };
 
-async function sync({ marketplace, since }, report) {
+async function sync({ marketplace, since, settled }, report) {
     const currency = MARKETPLACES[marketplace];
     if (!currency) {
         throw new Error(`Unsupported marketplace: ${marketplace}`);
@@ -77,7 +77,7 @@ async function sync({ marketplace, since }, report) {
         const [injection] = await chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: (options) => globalThis.ftScrapeAmazonOrders(options),
-            args: [{ since, currency }],
+            args: [{ since, currency, settled: settled ?? {} }],
         });
         const result = injection?.result;
         if (result?.reason === "signed-out") {
@@ -89,7 +89,7 @@ async function sync({ marketplace, since }, report) {
         if (!result?.ok) {
             throw new Error(result?.error ?? "Reading the Amazon orders failed");
         }
-        return { marketplace, orders: result.orders, warnings: result.warnings };
+        return { marketplace, orders: result.orders, warnings: result.warnings, skipped: result.skipped };
     } finally {
         reporters.delete(tab.id);
         if (created) {

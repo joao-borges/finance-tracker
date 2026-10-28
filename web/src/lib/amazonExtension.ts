@@ -9,6 +9,8 @@ export interface AmazonSyncResult {
     marketplace: string;
     orders: ScrapedAmazonOrder[];
     warnings: string[];
+    /** Settled orders the extension passed over without reading. */
+    skipped: number;
 }
 
 interface ExtensionMessage {
@@ -20,6 +22,7 @@ interface ExtensionMessage {
     marketplace?: string;
     orders?: ScrapedAmazonOrder[];
     warnings?: string[];
+    skipped?: number;
 }
 
 /** The installed extension's version, or null when it isn't installed (or not enabled for this site). */
@@ -27,10 +30,15 @@ export function installedExtensionVersion(): string | null {
     return document.documentElement.dataset.ftAmazonExtension ?? null;
 }
 
-/** Ask the extension to read every Amazon order placed on or after {@code since} (YYYY-MM-DD). */
+/**
+ * Ask the extension to read every Amazon order placed on or after {@code since}
+ * (YYYY-MM-DD), except the {@code settled} ones (order number → order date),
+ * which it skips without opening their invoices.
+ */
 export function syncAmazonOrders(
     marketplace: AmazonMarketplace,
     since: string,
+    settled: Record<string, string>,
     onProgress: (text: string) => void,
 ): Promise<AmazonSyncResult> {
     // Not crypto.randomUUID(): that needs a secure context, and the app may be opened over plain http on the LAN.
@@ -47,12 +55,12 @@ export function syncAmazonOrders(
             }
             window.removeEventListener("message", listener);
             if (data.type === "done") {
-                resolve({ marketplace: data.marketplace ?? marketplace, orders: data.orders ?? [], warnings: data.warnings ?? [] });
+                resolve({ marketplace: data.marketplace ?? marketplace, orders: data.orders ?? [], warnings: data.warnings ?? [], skipped: data.skipped ?? 0 });
             } else {
                 reject(new Error(data.error ?? "The extension reported an error"));
             }
         };
         window.addEventListener("message", listener);
-        window.postMessage({ source: "ft-app", type: "amazon-sync", requestId, marketplace, since }, window.location.origin);
+        window.postMessage({ source: "ft-app", type: "amazon-sync", requestId, marketplace, since, settled }, window.location.origin);
     });
 }

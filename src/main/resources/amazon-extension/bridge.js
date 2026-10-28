@@ -31,6 +31,6 @@
                 reply({ type: "error", error: chrome.runtime.lastError?.message ?? "The extension stopped unexpectedly" });
             }
         });
-        port.postMessage({ type: "sync", marketplace: data.marketplace, since: data.since });
+        port.postMessage({ type: "sync", marketplace: data.marketplace, since: data.since, settled: data.settled });
     });
 })();
