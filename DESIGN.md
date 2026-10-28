@@ -222,7 +222,13 @@ requested again and the gap was permanent. Two causes, both fixed:
   while a connection is dead.
 
 `SyncWindow` owns the clamping and is pure, so it is tested without a bridge or a
-database: at least `MIN_OVERLAP` (2 days, for rows the bank posts late), at most
+database: it starts `MIN_OVERLAP` (2 days) *behind* the watermark, and never later
+than `MIN_OVERLAP` before now. The step back from the watermark matters: the
+watermark is when the bridge reached the bank, but Amex lands rows on the bridge a
+day or two after the posted date they carry, so a window starting exactly at a
+stale watermark permanently skipped every row dated on the last good sync's day
+(Oct 2026: all of Oct 14 and Oct 22). At most
+
 `MAX_LOOKBACK` (40 days, so one permanently dead account — a closed card the
 bridge still lists — can't turn every sync into a full-history pull; kept under
 the bridge's recommended 45 days, which it warns on even when met exactly), and a

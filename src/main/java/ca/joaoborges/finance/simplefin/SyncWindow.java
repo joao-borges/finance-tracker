@@ -16,11 +16,22 @@ import java.util.Optional;
  * a reconnect self-heal: a broken account's watermark never advanced, so the
  * next sync reaches back over the whole outage.
  *
+ * <p>The watermark is when the bridge last reached the bank, not the newest
+ * posted date it returned — and Amex lands rows on the bridge a day or two
+ * after the posted date they carry. So the window always steps back
+ * {@link #MIN_OVERLAP} from the watermark, not only from now: starting exactly
+ * at a stale watermark after an outage is how every row dated on the last good
+ * sync's day (Oct 14, Oct 22) was skipped for good. Rows the overlap re-fetches
+ * are skipped by their SimpleFIN id.
+ *
  * <p>Pure so the clamping is testable without a bridge or a database.
  */
 final class SyncWindow {
 
-    /** Always re-request at least this much, so rows the bank posts late still land. */
+    /**
+     * Slack behind the watermark (and behind now), so rows the bank posts late
+     * with an earlier posted date still land.
+     */
     static final Duration MIN_OVERLAP = Duration.ofDays(2);
 
     /**
@@ -41,7 +52,9 @@ final class SyncWindow {
     }
 
     static Instant startFrom(final Optional<Instant> watermark, final Instant now) {
-        final Instant from = watermark.orElseGet(() -> now.minus(COLD_START_LOOKBACK));
+        final Instant from = watermark
+                .map(reached -> reached.minus(MIN_OVERLAP))
+                .orElseGet(() -> now.minus(COLD_START_LOOKBACK));
         final Instant floor = now.minus(MAX_LOOKBACK);
         final Instant ceiling = now.minus(MIN_OVERLAP);
         if (from.isBefore(floor)) {
